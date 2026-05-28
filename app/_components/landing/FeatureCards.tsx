@@ -1,22 +1,22 @@
-import { MagnifyingGlass, Scales, ChartLineUp } from '@phosphor-icons/react/dist/ssr';
+import { MagnifyingGlassIcon, ScalesIcon, ChartLineUpIcon } from '@phosphor-icons/react/dist/ssr';
 
 export default function FeatureCards() {
   const steps = [
     {
       // Guardamos la referencia al componente, no un string ni un elemento instanciado
-      Icon: MagnifyingGlass,
-      title: "1. Buscá y Sumá",
+      Icon: MagnifyingGlassIcon,
+      title: "1. Buscá y listá",
       desc: "Encontrá tus artículos diarios con precios reales de las cadenas locales."
     },
     {
-      Icon: Scales,
+      Icon: ScalesIcon,
       title: "2. Compará Sucursales",
       desc: "Analizá tu changuito completo y descubrí qué sucursal física es la más barata."
     },
     {
-      Icon: ChartLineUp,
+      Icon: ChartLineUpIcon,
       title: "3. Historial de Inflación",
-      desc: "Seguí la variación diaria de precios para entender los aumentos en el tiempo."
+      desc: "Seguí la variación mensual de precios para entender los aumentos en el tiempo."
     }
   ];
 

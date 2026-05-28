@@ -6,7 +6,7 @@ import Navigation from "./_components/global/Navigation";
 
 export const metadata: Metadata = {
   title: "LALIsta - Tu compañera en las compras",
-  description: "Comparador inteligente de precios de supermercados para Zona Oeste.",
+  description: "Comparador inteligente de precios de supermercados para Argentina.",
 };
 
 export default function RootLayout({

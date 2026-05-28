@@ -10,12 +10,12 @@ export default function FeatureCards() {
     },
     {
       Icon: ScalesIcon,
-      title: "2. Compará Sucursales",
+      title: "2. Compará sucursales",
       desc: "Analizá tu changuito completo y descubrí qué sucursal física es la más barata."
     },
     {
       Icon: ChartLineUpIcon,
-      title: "3. Historial de Inflación",
+      title: "3. Historial de inflación",
       desc: "Seguí la variación mensual de precios para entender los aumentos en el tiempo."
     }
   ];

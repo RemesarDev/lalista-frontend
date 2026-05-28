@@ -9,11 +9,9 @@ interface HeaderProps {
 
 export default function Header({ locationName }: HeaderProps) {
   return (
-    // Header Púrpura usando tu variable primary-400
     <header className="w-full bg-primary-400 border-b border-accent-300 px-4 py-3 sticky top-0 z-50 shadow-sm">
       <div className="flex items-center justify-between max-w-screen-xl mx-auto">
         
-        {/* LOGO: Totalmente blanco para que resalte sobre el púrpura */}
         <Link href="/" className="flex items-center gap-1">
           <span className="text-2xl font-black tracking-tight font-display text-white">
             LALI<span className="text-slate-800">sta</span>
@@ -24,7 +22,6 @@ export default function Header({ locationName }: HeaderProps) {
           onClick={() => console.log('Abrir mapa')}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition text-xs font-semibold font-sans text-white max-w-[180px] truncate"
         >
-          {/* El pin ahora es blanco para mantener la finura del diseño */}
           <MapPinIcon className="text-white text-lg" weight="regular" />
           <span className="truncate">
             {locationName || "Ubicación pendiente"}

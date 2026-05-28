@@ -5,7 +5,7 @@ import StickySearch from "./_components/global/StickySearch";
 import Navigation from "./_components/global/Navigation";
 
 export const metadata: Metadata = {
-  title: "LALIsta - Optimizá tus Compras",
+  title: "LALIsta - Tu compañera en las compras",
   description: "Comparador inteligente de precios de supermercados para Zona Oeste.",
 };
 

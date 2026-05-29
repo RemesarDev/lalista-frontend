@@ -1,7 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { 
+  APIProvider, 
+  Map, 
+  AdvancedMarker, 
+  useMap,
+  useMapsLibrary 
+} from '@vis.gl/react-google-maps';
 import { 
   MapPinIcon, 
   CrosshairIcon, 
@@ -12,70 +19,94 @@ import {
   ArrowLeftIcon 
 } from '@phosphor-icons/react/dist/ssr';
 
+// =========================================================================
+// 1. CASCARÓN PRINCIPAL
+// =========================================================================
 export default function UbicacionVista() {
-  const [radio, setRadio] = useState(2); // Radio por defecto: 2 Km
-  const [zoom, setZoom] = useState(14);  // Nivel de zoom inicial para el cálculo del mapa
+  const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
+  return (
+    <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+      <ContenidoMapa />
+    </APIProvider>
+  );
+}
+
+// =========================================================================
+// 2. COMPONENTE INTERNO (Basado en la versión estable que SÍ funcionaba)
+// =========================================================================
+function ContenidoMapa() {
+  const [radio, setRadio] = useState(2);
+  const [zoom, setZoom] = useState(14);
   const [direccion, setDireccion] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const [cargandoGps, setCargandoGps] = useState(false); // Feedback para la API de geolocalización
+  const [cargandoGps, setCargandoGps] = useState(false);
+  
+  const map = useMap();
+  const placesLibrary = useMapsLibrary('places');
+  const geocodingLibrary = useMapsLibrary('geocoding');
 
-  // ESTADO DE COORDENADAS (Centro del mapa - Inicializado en Ituzaingó por defecto)
+  const [geocoderService, setGeocoderService] = useState<google.maps.Geocoder | null>(null);
+  
+  // Volvemos al array clásico de predicciones
+  const [sugerencias, setSugerencias] = useState<any[]>([]);
+  
+  // Referencia para capturar las sugerencias activas al presionar Enter
+  const sugerenciasRef = useRef<any[]>([]);
+  useEffect(() => {
+    sugerenciasRef.current = sugerencias;
+  }, [sugerencias]);
+
   const [coordenadas, setCoordenadas] = useState({
-    lat: -34.66,
-    lng: -58.66
+    lat: -34.6621,
+    lng: -58.6654
   });
 
-  // Calles sugeridas de la zona para pruebas de UI
-  const sugerenciasSimuladas = [
-    "Brandsen 2500, Ituzaingó",
-    "Santa Rosa 1200, Castelar",
-    "Av. Ratti y Belgrano, Ituzaingó",
-    "Barrio Aeronáutico, Ituzaingó"
-  ];
+  useEffect(() => {
+    if (!geocodingLibrary) return;
+    setGeocoderService(new geocodingLibrary.Geocoder());
+  }, [geocodingLibrary]);
 
-  // FUNCIÓN CENTRALIZADA PARA GUARDAR LOS FILTROS DE UBICACIÓN
-  const guardarUbicacionFiltro = (nuevoRadio: number, nuevoZoom = zoom, nuevasCoords = coordenadas, textoDir = direccion) => {
+  // 🚀 EL EFECTO ORIGINAL QUE SÍ FUNCIONABA (Con bypass de tipos para Next.js)
+  useEffect(() => {
+    if (!placesLibrary || !direccion || direccion.trim().length < 3) {
+      setSugerencias([]);
+      return;
+    }
+
+    // Instancia clásica garantizada por Google
+    const service = new (placesLibrary as any).AutocompleteService();
+    
+    service.getPlacePredictions(
+      {
+        input: direccion,
+        componentRestrictions: { country: 'ar' },
+        types: ['address']
+      },
+      (predictions: any, status: string) => {
+        if (status === 'OK' && predictions) {
+          setSugerencias(predictions);
+        } else {
+          setSugerencias([]);
+        }
+      }
+    );
+  }, [direccion, placesLibrary]);
+
+  const guardarUbicacionFiltro = (nuevoRadio: number, nuevoZoom: number, nuevasCoords: { lat: number; lng: number }, textoDir = direccion) => {
     const payload = {
       rangoKm: nuevoRadio,
       zoomNivel: nuevoZoom,
       latitud: nuevasCoords.lat,
       longitud: nuevasCoords.lng,
-      direccionTexto: textoDir || "Ubicación en el mapa"
+      direccionTexto: textoDir || "Punto seleccionado en el mapa"
     };
-    console.log("Guardando datos en el estado global:", payload);
+    console.log("🚀 [Supabase Query] Ejecutando consulta controlada con parámetros:", payload);
   };
 
-  // Manejadores manuales de zoom con topes de seguridad
-  const handleZoomIn = () => {
-    if (zoom < 18) {
-      const nuevoZoom = zoom + 1;
-      setZoom(nuevoZoom);
-      guardarUbicacionFiltro(radio, nuevoZoom);
-    }
-  };
-
-  const handleZoomOut = () => {
-    if (zoom > 10) {
-      const nuevoZoom = zoom - 1;
-      setZoom(nuevoZoom);
-      guardarUbicacionFiltro(radio, nuevoZoom);
-    }
-  };
-
-  // FUNCIÓN LOGICA DEL GPS REAL DEL DISPOSITIVO
   const obtenerGeolocalizacionReal = () => {
-    if (!navigator.geolocation) {
-      alert("Tu navegador no soporta geolocalización o estás en un entorno no seguro (HTTP).");
-      return;
-    }
-
+    if (!navigator.geolocation) return;
     setCargandoGps(true);
-
-    const opcionesGps = {
-      enableHighAccuracy: true, // Forzar uso de GPS de hardware en móviles si está disponible
-      timeout: 10000,           // Esperar máximo 10 segundos
-      maximumAge: 0             // No traer respuestas cacheadas viejas
-    };
 
     navigator.geolocation.getCurrentPosition(
       (posicion) => {
@@ -83,67 +114,106 @@ export default function UbicacionVista() {
           lat: posicion.coords.latitude,
           lng: posicion.coords.longitude
         };
-        const tagDireccion = "Mi ubicación actual (GPS)";
+        const tag = "Mi ubicación actual (GPS)";
         
         setCoordenadas(nuevasCoords);
-        setDireccion(tagDireccion);
+        setDireccion(tag);
+        setZoom(16); 
         setCargandoGps(false);
         
-        // Persistimos los datos reales obtenidos
-        guardarUbicacionFiltro(radio, zoom, nuevasCoords, tagDireccion);
+        if (map) {
+          map.panTo(nuevasCoords);
+          map.setZoom(16);
+        }
+        
+        guardarUbicacionFiltro(radio, 16, nuevasCoords, tag);
       },
       (error) => {
         setCargandoGps(false);
-        console.error("Error de GPS:", error);
-        
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            alert("Permiso denegado. Habilitá la ubicación desde la configuración de tu navegador.");
-            break;
-          case error.POSITION_UNAVAILABLE:
-            alert("La información de ubicación no está disponible actualmente.");
-            break;
-          case error.TIMEOUT:
-            alert("Se agotó el tiempo de espera para obtener tu ubicación.");
-            break;
-          default:
-            alert("Ocurrió un error inesperado al obtener la ubicación.");
-            break;
-        }
+        console.error("Error obteniendo GPS:", error);
       },
-      opcionesGps
+      { enableHighAccuracy: true, timeout: 10000 }
     );
+  };
+
+  // MANEJADOR DE SELECCIÓN TRADICIONAL
+  const manejarSeleccionDireccion = (sug: any) => {
+    if (!geocoderService) return;
+
+    const textoDireccion = sug.description;
+    setDireccion(textoDireccion);
+    setSugerencias([]);
+
+    geocoderService.geocode({ address: textoDireccion }, (results, status) => {
+      if (status === 'OK' && results && results[0]) {
+        const loc = results[0].geometry.location;
+        const nuevasCoords = { lat: loc.lat(), lng: loc.lng() };
+
+        setCoordenadas(nuevasCoords);
+        setZoom(15);
+
+        if (map) {
+          map.panTo(nuevasCoords);
+          map.setZoom(15);
+        }
+
+        guardarUbicacionFiltro(radio, 15, nuevasCoords, textoDireccion);
+      } else {
+        console.error("No se pudieron obtener coordenadas para esta dirección:", status);
+      }
+    });
+  };
+
+  // 🚀 MANEJADOR PARA CONTROLAR EL ENTER
+  const manejarKeyDownInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (sugerenciasRef.current && sugerenciasRef.current.length > 0) {
+        manejarSeleccionDireccion(sugerenciasRef.current[0]);
+        (e.target as HTMLInputElement).blur(); // Cierra el teclado/foco
+      }
+    }
   };
 
   return (
     <div className="relative h-screen w-full overflow-hidden font-sans bg-slate-100">
       
-      {/* 1. MAPA DE FONDO (OpenStreetMap dinámico) */}
-      <div className="absolute inset-0 w-full h-full z-0 select-none grayscale-[20%] opacity-80">
-        <iframe 
-          src={`https://www.openstreetmap.org/export/embed.html?bbox=${coordenadas.lng - (0.2 / zoom)}%2C${coordenadas.lat - (0.15 / zoom)}%2C${coordenadas.lng + (0.2 / zoom)}%2C${coordenadas.lat + (0.15 / zoom)}&amp;layer=mapnik`} 
-          className="w-full h-full border-none pointer-events-auto"
+      {/* MAPA INTERACTIVO */}
+      <div className="absolute inset-0 w-full h-full z-0 select-none">
+        <Map
+          defaultCenter={coordenadas}
+          zoom={zoom}
+          disableDefaultUI={true} 
+          mapId="DEMO_MAP_ID" 
+          onCameraChanged={(ev) => {
+            setZoom(ev.detail.zoom);
+          }}
+          gestureHandling={'greedy'} 
+          className="w-full h-full"
         />
       </div>
 
-      {/* BOTÓN "VOLVER" (Ubicado fijo arriba a la izquierda sin competir con el input) */}
+      {/* CONTROLES ZOOM MANUAL */}
+      <ControlesZoomManual zoom={zoom} setZoom={setZoom} />
+
+      {/* BOTÓN VOLVER */}
       <Link 
         href="/" 
         className="absolute top-4 left-4 z-30 bg-white border border-slate-200/80 shadow-xl p-3.5 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 active:scale-95 transition-all"
-        title="Volver"
       >
         <ArrowLeftIcon weight="bold" className="text-xs" />
       </Link>
 
-      {/* PIN FLOTANTE FIJO EN EL CENTRO EXACTO DEL MAPA */}
-      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none flex flex-col items-center transition-opacity duration-300 ${isFocused ? 'opacity-30' : 'opacity-100'}`}>
-        <div className="bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md mb-1 animate-bounce">
-          {radio} Km a la redonda
+      {/* PIN AVANZADO */}
+      <AdvancedMarker position={coordenadas}>
+        <div className="flex flex-col items-center pointer-events-none -translate-y-8">
+          <div className="bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md mb-1 whitespace-nowrap">
+            {radio} Km a la redonda
+          </div>
+          <MapPinIcon weight="fill" className="text-red-500 text-4xl drop-shadow-md" />
         </div>
-        <MapPinIcon weight="fill" className="text-primary-400 text-4xl drop-shadow-md" />
-      </div>
+      </AdvancedMarker>
 
-      {/* 2. CONTROL LATERAL DERECHO: SLIDER VERTICAL MINIMALISTA DE RANGO */}
+      {/* SLIDER VERTICAL DE RANGO */}
       <div className={`absolute right-2 top-[32%] z-20 flex h-40 w-10 items-center justify-center transition-all duration-300 ${isFocused ? 'opacity-10 pointer-events-none' : 'opacity-100'}`}>
         <div className="relative flex h-full w-full items-center justify-center">
           <input 
@@ -155,33 +225,15 @@ export default function UbicacionVista() {
             onChange={(e) => {
               const valor = Number(e.target.value);
               setRadio(valor);
-              guardarUbicacionFiltro(valor, zoom);
+              guardarUbicacionFiltro(valor, zoom, coordenadas);
             }}
-            className="absolute h-1 w-32 -rotate-90 cursor-pointer appearance-none rounded-lg bg-slate-400/60 accent-primary-400 focus:outline-none touch-none"
+            className="absolute h-1 w-32 -rotate-90 cursor-pointer appearance-none rounded-lg bg-slate-400/60 accent-slate-900 focus:outline-none touch-none"
             style={{ WebkitAppearance: 'none' }}
           />
         </div>
       </div>
 
-      {/* 3. BOTONES DE ZOOM PROPIOS (Margen derecho superior) */}
-      <div className={`absolute top-20 right-4 z-30 flex flex-col bg-white border border-slate-200/80 shadow-xl rounded-xl overflow-hidden transition-all duration-300 ${isFocused ? 'opacity-10 pointer-events-none' : 'opacity-100'}`}>
-        <button 
-          onClick={handleZoomIn}
-          className="p-2.5 text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer border-b border-slate-100 flex items-center justify-center font-bold"
-          title="Acercar"
-        >
-          <PlusIcon weight="bold" className="text-xs" />
-        </button>
-        <button 
-          onClick={handleZoomOut}
-          className="p-2.5 text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center font-bold"
-          title="Alejar"
-        >
-          <MinusIcon weight="bold" className="text-xs" />
-        </button>
-      </div>
-
-      {/* 4. BLOQUE BUSCADOR INTELIGENTE (Agregamos pl-14 para coexistir perfectamente con el botón de Volver) */}
+      {/* BUSCADOR */}
       <div className="absolute top-4 inset-x-4 pl-14 z-20 max-w-md mx-auto">
         <div className="relative w-full shadow-lg rounded-xl overflow-hidden bg-white border border-slate-200/80">
           <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
@@ -190,59 +242,83 @@ export default function UbicacionVista() {
             value={direccion}
             onChange={(e) => setDireccion(e.target.value)}
             onFocus={() => setIsFocused(true)}
-            onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+            onBlur={() => setTimeout(() => setIsFocused(false), 300)}
+            onKeyDown={manejarKeyDownInput} 
             placeholder="Ingresá tu dirección o barrio..." 
             className="w-full pl-10 pr-10 py-3.5 bg-white text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none"
           />
-          
-          {/* Botón X para vaciar texto */}
           {direccion && (
-            <button 
-              onClick={() => setDireccion('')} 
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-            >
+            <button onClick={() => { setDireccion(''); setSugerencias([]); }} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600">
               <XIcon weight="bold" className="text-xs" />
             </button>
           )}
         </div>
 
-        {/* COMPONENTE DESPLEGABLE DE SUGERENCIAS */}
-        {isFocused && (
+        {/* SUGERENCIAS EN TIEMPO REAL CLÁSICAS */}
+        {isFocused && sugerencias.length > 0 && (
           <div className="mt-2 bg-white border border-slate-200/80 rounded-xl shadow-xl max-h-60 overflow-y-auto p-1 animate-fade-in">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-2 border-b border-slate-50">
-              Sugerencias en la zona
+              Sugerencias de Google Maps
             </p>
-            {sugerenciasSimuladas.map((sug, index) => (
+            {sugerencias.map((sug) => (
               <button
-                key={index}
-                onClick={() => {
-                  setDireccion(sug);
-                  const coordsDummy = { lat: -34.65 - (index * 0.01), lng: -58.65 - (index * 0.01) };
-                  setCoordenadas(coordsDummy);
-                  guardarUbicacionFiltro(radio, zoom, coordsDummy, sug);
-                }}
-                className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-primary-400 transition-colors flex items-center gap-2"
+                key={sug.place_id || sug.description}
+                type="button"
+                onMouseDown={() => manejarSeleccionDireccion(sug)}
+                className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors flex items-center gap-2"
               >
                 <MapPinIcon className="text-slate-400 text-sm flex-shrink-0" />
-                <span className="truncate">{sug}</span>
+                <div className="flex flex-col truncate">
+                  <span className="font-semibold text-slate-800 truncate">
+                    {sug.structured_formatting?.main_text || sug.description}
+                  </span>
+                  {sug.structured_formatting?.secondary_text && (
+                    <span className="text-[10px] text-slate-400 truncate">
+                      {sug.structured_formatting.secondary_text}
+                    </span>
+                  )}
+                </div>
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* 5. BOTÓN FLOTANTE DE GEOLOCALIZACIÓN (Ubicación ergonómica inferior derecha - Hardware Real) */}
+      {/* BOTÓN GPS */}
       <button 
         onClick={obtenerGeolocalizacionReal}
         disabled={cargandoGps}
         className={`absolute bottom-6 right-4 z-30 bg-slate-900 hover:bg-slate-800 active:scale-[0.92] text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 border border-slate-800 cursor-pointer 
           ${isFocused ? 'opacity-10 pointer-events-none' : 'opacity-100'} 
           ${cargandoGps ? 'animate-pulse opacity-50 cursor-wait' : ''}`}
-        title={cargandoGps ? "Localizando..." : "Geolocalizarme"}
       >
-        <CrosshairIcon weight="fill" className={`text-xl text-primary-400 ${cargandoGps ? 'animate-spin' : ''}`} />
+        <CrosshairIcon weight="fill" className={`text-xl text-red-400 ${cargandoGps ? 'animate-spin' : ''}`} />
       </button>
 
+    </div>
+  );
+}
+
+// Sub-componente para el Zoom Manual
+function ControlesZoomManual({ zoom, setZoom }: any) {
+  const map = useMap();
+
+  const cambiarZoom = (factor: number) => {
+    const nuevoZoom = zoom + factor;
+    if (nuevoZoom >= 10 && nuevoZoom <= 19) {
+      setZoom(nuevoZoom);
+      if (map) map.setZoom(nuevoZoom);
+    }
+  };
+
+  return (
+    <div className="absolute top-20 right-4 z-30 flex flex-col bg-white border border-slate-200/80 shadow-xl rounded-xl overflow-hidden">
+      <button type="button" onClick={() => cambiarZoom(1)} className="p-2.5 text-slate-700 hover:bg-slate-50 active:bg-slate-100 border-b border-slate-100 flex items-center justify-center font-bold">
+        <PlusIcon weight="bold" className="text-xs" />
+      </button>
+      <button type="button" onClick={() => cambiarZoom(-1)} className="p-2.5 text-slate-700 hover:bg-slate-50 active:bg-slate-100 flex items-center justify-center font-bold">
+        <MinusIcon weight="bold" className="text-xs" />
+      </button>
     </div>
   );
 }

@@ -18,15 +18,15 @@ export default function Header({ locationName }: HeaderProps) {
           </span>
         </Link>
 
-        <button 
-          onClick={() => console.log('Abrir mapa')}
+        <Link 
+          href="/ubicacion"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition text-xs font-semibold font-sans text-white max-w-[180px] truncate"
         >
           <MapPinIcon className="text-white text-lg" weight="regular" />
           <span className="truncate">
             {locationName || "Ubicación pendiente"}
           </span>
-        </button>
+        </Link>
 
         <button 
           onClick={() => console.log('Ir a login')}

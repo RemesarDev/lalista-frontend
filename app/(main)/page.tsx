@@ -1,5 +1,6 @@
-import HeroInfo from './_components/landing/HeroInfo';
-import FeatureCards from './_components/landing/FeatureCards';
+// app/(main)/page.tsx
+import HeroInfo from '../_components/landing/HeroInfo';
+import FeatureCards from '../_components/landing/FeatureCards';
 
 export default function Home() {
   return (

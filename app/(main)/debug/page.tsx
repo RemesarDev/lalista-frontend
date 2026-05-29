@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useListaStore } from '../_store/store';
-import { supabase } from '../_lib/supabase';
+import { useListaStore } from '../../_store/store';
+import { supabase } from '../../_lib/supabase';
 
 // 1. Mapeamos exactamente los tipos reales de tu base de datos
 interface ProductoBuscado {

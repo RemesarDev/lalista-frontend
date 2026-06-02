@@ -19,6 +19,7 @@ type SupabaseProductResponse = {
 
 const app = new Hono().basePath('/api');
 
+//ENDPOINTS
 const routes = app.get('/productos', async (c) => {
   const search = c.req.query('search');
 let query = supabase.from('productos').select(
@@ -74,12 +75,11 @@ let query = supabase.from('productos').select(
     return {
       id: p.id_producto,
       nombre: p.productos_descripcion,
-    precios: sucursalesUnicas.map((item) => {
-      const suc = item.sucursales;
-      const calle = suc?.sucursales_calle ?? "";
-      const numero = suc?.sucursales_numero ?? "";
-      const dir = (calle || numero) ? `${calle} ${numero}`.trim() : "Ubicación";
-
+        precios: sucursalesUnicas.map((item) => {
+          const suc = item.sucursales;
+          const calle = suc?.sucursales_calle ?? "";
+          const numero = suc?.sucursales_numero ?? "";
+          const dir = (calle || numero) ? `${calle} ${numero}`.trim() : "Ubicación";
       return {
         // Accedemos al nuevo campo que viene de la base de datos
         cadena: suc?.comercios?.comercio_bandera_nombre ?? "Genérico",

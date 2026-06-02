@@ -2,69 +2,86 @@ import { Hono } from 'hono';
 import { handle } from 'hono/vercel';
 import { supabase } from '@/app/_lib/supabase';
 
-// Definición del tipo para asegurar la estructura de datos que esperamos de la DB
 type SupabaseProductResponse = {
   id_producto: string;
   productos_descripcion: string;
   sucursal_productos: {
     productos_precio_lista: number;
     sucursales: {
-      sucursales_nombre: string;
-    } | null | any;
+      id_comercio: number | null;
+      sucursales_calle: string | null;
+      sucursales_numero: string | null;
+    } | null;
   }[];
 };
 
-// Inicializamos la app Hono
 const app = new Hono().basePath('/api');
 
 const routes = app.get('/productos', async (c) => {
-  // 1. Obtenemos el parámetro 'search' de la URL
   const search = c.req.query('search');
 
-  // 2. Construimos la query base
   let query = supabase.from('productos').select(`
-      id_producto,
-      productos_descripcion,
-      sucursal_productos!inner (
-        productos_precio_lista,
-        sucursales!inner (id_unico, sucursales_nombre)
-      )
-  `);
+        id_producto,
+        productos_descripcion,
+        sucursal_productos!inner (
+          productos_precio_lista,
+          sucursales!inner (
+            id_comercio,
+            sucursales_calle,
+            sucursales_numero
+          )
+        )
+    `);
 
-  // 3. Filtramos si el usuario escribió algo
   if (search) {
     query = query.ilike('productos_descripcion', `%${search}%`);
   }
 
-  // 4. Ejecutamos la consulta sin encadenar .returns (evitando errores de versión)
   const { data, error } = await query
     .order('productos_precio_lista', { referencedTable: 'sucursal_productos', ascending: true })
     .limit(20);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) {
+    console.error("Error en query Supabase:", error);
+    return c.json({ error: error.message }, 500);
+  }
 
-  // 5. Aplicamos el cast seguro para tratar 'data' con nuestro tipo definido
   const typedData = (data as unknown) as SupabaseProductResponse[];
 
-  // 6. Procesamos los datos para el Frontend
   const productosProcesados = typedData.map((p) => {
-    // 1. Tomamos el array de sucursales asociadas (que ya viene ordenado por precio)
-    const sucursalesOrdenadas = p.sucursal_productos || [];
+    // 1. Filtramos duplicados reales antes de cortar a 3
+    const sucursalesUnicas = [];
+    const vistas = new Set();
 
-    // 2. Mapeamos solo las primeras 3 (o menos si no hay tantas)
-    const top3Precios = sucursalesOrdenadas.slice(0, 3).map(item => ({
-      nombre: item.sucursales?.sucursales_nombre ?? "Desconocido",
-      precio: item.productos_precio_lista ?? 0
-    }));
+    for (const item of (p.sucursal_productos || [])) {
+      const suc = item.sucursales;
+      // Creamos una "huella" única de la sucursal
+      const huella = `${suc?.id_comercio}-${suc?.sucursales_calle}-${suc?.sucursales_numero}`;
+      
+      if (!vistas.has(huella)) {
+        sucursalesUnicas.push(item);
+        vistas.add(huella);
+      }
+      
+      // Si ya tenemos suficientes, paramos de procesar
+      if (sucursalesUnicas.length === 3) break;
+    }
 
     return {
       id: p.id_producto,
       nombre: p.productos_descripcion,
-      // Mantenemos la estructura para el frontend
-      precios: top3Precios,
-      // Opcional: seguimos manteniendo el primero para compatibilidad rápida
-      precioMin: top3Precios[0]?.precio ?? 0,
-      superMasBarato: top3Precios[0]?.nombre ?? "Sin datos",
+      precios: sucursalesUnicas.map((item) => {
+        const suc = item.sucursales;
+        const calle = suc?.sucursales_calle ?? "";
+        const numero = suc?.sucursales_numero ?? "";
+        const dir = (calle || numero) ? `${calle} ${numero}`.trim() : "Ubicación";
+
+        return {
+          cadena: suc?.id_comercio?.toString() ?? "Genérico",
+          direccion: dir,
+          precio: item.productos_precio_lista ?? 0
+        };
+      })
     };
   });
 

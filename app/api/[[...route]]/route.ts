@@ -11,6 +11,8 @@ type SupabaseProductResponse = {
       id_comercio: number | null;
       sucursales_calle: string | null;
       sucursales_numero: string | null;
+      // Añadimos la relación de comercios aquí
+      comercios: { comercio_bandera_nombre: string } | null;
     } | null;
   }[];
 };
@@ -19,18 +21,20 @@ const app = new Hono().basePath('/api');
 
 const routes = app.get('/productos', async (c) => {
   const search = c.req.query('search');
-
-  let query = supabase.from('productos').select(`
-        id_producto,
-        productos_descripcion,
-        sucursal_productos!inner (
-          productos_precio_lista,
-          sucursales!inner (
-            id_comercio,
-            sucursales_calle,
-            sucursales_numero
+let query = supabase.from('productos').select(
+    ` id_producto,
+      productos_descripcion,
+      sucursal_productos!inner (
+        productos_precio_lista,
+        sucursales!inner (
+          id_comercio,
+          sucursales_calle,
+          sucursales_numero,
+          comercios!fk_sucursales_comercios_compuesto (
+            comercio_bandera_nombre
           )
         )
+      )
     `);
 
   if (search) {
@@ -70,18 +74,19 @@ const routes = app.get('/productos', async (c) => {
     return {
       id: p.id_producto,
       nombre: p.productos_descripcion,
-      precios: sucursalesUnicas.map((item) => {
-        const suc = item.sucursales;
-        const calle = suc?.sucursales_calle ?? "";
-        const numero = suc?.sucursales_numero ?? "";
-        const dir = (calle || numero) ? `${calle} ${numero}`.trim() : "Ubicación";
+    precios: sucursalesUnicas.map((item) => {
+      const suc = item.sucursales;
+      const calle = suc?.sucursales_calle ?? "";
+      const numero = suc?.sucursales_numero ?? "";
+      const dir = (calle || numero) ? `${calle} ${numero}`.trim() : "Ubicación";
 
-        return {
-          cadena: suc?.id_comercio?.toString() ?? "Genérico",
-          direccion: dir,
-          precio: item.productos_precio_lista ?? 0
-        };
-      })
+      return {
+        // Accedemos al nuevo campo que viene de la base de datos
+        cadena: suc?.comercios?.comercio_bandera_nombre ?? "Genérico",
+        direccion: dir,
+        precio: item.productos_precio_lista ?? 0
+      };
+    })
     };
   });
 

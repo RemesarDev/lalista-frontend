@@ -122,7 +122,7 @@ app.get('/maps/autocomplete', async (c) => {
     });
 
     //DEPURACION
-    //const responseText = await res.text();
+    const responseText = await res.text();
     //console.log("Google response status:", res.status);
     //console.log("Google response body:", responseText);
 

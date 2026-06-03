@@ -9,10 +9,10 @@ import BuscadorUbicacion from './_components/BuscadorUbicacion';
 import ControlesZoom from './_components/ControlesZoom'; 
 import MapaInteractivo from './_components/MapaInteractivo';
 import { useUbicacion } from './_hooks/useUbicacion';
+import { useState } from 'react';
 
 export default function UbicacionVista() {
   const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-
   return (
     <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
       <ContenidoMapa />
@@ -21,19 +21,18 @@ export default function UbicacionVista() {
 }
 
 function ContenidoMapa() {
-  // Destructuramos todo lo necesario desde nuestro Custom Hook
+  const [isFocused, setIsFocused] = useState(false);
   const {
     radio, setRadio,
     zoom, setZoom,
     direccion, setDireccion,
-    isFocused, setIsFocused,
     cargandoGps,
     coordenadas,
     sugerencias, setSugerencias,
     obtenerGeolocalizacionReal,
     manejarKeyDownInput,
     manejarSeleccionDireccion,
-    guardarUbicacionFiltro
+    errorSugerencias
   } = useUbicacion();
 
   return (
@@ -65,7 +64,6 @@ function ContenidoMapa() {
             onChange={(e) => {
               const valor = Number(e.target.value);
               setRadio(valor);
-              guardarUbicacionFiltro(valor, zoom, coordenadas);
             }}
             className="absolute h-1 w-32 -rotate-90 cursor-pointer appearance-none rounded-lg bg-slate-400/60 accent-slate-900 focus:outline-none touch-none"
             style={{ WebkitAppearance: 'none' }}
@@ -83,6 +81,7 @@ function ContenidoMapa() {
         setSugerencias={setSugerencias}
         onKeyDownInput={manejarKeyDownInput}
         onSeleccionDireccion={manejarSeleccionDireccion}
+        errorSugerencias={errorSugerencias}
       />
 
       {/* BOTÓN GPS */}

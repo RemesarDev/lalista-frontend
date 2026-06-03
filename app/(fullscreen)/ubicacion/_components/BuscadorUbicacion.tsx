@@ -2,16 +2,25 @@
 
 import { MagnifyingGlassIcon, XIcon, MapPinIcon } from '@phosphor-icons/react/dist/ssr';
 
+type SugerenciaLugar = {
+  placeId: string;
+  text: { text: string };
+  structuredFormat: {
+    mainText: { text: string };
+    secondaryText?: { text: string };
+  };
+};
+
 interface BuscadorUbicacionProps {
   direccion: string;
   setDireccion: (value: string) => void;
   isFocused: boolean;
   setIsFocused: (value: boolean) => void;
-  sugerencias: google.maps.places.PlacePrediction[];       
-  setSugerencias: (value: google.maps.places.PlacePrediction[]) => void;  
+  sugerencias: SugerenciaLugar[];
+  setSugerencias: (value: SugerenciaLugar[]) => void;
   onKeyDownInput: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  onSeleccionDireccion: (sug: google.maps.places.PlacePrediction) => void;
-  errorSugerencias: string | null; 
+  onSeleccionDireccion: (sug: SugerenciaLugar) => void;
+  errorSugerencias: string | null;
 }
 
 export default function BuscadorUbicacion({
@@ -70,11 +79,11 @@ export default function BuscadorUbicacion({
               <MapPinIcon className="text-slate-400 text-sm flex-shrink-0" />
               <div className="flex flex-col truncate">
                 <span className="font-semibold text-slate-800 truncate">
-                  {sug.mainText?.toString()}
+                  {sug.structuredFormat.mainText.text}
                 </span>
-                {sug.secondaryText && (
+                {sug.structuredFormat.secondaryText && (
                   <span className="text-[10px] text-slate-400 truncate">
-                    {sug.secondaryText?.toString()}
+                    {sug.structuredFormat.secondaryText.text}
                   </span>
                 )}
               </div>

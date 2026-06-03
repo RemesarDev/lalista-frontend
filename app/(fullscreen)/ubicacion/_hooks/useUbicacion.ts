@@ -1,75 +1,77 @@
 'use client';
 
-import { useState, useEffect, useRef,useMemo, useCallback } from 'react';
-import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useMap } from '@vis.gl/react-google-maps';
 import { useListaStore } from '@/app/_store/store';
+
+// Tipo local para las sugerencias que devuelve nuestro endpoint
+type SugerenciaLugar = {
+  placeId: string;
+  text: { text: string };
+  structuredFormat: {
+    mainText: { text: string };
+    secondaryText?: { text: string };
+  };
+};
 
 export function useUbicacion() {
   const { ubicacion, setUbicacion, cambiarRadioBusqueda } = useListaStore();
   
-  // Estados locales para la UI
   const [direccion, setDireccion] = useState<string>(ubicacion.nombreLugar || '');
-  const [sugerencias, setSugerencias] = useState<google.maps.places.PlacePrediction[]>([]);
+  const [sugerencias, setSugerencias] = useState<SugerenciaLugar[]>([]);
   const [cargandoGps, setCargandoGps] = useState<boolean>(false);
   const [zoom, setZoom] = useState<number>(14);
-
   const [errorSugerencias, setErrorSugerencias] = useState<string | null>(null);
 
   const map = useMap();
-  const placesLibrary = useMapsLibrary('places');
-  const geocodingLibrary = useMapsLibrary('geocoding');
 
-  const geocoderService = useMemo(() => geocodingLibrary ? new geocodingLibrary.Geocoder() : null, [geocodingLibrary]);
-  
   const coordenadas = useMemo(() => ({ 
-  lat: ubicacion.latitud || -34.6621, 
-  lng: ubicacion.longitud || -58.6654 
-}), [ubicacion.latitud, ubicacion.longitud]);
+    lat: ubicacion.latitud || -34.6621, 
+    lng: ubicacion.longitud || -58.6654 
+  }), [ubicacion.latitud, ubicacion.longitud]);
 
-  const sugerenciasRef = useRef<google.maps.places.PlacePrediction[]>([]);
+  const sugerenciasRef = useRef<SugerenciaLugar[]>([]);
   useEffect(() => { sugerenciasRef.current = sugerencias; }, [sugerencias]);
 
   const handleDireccionChange = (nuevaDireccion: string) => {
     setDireccion(nuevaDireccion);
     if (nuevaDireccion.trim().length < 3) {
-      setSugerencias([]); // Limpiamos aquí, fuera de un useEffect
+      setSugerencias([]);
     }
   };
 
-useEffect(() => {
-  if (!placesLibrary || direccion.trim().length < 3) return;
+  // Autocomplete via Hono
+  useEffect(() => {
+    if (direccion.trim().length < 3) return;
 
-  let cancelled = false;
+    let cancelled = false;
 
-  const buscar = async () => {
-    const { AutocompleteSuggestion } = placesLibrary;
-    
-    const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-      input: direccion,
-      includedRegionCodes: ['ar'],
-      includedPrimaryTypes: ['geocode'],
+    const buscar = async () => {
+      const res = await fetch(`/api/maps/autocomplete?input=${encodeURIComponent(direccion)}`);
+      if (!res.ok) throw new Error('Error en autocomplete');
+      
+      const data = await res.json();
+
+      if (!cancelled) {
+        setSugerencias(
+          (data.suggestions ?? [])
+            .map((s: { placePrediction: SugerenciaLugar }) => s.placePrediction)
+            .filter(Boolean)
+        );
+        setErrorSugerencias(null);
+      }
+    };
+
+    buscar().catch(() => {
+      if (!cancelled) {
+        setSugerencias([]);
+        setErrorSugerencias("No pudimos cargar sugerencias. Si usás Brave o uBlock, habilitá Google Maps para este sitio.");
+      }
     });
 
-    if (!cancelled) {
-      setSugerencias(
-        suggestions
-          .map(s => s.placePrediction)
-          .filter((p): p is google.maps.places.PlacePrediction => p !== null)
-      );
-      setErrorSugerencias(null);
-    }
-  };
+    return () => { cancelled = true; };
+  }, [direccion]);
 
-  buscar().catch(() => {
-    if (!cancelled) {
-      setSugerencias([]);
-      setErrorSugerencias("No pudimos cargar sugerencias. Si usás Brave o uBlock, habilitá Google Maps para este sitio.");
-    }
-  });
-
-  return () => { cancelled = true; };
-}, [direccion, placesLibrary]);
-  
   const guardarUbicacionFiltro = useCallback((nuevoRadio: number, nuevasCoords: { lat: number; lng: number }, textoDir: string) => {
     setUbicacion({
       latitud: nuevasCoords.lat,
@@ -99,24 +101,25 @@ useEffect(() => {
     );
   };
 
-  const manejarSeleccionDireccion = (sug: google.maps.places.PlacePrediction) => {
-  if (!geocoderService) return;
-  const textoDireccion = sug.text.toString();
-  setDireccion(textoDireccion);
-    
-    geocoderService.geocode({ address: textoDireccion }, (results, status) => {
-      if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
-        const loc = results[0].geometry.location;
-        const nuevasCoords = { lat: loc.lat(), lng: loc.lng() };
-        
-        guardarUbicacionFiltro(ubicacion.radioBusqueda, nuevasCoords, textoDireccion);
-        
-        if (map) {
-          map.panTo(nuevasCoords);
-          map.setZoom(15);
-        }
-      }
-    });
+  // Geocoding via Hono
+  const manejarSeleccionDireccion = async (sug: SugerenciaLugar) => {
+    const textoDireccion = sug.text.text;
+    setDireccion(textoDireccion);
+    setSugerencias([]);
+
+    const res = await fetch(`/api/maps/geocode?address=${encodeURIComponent(textoDireccion)}`);
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.lat || !data.lng) return;
+
+    const nuevasCoords = { lat: data.lat, lng: data.lng };
+    guardarUbicacionFiltro(ubicacion.radioBusqueda, nuevasCoords, textoDireccion);
+
+    if (map) {
+      map.panTo(nuevasCoords);
+      map.setZoom(15);
+    }
   };
 
   const manejarKeyDownInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -126,19 +129,19 @@ useEffect(() => {
     }
   };
 
-return {
-  radio: ubicacion.radioBusqueda,
-  setRadio: cambiarRadioBusqueda,
-  zoom, setZoom,
-  direccion, 
-  setDireccion: handleDireccionChange, 
-  cargandoGps,
-  coordenadas,
-  sugerencias, setSugerencias,
-  obtenerGeolocalizacionReal,
-  manejarKeyDownInput,
-  manejarSeleccionDireccion,
-  guardarUbicacionFiltro,
-  errorSugerencias,
-};
+  return {
+    radio: ubicacion.radioBusqueda,
+    setRadio: cambiarRadioBusqueda,
+    zoom, setZoom,
+    direccion, 
+    setDireccion: handleDireccionChange, 
+    cargandoGps,
+    coordenadas,
+    sugerencias, setSugerencias,
+    errorSugerencias,
+    obtenerGeolocalizacionReal,
+    manejarKeyDownInput,
+    manejarSeleccionDireccion,
+    guardarUbicacionFiltro
+  };
 }

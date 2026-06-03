@@ -68,7 +68,6 @@ let query = supabase.from('productos').select(
         vistas.add(huella);
       }
       
-      // Si ya tenemos suficientes, paramos de procesar
       if (sucursalesUnicas.length === 3) break;
     }
 

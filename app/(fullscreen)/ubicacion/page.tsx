@@ -36,7 +36,7 @@ function ContenidoMapa() {
   } = useUbicacion();
 
   return (
-    <div className="relative h-screen w-full overflow-hidden font-sans bg-slate-100">
+    <div className="relative w-full overflow-hidden font-sans bg-slate-100" style={{ height: '100dvh' }}>
       
       {/* MAPA INTERACTIVO */}
       <MapaInteractivo coordenadas={coordenadas} zoom={zoom} setZoom={setZoom} radio={radio} />

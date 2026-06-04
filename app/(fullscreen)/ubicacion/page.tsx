@@ -88,7 +88,8 @@ function ContenidoMapa() {
       <button 
         onClick={obtenerGeolocalizacionReal}
         disabled={cargandoGps}
-        className={`absolute bottom-6 right-4 z-30 bg-slate-900 hover:bg-slate-800 active:scale-[0.92] text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 border border-slate-800 cursor-pointer 
+        style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+        className={`absolute right-4 z-30 bg-slate-900 hover:bg-slate-800 active:scale-[0.92] text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 border border-slate-800 cursor-pointer 
           ${isFocused ? 'opacity-10 pointer-events-none' : 'opacity-100'} 
           ${cargandoGps ? 'animate-pulse opacity-50 cursor-wait' : ''}`}
       >

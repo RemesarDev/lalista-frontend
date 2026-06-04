@@ -1,7 +1,6 @@
 'use client';
-
-import { Map, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { MapPinIcon } from '@phosphor-icons/react/dist/ssr';
+//ESTE CODIGO REQUIERE UN ID MAP
+import { Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 
 interface Coordenadas {
   lat: number;
@@ -25,6 +24,7 @@ export default function MapaInteractivo({
     <div className="absolute inset-0 w-full h-full z-0 select-none">
       <Map
         defaultCenter={coordenadas}
+        center={coordenadas}
         zoom={zoom}
         disableDefaultUI={true}
         mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
@@ -32,13 +32,18 @@ export default function MapaInteractivo({
         gestureHandling={'greedy'}
         className="w-full h-full"
       >
-        {/* ADENTRO DEL MAP */}
         <AdvancedMarker position={coordenadas}>
-          <div className="flex flex-col items-center pointer-events-none -translate-y-8">
-            <div className="bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md mb-1 whitespace-nowrap">
-              {radio} Km a la redonda
-            </div>
-            <MapPinIcon weight="fill" className="text-red-500 text-4xl drop-shadow-md" />
+          {/* Usamos el Pin nativo de Google */}
+          <Pin 
+            background={'#ef4444'} // Red-500
+            glyphColor={'#ffffff'} 
+            borderColor={'#991b1b'} 
+          />
+          
+          {/* El texto del radio lo mantenemos externo, 
+              pero al no ser parte del marcador, el mapa no se confunde */}
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md whitespace-nowrap pointer-events-none">
+            {radio} Km a la redonda
           </div>
         </AdvancedMarker>
       </Map>

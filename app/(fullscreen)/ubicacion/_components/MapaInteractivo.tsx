@@ -25,7 +25,7 @@ export default function MapaInteractivo({
     <div className="absolute inset-0 w-full h-full z-0 select-none">
       <Map
         defaultCenter={coordenadas}
-        center={coordenadas} // Asegura que el mapa se mueva cuando cambian las coordenadas externamente
+        //center={coordenadas} // Asegura que el mapa se mueva cuando cambian las coordenadas externamente
         zoom={zoom}
         disableDefaultUI={true} 
         mapId="DEMO_MAP_ID" 

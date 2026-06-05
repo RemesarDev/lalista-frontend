@@ -43,7 +43,7 @@ export const useListaStore = create<ListaState>()(
         latitud: null, 
         longitud: null, 
         precision: null, 
-        radioBusqueda: 3,
+        radioBusqueda: 1,
         nombreLugar: null,
         cargandoUbicacion: false 
       },

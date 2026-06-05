@@ -1,6 +1,7 @@
 import Header from "../_components/global/Header";
 import StickySearch from "../_components/global/StickySearch";
 import Navigation from "../_components/global/Navigation";
+import HeaderUbicacion from "../_components/global/HeaderUbicacion";
 
 export default function MainLayout({
   children,
@@ -11,7 +12,7 @@ export default function MainLayout({
     <div className="flex flex-col min-h-screen">
       
       {/* Header fijo superior (Logo + Selector de Ubicación + Login) */}
-      <Header locationName="Ituzaingó" /> 
+      <HeaderUbicacion />
       
       {/* Buscador intermedio que se queda pegado arriba al hacer scroll */}
       <StickySearch />

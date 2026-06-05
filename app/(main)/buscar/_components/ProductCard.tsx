@@ -1,6 +1,7 @@
 import { PlusIcon, MinusIcon } from '@phosphor-icons/react/dist/ssr';
 import { useState } from 'react';
 import { Producto } from '../_types';
+import Link from 'next/link';
 
 interface Props {
   producto: Producto;
@@ -29,19 +30,28 @@ export const ProductCard = ({ producto, onAgregar }: Props) => {
         </h3>
         
         <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
-          {producto.sucursales.slice(0, 3).map((item, index) => (
-            <div key={index} className="flex justify-between items-center text-[10px]">
-              <div className="flex flex-col truncate mr-2">
-                <span className={`font-bold ${index === 0 ? 'text-primary-500' : 'text-slate-700'}`}>
-                  {index === 0 ? '🏆 ' : ''}{item.cadena}
-                </span>
-                <span className="text-slate-400 truncate max-w-[100px]">{item.direccion}</span>
+          {producto.sucursales.length > 0 ? (
+            producto.sucursales.slice(0, 3).map((item, index) => (
+              <div key={index} className="flex justify-between items-center text-[10px]">
+                <div className="flex flex-col truncate mr-2">
+                  <span className={`font-bold ${index === 0 ? 'text-primary-500' : 'text-slate-700'}`}>
+                    {index === 0 ? '🏆 ' : ''}{item.cadena}
+                  </span>
+                  <span className="text-slate-400 truncate max-w-[100px]">{item.direccion}</span>
+                </div>
+                <strong className={`text-xs ${index === 0 ? 'text-primary-500' : 'text-slate-800'}`}>
+                  ${item.precio}
+                </strong>
               </div>
-              <strong className={`text-xs ${index === 0 ? 'text-primary-500' : 'text-slate-800'}`}>
-                ${item.precio}
-              </strong>
-            </div>
-          ))}
+            ))
+          ) : (
+            <Link 
+              href="/ubicacion"
+              className="text-[10px] text-center text-primary-500 font-semibold py-1 hover:underline"
+            >
+              📍 Configurá tu ubicación para ver precios
+            </Link>
+          )}
         </div>
       </div>
 

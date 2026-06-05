@@ -10,7 +10,7 @@ export interface Sucursal {
 export interface Producto {
   id: string;
   nombre: string;
-  precioMinimo: number;
+  precioMinimo: number | null;
   sucursales: Sucursal[];
 }
 

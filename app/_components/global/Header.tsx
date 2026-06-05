@@ -1,13 +1,14 @@
 "use client";
 
 import Link from 'next/link';
-import { MapPinIcon, UserIcon } from '@phosphor-icons/react/dist/ssr';
+import { XIcon, MapPinIcon, UserIcon } from '@phosphor-icons/react/dist/ssr';
 
 interface HeaderProps {
   locationName?: string;
+  onLimpiarUbicacion?: () => void;
 }
 
-export default function Header({ locationName }: HeaderProps) {
+export default function Header({ locationName, onLimpiarUbicacion }: HeaderProps) {
   return (
     <header className="w-full bg-primary-400 border-b border-accent-300 px-4 py-3 sticky top-0 z-50 shadow-sm">
       <div className="flex items-center justify-between max-w-screen-xl mx-auto">
@@ -27,6 +28,16 @@ export default function Header({ locationName }: HeaderProps) {
             {locationName || "Ubicación pendiente"}
           </span>
         </Link>
+
+        {onLimpiarUbicacion && (
+          <button
+            onClick={onLimpiarUbicacion}
+            className="p-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition text-white ml-1"
+            aria-label="Limpiar ubicación"
+          >
+            <XIcon weight="bold" className="text-xs" />
+          </button>
+        )}
 
         <button 
           onClick={() => console.log('Ir a login')}

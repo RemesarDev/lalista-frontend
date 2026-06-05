@@ -4,8 +4,12 @@ import { supabase } from '@/app/_lib/supabase';
 
 const app = new Hono().basePath('/api');
 
-//ENDPOINTS
-const routes = app.get('/productos', async (c) => {
+
+const routes = app
+
+//Enpoints I: de /buscar productos
+// a. con ubicacion y sus precios por sucursal
+.get('/productos', async (c) => {
   const search = c.req.query('search');
   const lat = c.req.query('lat');
   const lng = c.req.query('lng');
@@ -73,11 +77,39 @@ const routes = app.get('/productos', async (c) => {
   }));
 
   return c.json({ productos });
-});
+})
+
+// b. Endpoint: busqueda sin ubicacion
+.get('/catalogo', async (c) => {
+  const search = c.req.query('search');
+
+  if (!search || search.trim().length < 3) {
+    return c.json({ productos: [] });
+  }
+
+  const { data, error } = await supabase.rpc('buscar_catalogo', {
+    search_term: search,
+  });
+
+  if (error) {
+    console.error("Error en catálogo:", error);
+    return c.json({ error: error.message }, 500);
+  }
+
+  const productos = (data as { id_producto: string; productos_descripcion: string }[] ?? []).map(p => ({
+    id: p.id_producto,
+    nombre: p.productos_descripcion,
+    precioMinimo: null,
+    sucursales: [],
+  }));
+
+  return c.json({ productos });
+})
+
 
 //Endpoint II: de Ubicacion
 // Endpoint: Autocomplete
-app.get('/maps/autocomplete', async (c) => {
+.get('/maps/autocomplete', async (c) => {
   const input = c.req.query('input');
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   
@@ -115,10 +147,10 @@ app.get('/maps/autocomplete', async (c) => {
     console.error("Error en autocomplete:", err);
     return c.json({ error: 'Error interno' }, 500);
   }
-});
+})
 
 // Endpoint: Geocoding
-app.get('/maps/geocode', async (c) => {
+.get('/maps/geocode', async (c) => {
   const address = c.req.query('address');
   if (!address) return c.json({ error: 'Falta el parámetro address' }, 400);
 

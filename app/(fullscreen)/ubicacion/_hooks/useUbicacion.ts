@@ -31,6 +31,12 @@ export function useUbicacion() {
 
   const map = useMap();
 
+  // Crea esta pequeña función auxiliar para limpiar la dirección
+  const limpiarDireccion = (direccion: string) => {
+    const partes = direccion.split(',');
+    return partes.slice(2).join(',').trim();
+  };
+
   const coordenadas = useMemo(() => ({ 
     lat: ubicacion.latitud || -34.6621, 
     lng: ubicacion.longitud || -58.6654 
@@ -94,21 +100,39 @@ export function useUbicacion() {
     });
   }, [setUbicacion]);
 
-  const obtenerGeolocalizacionReal = () => {
+  //Geolocalización real usando la API de Geolocalización del navegador.
+    const obtenerGeolocalizacionReal = async () => {
     if (!navigator.geolocation) return;
     setCargandoGps(true);
+    
     navigator.geolocation.getCurrentPosition(
-      (posicion) => {
-        const nuevasCoords = { lat: posicion.coords.latitude, lng: posicion.coords.longitude };
-        const tag = "Ingrese una dirección";
-        setDireccion(tag);
-        setZoom(16);
-        setCargandoGps(false);
-        if (map) { map.panTo(nuevasCoords); map.setZoom(16); }
-        setCoordenadasPendientes({ ...nuevasCoords, texto: tag });
+      async (posicion) => {
+        const lat = posicion.coords.latitude;
+        const lng = posicion.coords.longitude;
+
+        try {
+          const res = await fetch(`/api/maps/reverse-geocode?lat=${lat}&lng=${lng}`);
+          const data = await res.json();
+          
+          // Asignamos la dirección encontrada O las coordenadas como fallback
+          const textoFinal = limpiarDireccion(data.direccion);
+          
+          // ACTUALIZACIÓN UNIFICADA
+          setDireccion(textoFinal);
+          setCoordenadasPendientes({ lat, lng, texto: textoFinal });
+          
+          if (map) { 
+            map.panTo({ lat, lng }); 
+            map.setZoom(16); 
+          }
+        } catch (err) {
+          console.error("Error:", err);
+        } finally {
+          setCargandoGps(false);
+        }
       },
       () => setCargandoGps(false),
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true }
     );
   };
 
@@ -118,7 +142,7 @@ export function useUbicacion() {
     setDireccion(textoDireccion);
     setSugerencias([]);
 
-    const res = await fetch(`/api/maps/geocode?address=${encodeURIComponent(textoDireccion)}`);
+    const res = await fetch(`/api/maps/details?placeId=${encodeURIComponent(sug.placeId)}`);
     if (!res.ok) return;
 
     const data = await res.json();
@@ -129,7 +153,7 @@ export function useUbicacion() {
 
     if (map) {
       map.panTo(nuevasCoords);
-      map.setZoom(15);
+      map.setZoom(16);
     }
   };
 

@@ -177,8 +177,48 @@ const routes = app
 
   const loc = data.results[0].geometry.location;
   return c.json({ lat: loc.lat, lng: loc.lng });
-});
+})
 
+// Endpoint: Details (para obtener coordenadas precisas)
+.get('/maps/details', async (c) => {
+  const placeId = c.req.query('placeId');
+  if (!placeId) return c.json({ error: 'Falta el placeId' }, 400);
+
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  const url = `https://places.googleapis.com/v1/places/${placeId}?fields=location&key=${apiKey}`;
+
+  const res = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey!,
+    },
+  });
+
+  const data = await res.json();
+  
+  if (!data.location) {
+    return c.json({ error: 'No se encontraron coordenadas' }, 404);
+  }
+
+  return c.json({ 
+    lat: data.location.latitude, 
+    lng: data.location.longitude 
+  });
+})
+// Endpoint: Reverse Geocoding
+.get('/maps/reverse-geocode', async (c) => {
+  const lat = c.req.query('lat');
+  const lng = c.req.query('lng');
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+  const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&language=es`);
+  const data = await res.json();
+
+  if (data.status === 'OK' && data.results[0]) {
+    return c.json({ direccion: data.results[0].formatted_address });
+  }
+  return c.json({ direccion: "Ubicación detectada" });
+});
 
 export const GET = handle(app);
 export const POST = handle(app);

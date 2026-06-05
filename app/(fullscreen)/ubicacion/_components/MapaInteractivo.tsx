@@ -32,7 +32,7 @@ export default function MapaInteractivo({
         gestureHandling={'greedy'}
         className="w-full h-full"
       >
-        <AdvancedMarker position={coordenadas}>
+        <AdvancedMarker key={`${coordenadas.lat}-${coordenadas.lng}`} position={coordenadas}>
           {/* Usamos el Pin nativo de Google */}
           <Pin 
             background={'#ef4444'} // Red-500

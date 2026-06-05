@@ -29,7 +29,7 @@ export const ProductCard = ({ producto, onAgregar }: Props) => {
         </h3>
         
         <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
-          {producto.precios.slice(0, 3).map((item, index) => (
+          {producto.sucursales.slice(0, 3).map((item, index) => (
             <div key={index} className="flex justify-between items-center text-[10px]">
               <div className="flex flex-col truncate mr-2">
                 <span className={`font-bold ${index === 0 ? 'text-primary-500' : 'text-slate-700'}`}>

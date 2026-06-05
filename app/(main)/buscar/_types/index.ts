@@ -1,14 +1,17 @@
 // app/_types.ts
-export interface Precio {
+export interface Sucursal {
   cadena: string;
   direccion: string;
   precio: number;
+  id_comercio: number;
+  id_bandera: number;
 }
 
 export interface Producto {
-  id: string; // O number, según tu DB
+  id: string;
   nombre: string;
-  precios: Precio[];
+  precioMinimo: number;
+  sucursales: Sucursal[];
 }
 
 export interface BusquedaResponse {

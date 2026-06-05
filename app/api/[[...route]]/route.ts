@@ -2,98 +2,78 @@ import { Hono } from 'hono';
 import { handle } from 'hono/vercel';
 import { supabase } from '@/app/_lib/supabase';
 
-type SupabaseProductResponse = {
-  id_producto: string;
-  productos_descripcion: string;
-  sucursal_productos: {
-    productos_precio_lista: number;
-    sucursales: {
-      id_comercio: number | null;
-      sucursales_calle: string | null;
-      sucursales_numero: string | null;
-      comercios: { comercio_bandera_nombre: string } | null;
-    } | null;
-  }[];
-};
-
 const app = new Hono().basePath('/api');
 
 //ENDPOINTS
-const routes = 
-//ENDPOINT I: Busqueda
-  app.get('/productos', async (c) => {
-    const search = c.req.query('search');
-    let query = supabase.from('productos').select(
-      ` id_producto,
-        productos_descripcion,
-        sucursal_productos!inner (
-          productos_precio_lista,
-          sucursales!inner (
-            id_comercio,
-            sucursales_calle,
-            sucursales_numero,
-            comercios!fk_sucursales_comercios_compuesto (
-              comercio_bandera_nombre
-            )
-          )
-        )
-      `);
+const routes = app.get('/productos', async (c) => {
+  const search = c.req.query('search');
+  const lat = c.req.query('lat');
+  const lng = c.req.query('lng');
+  const radio = c.req.query('radio');
 
-    if (search) {
-      query = query.ilike('productos_descripcion', `%${search}%`);
-    }
+  // Si no hay coordenadas no podemos filtrar por área
+  if (!lat || !lng || !radio) {
+    return c.json({ error: 'Faltan parámetros de ubicación' }, 400);
+  }
 
-    //ALGO QUE SE DEBE RESOLVER! EL CODIGO BUSCA 50 Y MUESTRA EN JS 20. 
-    //COMO DEBE FUNCIONAR? EL CODIGO DEBE MOSTRAR TODOS MAXIMOS PERMITIDOS EN UNA CONSULTA Y LOS RESULTADOS QUE BUSQUE PERO CARGARLOS EN JS DE MODO DINAMICO. 
-    const { data, error } = await query
-      .order('productos_precio_lista', { referencedTable: 'sucursal_productos', ascending: true })
-      .limit(20);
-
-    if (error) {
-      console.error("Error en query Supabase:", error);
-      return c.json({ error: error.message }, 500);
-    }
-
-    const typedData = (data as unknown) as SupabaseProductResponse[];
-
-    const productosProcesados = typedData.map((p) => {
-      // 1. Filtramos duplicados reales antes de cortar a 3
-      const sucursalesUnicas = [];
-      const vistas = new Set();
-
-      for (const item of (p.sucursal_productos || [])) {
-        const suc = item.sucursales;
-        // Creamos una "huella" única de la sucursal
-        const huella = `${suc?.id_comercio}-${suc?.sucursales_calle}-${suc?.sucursales_numero}`;
-        
-        if (!vistas.has(huella)) {
-          sucursalesUnicas.push(item);
-          vistas.add(huella);
-        }
-        
-        if (sucursalesUnicas.length === 3) break;
-      }
-
-      return {
-        id: p.id_producto,
-        nombre: p.productos_descripcion,
-          precios: sucursalesUnicas.map((item) => {
-            const suc = item.sucursales;
-            const calle = suc?.sucursales_calle ?? "";
-            const numero = suc?.sucursales_numero ?? "";
-            const dir = (calle || numero) ? `${calle} ${numero}`.trim() : "Ubicación";
-        return {
-          // Accedemos al nuevo campo que viene de la base de datos
-          cadena: suc?.comercios?.comercio_bandera_nombre ?? "Genérico",
-          direccion: dir,
-          precio: item.productos_precio_lista ?? 0
-        };
-      })
-      };
-    });
-
-    return c.json({ productos: productosProcesados });
+  const { data, error } = await supabase.rpc('buscar_productos_por_area', {
+    lat: parseFloat(lat),
+    lng: parseFloat(lng),
+    radio_km: parseFloat(radio),
+    search_term: search ?? null,
   });
+
+  if (error) {
+    console.error("Error en RPC:", error);
+    return c.json({ error: error.message }, 500);
+  }
+
+  // Agrupar por producto
+  const mapaProductos = new Map<string, {
+    id: string;
+    nombre: string;
+    sucursales: {
+      cadena: string;
+      direccion: string;
+      precio: number;
+      id_comercio: number;
+      id_bandera: number;
+    }[];
+  }>();
+
+  for (const fila of data) {
+    if (!mapaProductos.has(fila.id_producto)) {
+      mapaProductos.set(fila.id_producto, {
+        id: fila.id_producto,
+        nombre: fila.productos_descripcion,
+        sucursales: [],
+      });
+    }
+
+    const producto = mapaProductos.get(fila.id_producto)!;
+    
+    // Deduplicar por comercio+dirección
+    const dir = `${fila.sucursales_calle ?? ''} ${fila.sucursales_numero ?? ''}`.trim() || 'Ubicación';
+    const huella = `${fila.id_comercio}-${dir}`;
+
+    if (!producto.sucursales.some(s => `${s.id_comercio}-${s.direccion}` === huella)) {
+      producto.sucursales.push({
+        cadena: fila.comercio_bandera_nombre ?? 'Genérico',
+        direccion: dir,
+        precio: fila.productos_precio_lista ?? 0,
+        id_comercio: fila.id_comercio,
+        id_bandera: fila.id_bandera,
+      });
+    }
+  }
+
+  const productos = Array.from(mapaProductos.values()).map(p => ({
+    ...p,
+    precioMinimo: p.sucursales[0]?.precio ?? 0,
+  }));
+
+  return c.json({ productos });
+});
 
 //Endpoint II: de Ubicacion
 // Endpoint: Autocomplete

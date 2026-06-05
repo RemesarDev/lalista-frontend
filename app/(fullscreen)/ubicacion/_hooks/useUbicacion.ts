@@ -46,30 +46,35 @@ export function useUbicacion() {
 
     let cancelled = false;
 
-    const buscar = async () => {
-      const res = await fetch(`/api/maps/autocomplete?input=${encodeURIComponent(direccion)}`);
-      if (!res.ok) throw new Error('Error en autocomplete');
-      
-      const data = await res.json();
+    // Esperamos 1000ms antes de buscar
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/maps/autocomplete?input=${encodeURIComponent(direccion)}`);
+        if (!res.ok) throw new Error('Error en autocomplete');
+        
+        const data = await res.json();
 
-      if (!cancelled) {
-        setSugerencias(
-          (data.suggestions ?? [])
-            .map((s: { placePrediction: SugerenciaLugar }) => s.placePrediction)
-            .filter(Boolean)
-        );
-        setErrorSugerencias(null);
+        if (!cancelled) {
+          setSugerencias(
+            (data.suggestions ?? [])
+              .map((s: { placePrediction: SugerenciaLugar }) => s.placePrediction)
+              .filter(Boolean)
+          );
+          setErrorSugerencias(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setSugerencias([]);
+          setErrorSugerencias("No pudimos cargar sugerencias. Si usás Brave o uBlock, habilitá Google Maps para este sitio.");
+        }
       }
+    }, 1000);
+
+    // Si el usuario sigue escribiendo, cancelamos el timer anterior
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
     };
-
-    buscar().catch(() => {
-      if (!cancelled) {
-        setSugerencias([]);
-        setErrorSugerencias("No pudimos cargar sugerencias. Si usás Brave o uBlock, habilitá Google Maps para este sitio.");
-      }
-    });
-
-    return () => { cancelled = true; };
   }, [direccion]);
 
   const guardarUbicacionFiltro = useCallback((nuevoRadio: number, nuevasCoords: { lat: number; lng: number }, textoDir: string) => {

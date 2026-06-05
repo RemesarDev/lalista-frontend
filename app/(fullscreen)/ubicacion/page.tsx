@@ -10,6 +10,7 @@ import ControlesZoom from './_components/ControlesZoom';
 import MapaInteractivo from './_components/MapaInteractivo';
 import { useUbicacion } from './_hooks/useUbicacion';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function UbicacionVista() {
   const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
@@ -22,6 +23,7 @@ export default function UbicacionVista() {
 
 function ContenidoMapa() {
   const [isFocused, setIsFocused] = useState(false);
+  const router = useRouter();
   const {
     radio, setRadio,
     zoom, setZoom,
@@ -32,9 +34,11 @@ function ContenidoMapa() {
     obtenerGeolocalizacionReal,
     manejarKeyDownInput,
     manejarSeleccionDireccion,
-    errorSugerencias
+    errorSugerencias,
+    coordenadasPendientes,
+    confirmarUbicacion,
   } = useUbicacion();
-
+  
   return (
     <div className="relative w-full overflow-hidden font-sans bg-slate-100" style={{ height: '100dvh' }}>
       
@@ -96,6 +100,26 @@ function ContenidoMapa() {
         <CrosshairIcon weight="fill" className={`text-xl text-red-400 ${cargandoGps ? 'animate-spin' : ''}`} />
       </button>
 
+          {/* BOTÓN GUARDAR UBICACIÓN FILTRO */}
+      <div 
+        className={`absolute bottom-0 left-0 right-0 z-30 flex justify-center pb-6 transition-all duration-300 ${isFocused ? 'opacity-10 pointer-events-none' : 'opacity-100'}`}
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
+          <button
+            onClick={() => {
+              confirmarUbicacion();
+              router.push('/buscar');
+              }}
+            disabled={!coordenadasPendientes}
+            className={`px-6 py-3.5 rounded-2xl font-bold text-sm shadow-2xl transition-all duration-300 active:scale-95
+              ${coordenadasPendientes 
+                ? 'bg-slate-900 text-white border border-slate-800 hover:bg-slate-800' 
+                : 'bg-white text-slate-400 border border-slate-200 cursor-not-allowed'
+              }`}
+          >
+            {coordenadasPendientes ? '📍 Guardar ubicación para filtrar' : 'Elegí una ubicación'}
+          </button>
+        </div>
     </div>
   );
 }

@@ -23,6 +23,12 @@ export function useUbicacion() {
   const [zoom, setZoom] = useState<number>(14);
   const [errorSugerencias, setErrorSugerencias] = useState<string | null>(null);
 
+  const [coordenadasPendientes, setCoordenadasPendientes] = useState<{
+  lat: number;
+  lng: number;
+  texto: string;
+} | null>(null);
+
   const map = useMap();
 
   const coordenadas = useMemo(() => ({ 
@@ -94,12 +100,12 @@ export function useUbicacion() {
     navigator.geolocation.getCurrentPosition(
       (posicion) => {
         const nuevasCoords = { lat: posicion.coords.latitude, lng: posicion.coords.longitude };
-        const tag = "Mi ubicación actual (GPS)";
+        const tag = "Ingrese una dirección";
         setDireccion(tag);
         setZoom(16);
         setCargandoGps(false);
         if (map) { map.panTo(nuevasCoords); map.setZoom(16); }
-        guardarUbicacionFiltro(ubicacion.radioBusqueda, nuevasCoords, tag);
+        setCoordenadasPendientes({ ...nuevasCoords, texto: tag });
       },
       () => setCargandoGps(false),
       { enableHighAccuracy: true, timeout: 10000 }
@@ -119,12 +125,22 @@ export function useUbicacion() {
     if (!data.lat || !data.lng) return;
 
     const nuevasCoords = { lat: data.lat, lng: data.lng };
-    guardarUbicacionFiltro(ubicacion.radioBusqueda, nuevasCoords, textoDireccion);
+    setCoordenadasPendientes({ ...nuevasCoords, texto: textoDireccion });
 
     if (map) {
       map.panTo(nuevasCoords);
       map.setZoom(15);
     }
+  };
+
+  const confirmarUbicacion = () => {
+  if (!coordenadasPendientes) return;
+  guardarUbicacionFiltro(
+    ubicacion.radioBusqueda,
+    { lat: coordenadasPendientes.lat, lng: coordenadasPendientes.lng },
+    coordenadasPendientes.texto
+  );
+  setCoordenadasPendientes(null);
   };
 
   const manejarKeyDownInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -147,6 +163,8 @@ export function useUbicacion() {
     obtenerGeolocalizacionReal,
     manejarKeyDownInput,
     manejarSeleccionDireccion,
-    guardarUbicacionFiltro
+    guardarUbicacionFiltro,
+    coordenadasPendientes,  
+    confirmarUbicacion,  
   };
 }

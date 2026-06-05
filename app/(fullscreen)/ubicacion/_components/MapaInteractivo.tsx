@@ -24,7 +24,7 @@ export default function MapaInteractivo({
     <div className="absolute inset-0 w-full h-full z-0 select-none">
       <Map
         defaultCenter={coordenadas}
-        center={coordenadas}
+        key={`${coordenadas.lat}-${coordenadas.lng}`}
         zoom={zoom}
         disableDefaultUI={true}
         mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}

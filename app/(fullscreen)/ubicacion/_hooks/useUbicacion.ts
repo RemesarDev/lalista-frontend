@@ -34,7 +34,7 @@ export function useUbicacion() {
   // Crea esta pequeña función auxiliar para limpiar la dirección
   const limpiarDireccion = (direccion: string) => {
     const partes = direccion.split(',');
-    return partes.slice(2).join(',').trim();
+    return partes.slice(0).join(',').trim(); //modificar en caso de recibir una dirección con formato diferente, por ejemplo sin comas. Por ahora asumo que siempre viene con formato "Calle 123, Ciudad, País"
   };
 
   const coordenadas = useMemo(() => ({ 

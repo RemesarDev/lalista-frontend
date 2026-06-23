@@ -5,7 +5,6 @@ import Link from 'next/link';
 
 interface Props {
   producto: Producto;
-  // Actualizamos la firma de la función para incluir la cantidad
   onAgregar: (id: string, nombre: string, cantidad: number) => void;
 }
 
@@ -17,6 +16,15 @@ export const ProductCard = ({ producto, onAgregar }: Props) => {
     setCantidad(nuevaCantidad);
     onAgregar(producto.id, producto.nombre, nuevaCantidad);
   };
+
+  // 🎯 FILTRADO "ON-THE-FLY": Deduplicamos cadena + tipo de sucursal manteniendo el orden original.
+  // Como el backend de Hono/Supabase ya suele devolver los datos ordenados por precio mínimo, 
+  // este filtro se quedará automáticamente con la sucursal más barata de cada formato.
+  const sucursalesUnicasPorTipo = producto.sucursales.filter((sucursal, index, self) =>
+    index === self.findIndex((s) => 
+      s.id_comercio === sucursal.id_comercio && s.id_bandera === sucursal.id_bandera
+    )
+  );
 
   return (
     <div className="bg-white border border-slate-200/70 rounded-xl p-3 flex flex-col justify-between shadow-xs h-full">
@@ -30,16 +38,17 @@ export const ProductCard = ({ producto, onAgregar }: Props) => {
         </h3>
         
         <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
-          {producto.sucursales.length > 0 ? (
-            producto.sucursales.slice(0, 3).map((item, index) => (
+          {/* 🚀 Cambiamos producto.sucursales por nuestro nuevo array filtrado */}
+          {sucursalesUnicasPorTipo.length > 0 ? (
+            sucursalesUnicasPorTipo.slice(0, 3).map((item, index) => (
               <div key={index} className="flex justify-between items-center text-[10px]">
                 <div className="flex flex-col truncate mr-2">
-                  <span className={`font-bold ${index === 0 ? 'text-primary-500' : 'text-slate-700'}`}>
-                    {index === 0 ? '🏆 ' : ''}{item.cadena}
+                  <span className={`font-bold ${index === 0 ? 'text-slate-700' : 'text-slate-700'}`}>
+                    {item.cadena}
                   </span>
-                  <span className="text-slate-400 truncate max-w-[100px]">{item.direccion}</span>
+                  {/* <span className="text-slate-400 truncate max-w-[100px]">{item.direccion}</span> */}
                 </div>
-                <strong className={`text-xs ${index === 0 ? 'text-primary-500' : 'text-slate-800'}`}>
+                <strong className={`text-xs ${index === 0 ? 'text-primary-800' : 'text-slate-800'}`}>
                   ${item.precio}
                 </strong>
               </div>

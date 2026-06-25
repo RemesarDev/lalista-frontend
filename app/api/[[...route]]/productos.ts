@@ -1,18 +1,13 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
 import { supabase } from '@/app/_lib/supabase';
+// Importamos nuestros esquemas centralizados
+import { productosQuerySchema, catalogoQuerySchema } from '@/app/_lib/apiSchemas';
 
 export const productosRouter = new Hono()
   // Endpoint a: Búsqueda con ubicación
   .get('/productos', 
-    zValidator('query', z.object({
-      search: z.string().optional(),
-      // Corregido: Usamos "message" como lo exige TypeScript en esta versión de Zod
-      lat: z.coerce.number({ message: 'Latitud inválida' }),
-      lng: z.coerce.number({ message: 'Longitud inválida' }),
-      radio: z.coerce.number({ message: 'Radio inválido' })
-    })),
+    zValidator('query', productosQuerySchema), // Validamos usando el esquema importado
     async (c) => {
       // Magia: lat, lng y radio YA SON NÚMEROS seguros
       const { search, lat, lng, radio } = c.req.valid('query');
@@ -66,9 +61,7 @@ export const productosRouter = new Hono()
 
   // Endpoint b: Búsqueda sin ubicación
   .get('/catalogo', 
-    zValidator('query', z.object({
-      search: z.string().min(3, { message: 'El término debe tener al menos 3 caracteres' })
-    })),
+    zValidator('query', catalogoQuerySchema), // Validamos usando el esquema importado
     async (c) => {
       const { search } = c.req.valid('query');
 

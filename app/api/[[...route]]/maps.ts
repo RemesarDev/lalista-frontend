@@ -1,10 +1,16 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
+// Importamos nuestros esquemas centralizados
+import { 
+  autocompleteQuerySchema, 
+  geocodeQuerySchema, 
+  placeDetailsQuerySchema, 
+  reverseGeocodeQuerySchema 
+} from '@/app/_lib/apiSchemas';
 
 export const mapsRouter = new Hono()
   .get('/autocomplete', 
-    zValidator('query', z.object({ input: z.string().min(3) })),
+    zValidator('query', autocompleteQuerySchema), // Usamos el esquema importado
     async (c) => {
       const { input } = c.req.valid('query');
       const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -30,7 +36,7 @@ export const mapsRouter = new Hono()
     }
   )
   .get('/geocode', 
-    zValidator('query', z.object({ address: z.string().min(1) })),
+    zValidator('query', geocodeQuerySchema), // Usamos el esquema importado
     async (c) => {
       const { address } = c.req.valid('query');
       const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -45,7 +51,7 @@ export const mapsRouter = new Hono()
     }
   )
   .get('/details', 
-    zValidator('query', z.object({ placeId: z.string().min(1) })),
+    zValidator('query', placeDetailsQuerySchema), // Usamos el esquema importado
     async (c) => {
       const { placeId } = c.req.valid('query');
       const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -59,10 +65,7 @@ export const mapsRouter = new Hono()
     }
   )
   .get('/reverse-geocode', 
-    zValidator('query', z.object({ 
-      lat: z.coerce.number(), 
-      lng: z.coerce.number() 
-    })),
+    zValidator('query', reverseGeocodeQuerySchema), // Usamos el esquema importado
     async (c) => {
       const { lat, lng } = c.req.valid('query');
       const apiKey = process.env.GOOGLE_MAPS_API_KEY;

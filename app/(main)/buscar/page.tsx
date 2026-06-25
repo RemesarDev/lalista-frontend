@@ -1,16 +1,19 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react'; // Importamos Suspense
+import { Suspense } from 'react';
 import { useBusqueda } from './_hooks/useBusqueda';
 import { ProductCard } from './_components/ProductCard';
+import { useListaStore } from '@/app/_store/store';
 
 export const dynamic = 'force-dynamic';
 
-// Creamos un componente interno que contenga la lógica de búsqueda
 function ResultadosBusqueda() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || "";
   const { productos, cargando } = useBusqueda(query);
+  
+  // 🚀 Traemos la acción real para sumar productos al carrito
+  const agregarProducto = useListaStore((state) => state.agregarProducto);
 
   if (cargando) return <p className="col-span-2 text-center text-slate-400 text-sm">Buscando precios...</p>;
 
@@ -20,8 +23,13 @@ function ResultadosBusqueda() {
         <ProductCard 
           key={prod.id} 
           producto={prod} 
-          onAgregar={(id, nombre) => {
-            console.log(`Producto agregado a LALIsta: ${nombre} (ID: ${id})`);
+          // 🛠️ Ajustamos la firma: recibe el objeto 'producto' completo del map
+          onAgregar={(producto) => {
+            agregarProducto({
+              id: producto.id,
+              nombre: producto.nombre,
+              url_imagen: producto.url_imagen // 👈 Viaja la imagen directo al LocalStorage del carrito
+            });
           }} 
         />
       ))}
@@ -30,7 +38,6 @@ function ResultadosBusqueda() {
 }
 
 export default function BuscarVista() {
-  // El padre solo contiene la estructura y el Suspense
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-16">
       <main className="max-w-screen-xl mx-auto px-2 mt-4">
@@ -38,7 +45,6 @@ export default function BuscarVista() {
           Resultados en tu zona
         </h2>
         
-        {/* Aquí es donde "envolvemos" el uso de searchParams */}
         <Suspense fallback={<p className="text-center text-slate-400">Cargando buscador...</p>}>
           <ResultadosBusqueda />
         </Suspense>

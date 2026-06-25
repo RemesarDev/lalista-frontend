@@ -12,6 +12,7 @@ export interface Producto {
   nombre: string;
   precioMinimo: number | null;
   sucursales: Sucursal[];
+  url_imagen: string | null;
 }
 
 export interface BusquedaResponse {

@@ -48,7 +48,7 @@ export const productosRouter = new Hono()
           mapaProductos.set(fila.id_producto, {
             id: fila.id_producto,
             nombre: fila.productos_descripcion,
-            url_imagen: fila.productos_url_imagen ?? null,
+            url_imagen: fila.url_imagen ?? null,
             sucursales: [], // Aquí TypeScript ya sabe que es de tipo SucursalResponse[]
           });
         }
@@ -97,7 +97,7 @@ export const productosRouter = new Hono()
       const productos: ProductoResponse[] = (data as any[] ?? []).map(p => ({
         id: p.id_producto,
         nombre: p.productos_descripcion,
-        url_imagen: p.productos_url_imagen ?? null, // Cumple el contrato
+        url_imagen: p.url_imagen ?? null, // Cumple el contrato
         precioMinimo: null,
         sucursales: [], // Tipado como SucursalResponse[] gracias al mapping explícito
       }));

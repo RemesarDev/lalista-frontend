@@ -8,6 +8,21 @@ interface Props {
   onAgregar: (id: string, nombre: string, cantidad: number) => void;
 }
 
+const formatearNombreProducto = (texto: string): string => {
+  if (!texto) return '';
+  return texto
+    .toLowerCase()
+    .split(' ')
+    .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1))
+    .join(' ');
+};
+
+const formatearPrecio = (precio: number): string => {
+  return new Intl.NumberFormat('es-AR', {
+    maximumFractionDigits: 0
+  }).format(precio);
+};
+
 export const ProductCard = ({ producto, onAgregar }: Props) => {
   const [cantidad, setCantidad] = useState(0);
 
@@ -34,7 +49,7 @@ export const ProductCard = ({ producto, onAgregar }: Props) => {
         </div>
         
         <h3 className="font-bold text-slate-900 text-xs md:text-sm line-clamp-2 min-h-[2.5rem] leading-tight">
-          {producto.nombre}
+          {formatearNombreProducto(producto.nombre)}
         </h3>
         
         <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
@@ -49,7 +64,7 @@ export const ProductCard = ({ producto, onAgregar }: Props) => {
                   {/* <span className="text-slate-400 truncate max-w-[100px]">{item.direccion}</span> */}
                 </div>
                 <strong className={`text-xs ${index === 0 ? 'text-primary-800' : 'text-slate-800'}`}>
-                  ${item.precio}
+                  ${formatearPrecio(item.precio)}
                 </strong>
               </div>
             ))

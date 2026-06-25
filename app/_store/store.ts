@@ -6,6 +6,7 @@ export interface ProductoLista {
   id: string;         // ID único del producto (viene del SEPA / Supabase)
   nombre: string;     // Nombre del producto (ej: "Leche Entera 1L")
   marca: string;      // Marca para mostrar en la tarjeta
+  url_imagen: string | null;
   cantidad: number;   // Cuántas unidades lleva el usuario
 }
 

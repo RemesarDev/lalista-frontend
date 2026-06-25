@@ -7,7 +7,7 @@ const app = new Hono().basePath('/api');
 
 const routes = app
 
-//Enpoints I: de /buscar productos
+//Endpoints I: de /buscar productos
 // a. con ubicacion y sus precios por sucursal
 .get('/productos', async (c) => {
   const search = c.req.query('search');
@@ -32,10 +32,11 @@ const routes = app
     return c.json({ error: error.message }, 500);
   }
 
-  // Agrupar por producto
+  // Agrupar por producto (Agregamos url_imagen al tipado del mapa)
   const mapaProductos = new Map<string, {
     id: string;
     nombre: string;
+    url_imagen: string | null; // 👈 Habilitamos el tipo en el acumulador
     sucursales: {
       cadena: string;
       direccion: string;
@@ -50,6 +51,7 @@ const routes = app
       mapaProductos.set(fila.id_producto, {
         id: fila.id_producto,
         nombre: fila.productos_descripcion,
+        url_imagen: fila.url_imagen ?? null, // 👈 Capturamos el dato que escupe Postgres
         sucursales: [],
       });
     }
@@ -100,6 +102,7 @@ const routes = app
     id: p.id_producto,
     nombre: p.productos_descripcion,
     precioMinimo: null,
+    url_imagen: null, // 👈 Mantenemos consistencia con la interfaz global
     sucursales: [],
   }));
 
@@ -113,9 +116,6 @@ const routes = app
   const input = c.req.query('input');
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   
-  //PARA DEPURACION
-  //console.log("AUTOCOMPLETE - input:", input, "| key:", apiKey ? "OK" : "FALTA");
-
   if (!input || input.trim().length < 3) return c.json({ suggestions: [] });
   if (!apiKey) return c.json({ error: 'API key no configurada' }, 500);
 
@@ -133,10 +133,7 @@ const routes = app
       }),
     });
 
-    //DEPURACION
     const responseText = await res.text();
-    //console.log("Google response status:", res.status);
-    //console.log("Google response body:", responseText);
 
     if (!res.ok) return c.json({ error: 'Error consultando Google Places' }, 500);
 

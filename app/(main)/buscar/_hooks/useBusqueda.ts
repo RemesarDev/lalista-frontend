@@ -9,7 +9,12 @@ export const useBusqueda = (query: string = "") => {
   const { ubicacion } = useListaStore();
 
   useEffect(() => {
-    if (!query || query.trim().length < 3) return;
+    const termino = query.trim();
+    if (termino.length < 3) {
+      setProductos([]);
+      setCargando(false);
+      return;
+    }
 
     const controller = new AbortController();
     let cancelado = false;
@@ -18,38 +23,34 @@ export const useBusqueda = (query: string = "") => {
       setCargando(true);
       try {
         let res;
-
         if (ubicacion.latitud && ubicacion.longitud) {
-          res = await client.api.productos.$get({ 
-            query: { 
-              search: query,
+          res = await client.api.productos.$get({
+            query: {
+              search: termino,
               lat: ubicacion.latitud.toString(),
               lng: ubicacion.longitud.toString(),
               radio: ubicacion.radioBusqueda.toString(),
-            } 
+            },
           });
         } else {
-          res = await client.api.catalogo.$get({ 
-            query: { search: query } 
+          res = await client.api.catalogo.$get({
+            query: { search: termino },
           });
         }
 
-        // Si este efecto ya fue cancelado por uno más nuevo, ignoramos la respuesta
         if (cancelado) return;
+        if (!res.ok) throw new Error('Error en la respuesta del servidor');
 
-        if (!res.ok) throw new Error("Error en la respuesta del servidor");
-        
         const data = (await res.json()) as BusquedaResponse;
-        
         if (data && Array.isArray(data.productos)) {
           setProductos(data.productos);
         } else {
           setProductos([]);
         }
-        
+
       } catch (error) {
-        if (cancelado) return; // ignoramos errores de requests viejos también
-        console.error("Error al buscar productos:", error);
+        if (cancelado) return;
+        console.error('Error al buscar productos:', error);
         setProductos([]);
       } finally {
         if (!cancelado) setCargando(false);
@@ -58,7 +59,6 @@ export const useBusqueda = (query: string = "") => {
 
     fetchProductos();
 
-    // Cuando el efecto se re-ejecuta (nuevo query), esto cancela el anterior
     return () => {
       cancelado = true;
       controller.abort();

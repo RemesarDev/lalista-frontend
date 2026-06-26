@@ -3,7 +3,9 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useBusqueda } from './_hooks/useBusqueda';
 import { ProductCard } from './_components/ProductCard';
+import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
 import { useListaStore } from '@/app/_store/store';
+import { ShoppingCartIcon } from '@phosphor-icons/react/dist/ssr';
 import StickySearch from '@/app/_components/global/StickySearch';
 
 export const dynamic = 'force-dynamic';
@@ -12,9 +14,26 @@ function ResultadosBusqueda() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || "";
   const { productos, cargando } = useBusqueda(query);
-  
-  // 🚀 Traemos la acción real para sumar productos al carrito
+  const lista = useListaStore((state) => state.lista);
   const agregarProducto = useListaStore((state) => state.agregarProducto);
+  const actualizarCantidad = useListaStore((state) => state.actualizarCantidad);
+  const eliminarProducto = useListaStore((state) => state.eliminarProducto);
+
+  const handleAgregar = (producto: (typeof productos)[number], cantidad: number) => {
+    const existente = lista.find((item) => item.id === producto.id);
+    if (cantidad <= 0) {
+      if (existente) eliminarProducto(producto.id);
+      return;
+    }
+    if (!existente) {
+      agregarProducto({
+        id: producto.id,
+        nombre: producto.nombre,
+        url_imagen: producto.url_imagen,
+      });
+    }
+    actualizarCantidad(producto.id, cantidad);
+  };
 
   if (cargando) return (
     <div className="col-span-2 flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
@@ -30,21 +49,14 @@ function ResultadosBusqueda() {
       <p className="text-xs">Probá cambiando la ubicación del GPS, el rango de búsqueda o el término ingresado.</p>
     </div>
   );
-  
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
       {productos.map((prod) => (
-        <ProductCard 
-          key={prod.id} 
-          producto={prod} 
-          // 🛠️ Ajustamos la firma: recibe el objeto 'producto' completo del map
-          onAgregar={(producto) => {
-            agregarProducto({
-              id: producto.id,
-              nombre: producto.nombre,
-              url_imagen: producto.url_imagen // 👈 Viaja la imagen directo al LocalStorage del carrito
-            });
-          }} 
+        <ProductCard
+          key={prod.id}
+          producto={prod}
+          onAgregar={handleAgregar}
         />
       ))}
     </div>
@@ -57,10 +69,18 @@ export default function BuscarVista() {
       <StickySearch />
       <div className="min-h-screen bg-slate-50 font-sans pb-16">
         <main className="max-w-screen-xl mx-auto px-2 mt-4">
-          <h2 className="text-sm font-bold font-display text-slate-400 uppercase tracking-wider mb-3 px-1">
-            Resultados en tu zona
-          </h2>
-          
+          <div className="mb-3 flex items-start justify-between gap-3 px-1">
+            <h2 className="text-sm font-bold font-display text-slate-400 uppercase tracking-wider">
+              Resultados en tu zona
+            </h2>
+            <DesktopActionButton
+              href="/mi-lista"
+              label="Ir a mi lista"
+              icon={<ShoppingCartIcon weight="bold" />}
+              variant="outline"
+            />
+          </div>
+
           <Suspense fallback={<p className="text-center text-slate-400">Cargando buscador...</p>}>
             <ResultadosBusqueda />
           </Suspense>

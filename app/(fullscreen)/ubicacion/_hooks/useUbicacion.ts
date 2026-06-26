@@ -157,15 +157,17 @@ export function useUbicacion() {
     }
   };
 
-  const confirmarUbicacion = () => {
-  if (!coordenadasPendientes) return;
-  guardarUbicacionFiltro(
-    ubicacion.radioBusqueda,
-    { lat: coordenadasPendientes.lat, lng: coordenadasPendientes.lng },
-    coordenadasPendientes.texto
-  );
-  setCoordenadasPendientes(null);
-  };
+  const confirmarUbicacion = useCallback(() => {
+    if (!coordenadasPendientes) return;
+    // Leemos el radio fresco directamente del store, no del closure
+    const radioActual = useListaStore.getState().ubicacion.radioBusqueda;
+    guardarUbicacionFiltro(
+      radioActual,
+      { lat: coordenadasPendientes.lat, lng: coordenadasPendientes.lng },
+      coordenadasPendientes.texto
+    );
+    setCoordenadasPendientes(null);
+  }, [coordenadasPendientes, guardarUbicacionFiltro]);
 
   const manejarKeyDownInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && sugerenciasRef.current.length > 0) {

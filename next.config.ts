@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
+      // Ya existentes
       {
         protocol: 'https',
         hostname: 'carrefourar.vteximg.com.br',
@@ -11,6 +12,23 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'jumboargentina.vteximg.com.br',
+        pathname: '/**',
+      },
+      // Coto
+      {
+        protocol: 'https',
+        hostname: 'static.cotodigital3.com.ar',
+        pathname: '/**',
+      },
+      // VTEX genérico (cubre Jumbo, Disco, Vea, Carrefour nuevos dominios)
+      {
+        protocol: 'https',
+        hostname: '*.vtexassets.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.vteximg.com.br',
         pathname: '/**',
       },
     ],

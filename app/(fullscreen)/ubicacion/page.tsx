@@ -8,6 +8,7 @@ import { CrosshairIcon, ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr';
 import BuscadorUbicacion from './_components/BuscadorUbicacion';
 import ControlesZoom from './_components/ControlesZoom'; 
 import MapaInteractivo from './_components/MapaInteractivo';
+import SliderVertical from './_components/SliderVertical';
 import { useUbicacion } from './_hooks/useUbicacion';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -57,23 +58,14 @@ function ContenidoMapa() {
       </Link>
 
       {/* SLIDER VERTICAL DE RANGO */}
-      <div className={`absolute right-2 top-[32%] z-20 flex h-40 w-10 items-center justify-center transition-all duration-300 ${isFocused ? 'opacity-10 pointer-events-none' : 'opacity-100'}`}>
-        <div className="relative flex h-full w-full items-center justify-center">
-          <input 
-            type="range" 
-            min="1" 
-            max="10" 
-            step="1"
-            value={radio} 
-            onChange={(e) => {
-              const valor = Number(e.target.value);
-              setRadio(valor);
-            }}
-            className="absolute h-1 w-32 -rotate-90 cursor-pointer appearance-none rounded-lg bg-slate-400/60 accent-slate-900 focus:outline-none touch-none"
-            style={{ WebkitAppearance: 'none' }}
-          />
-        </div>
-      </div>
+      <SliderVertical
+        value={radio}
+        min={1}
+        max={10}
+        step={0.1}
+        onChange={setRadio}
+        isFocused={isFocused}
+      />
 
       {/* BUSCADOR MODULARIZADO */}
       <BuscadorUbicacion 

@@ -10,23 +10,20 @@ export const useBusqueda = (query: string = "") => {
 
   useEffect(() => {
     const termino = query.trim();
-
     if (termino.length < 3) {
       setProductos([]);
       setCargando(false);
       return;
     }
 
-    let activo = true;
+    const controller = new AbortController();
+    let cancelado = false;
 
     const fetchProductos = async () => {
       setCargando(true);
-
       try {
         let res;
-
         if (ubicacion.latitud && ubicacion.longitud) {
-          // Con ubicación: precios y sucursales cercanas
           res = await client.api.productos.$get({
             query: {
               search: termino,
@@ -36,39 +33,35 @@ export const useBusqueda = (query: string = "") => {
             },
           });
         } else {
-          // Sin ubicación: solo catálogo sin precios
           res = await client.api.catalogo.$get({
             query: { search: termino },
           });
         }
 
+        if (cancelado) return;
         if (!res.ok) throw new Error('Error en la respuesta del servidor');
 
         const data = (await res.json()) as BusquedaResponse;
-
-        if (!activo) return;
-
         if (data && Array.isArray(data.productos)) {
           setProductos(data.productos);
         } else {
           setProductos([]);
         }
-      } catch (error) {
-        if (!activo) return;
 
+      } catch (error) {
+        if (cancelado) return;
         console.error('Error al buscar productos:', error);
         setProductos([]);
       } finally {
-        if (activo) {
-          setCargando(false);
-        }
+        if (!cancelado) setCargando(false);
       }
     };
 
     fetchProductos();
 
     return () => {
-      activo = false;
+      cancelado = true;
+      controller.abort();
     };
   }, [query, ubicacion.latitud, ubicacion.longitud, ubicacion.radioBusqueda]);
 

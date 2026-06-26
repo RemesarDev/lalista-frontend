@@ -1,15 +1,16 @@
 'use client'; // Necesitamos esto porque usamos hooks
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 export default function StickySearch() {
   const [query, setQuery] = useState("");
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim().length >= 3) {
-      // Redirigimos al usuario a /buscar con el parámetro 'q'
+      inputRef.current?.blur();
       router.push(`/buscar?q=${encodeURIComponent(query)}`);
     }
   };
@@ -23,6 +24,7 @@ export default function StickySearch() {
           </svg>
         </span>
         <input 
+          ref={inputRef}
           type="text" 
           value={query}
           onChange={(e) => setQuery(e.target.value)}

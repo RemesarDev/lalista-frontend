@@ -26,7 +26,7 @@ export default function MapaInteractivo({
   useEffect(() => {
     if (map) {
       map.setCenter(coordenadas);
-      map.setZoom(16); 
+      map.setZoom(13); 
     }
   }, [coordenadas.lat, coordenadas.lng, map]);
 
@@ -62,7 +62,7 @@ export default function MapaInteractivo({
           /> 
           
           <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md whitespace-nowrap pointer-events-none">
-            {radio} Km a la redonda
+            {radio.toFixed(1)} Km a la redonda
           </div>
         </AdvancedMarker>
         

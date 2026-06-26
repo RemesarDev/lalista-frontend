@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useBusqueda } from './_hooks/useBusqueda';
 import { ProductCard } from './_components/ProductCard';
 import { useListaStore } from '@/app/_store/store';
+import StickySearch from '@/app/_components/global/StickySearch';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,16 +53,19 @@ function ResultadosBusqueda() {
 
 export default function BuscarVista() {
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-16">
-      <main className="max-w-screen-xl mx-auto px-2 mt-4">
-        <h2 className="text-sm font-bold font-display text-slate-400 uppercase tracking-wider mb-3 px-1">
-          Resultados en tu zona
-        </h2>
-        
-        <Suspense fallback={<p className="text-center text-slate-400">Cargando buscador...</p>}>
-          <ResultadosBusqueda />
-        </Suspense>
-      </main>
-    </div>
+    <>
+      <StickySearch />
+      <div className="min-h-screen bg-slate-50 font-sans pb-16">
+        <main className="max-w-screen-xl mx-auto px-2 mt-4">
+          <h2 className="text-sm font-bold font-display text-slate-400 uppercase tracking-wider mb-3 px-1">
+            Resultados en tu zona
+          </h2>
+          
+          <Suspense fallback={<p className="text-center text-slate-400">Cargando buscador...</p>}>
+            <ResultadosBusqueda />
+          </Suspense>
+        </main>
+      </div>
+    </>
   );
 }

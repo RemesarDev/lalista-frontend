@@ -29,7 +29,6 @@ function ResultadosBusqueda() {
       agregarProducto({
         id: producto.id,
         nombre: producto.nombre,
-        marca: producto.marca ?? 'Sin marca',
         url_imagen: producto.url_imagen,
       });
     }

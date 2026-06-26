@@ -10,7 +10,6 @@ export interface Sucursal {
 export interface Producto {
   id: string;
   nombre: string;
-  marca?: string;
   precioMinimo: number | null;
   sucursales: Sucursal[];
   url_imagen: string | null;

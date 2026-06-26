@@ -15,8 +15,21 @@ function ResultadosBusqueda() {
   // 🚀 Traemos la acción real para sumar productos al carrito
   const agregarProducto = useListaStore((state) => state.agregarProducto);
 
-  if (cargando) return <p className="col-span-2 text-center text-slate-400 text-sm">Buscando precios...</p>;
+  if (cargando) return (
+    <div className="col-span-2 flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
+      <span className="text-5xl animate-bounce">🛒</span>
+      <p className="text-sm">Buscando precios en tu zona...</p>
+    </div>
+  );
 
+  if (!cargando && productos.length === 0) return (
+    <div className="col-span-2 flex flex-col items-center justify-center py-16 gap-2 text-center text-slate-400 px-4">
+      <span className="text-4xl">🔍</span>
+      <p className="text-sm font-medium">No se encontraron resultados en tu zona.</p>
+      <p className="text-xs">Probá cambiando la ubicación del GPS, el rango de búsqueda o el término ingresado.</p>
+    </div>
+  );
+  
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
       {productos.map((prod) => (

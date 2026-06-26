@@ -54,9 +54,6 @@ export function ListItem({ producto, onIncrementar, onDecrementar, onEliminar }:
               <h3 className={`truncate text-sm font-bold text-slate-900 ${completado ? 'line-through opacity-70' : ''}`}>
                 {producto.nombre}
               </h3>
-              <p className={`mt-0.5 text-xs text-slate-500 ${completado ? 'line-through opacity-60' : ''}`}>
-                {producto.marca || 'Sin marca'}
-              </p>
             </div>
 
             <button

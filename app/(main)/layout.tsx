@@ -1,6 +1,7 @@
 import Header from "../_components/global/Header";
 import StickySearch from "../_components/global/StickySearch";
 import Navigation from "../_components/global/Navigation";
+import FooterLanding from "../_components/global/Footer-landing";
 
 export default function MainLayout({
   children,
@@ -24,6 +25,11 @@ export default function MainLayout({
       
       {/* Barra de navegación inferior (Fija en mobile, oculta en desktop) */}
       <Navigation />
+
+      {/* Footer visible solo en desktop */}
+      <div className="hidden md:block">
+        <FooterLanding />
+      </div>
       
     </div>
   );

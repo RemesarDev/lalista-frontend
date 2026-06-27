@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import NextImage from 'next/image';
 import { MapPinIcon, UserIcon } from '@phosphor-icons/react/dist/ssr';
 
 interface HeaderProps {
@@ -13,9 +14,7 @@ export default function Header({ locationName }: HeaderProps) {
       <div className="flex items-center justify-between max-w-screen-xl mx-auto">
         
         <Link href="/" className="flex items-center gap-1">
-          <span className="text-2xl font-black tracking-tight font-display text-white">
-            LALI<span className="text-slate-800">sta</span>
-          </span>
+          <NextImage src="/img/lalista-logo.png" alt="Logo de LaLista" width={60} height={60} />
         </Link>
 
         <Link 

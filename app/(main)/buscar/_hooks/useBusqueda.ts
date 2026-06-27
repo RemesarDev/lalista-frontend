@@ -4,17 +4,29 @@ import { client } from '@/app/_lib/hono-client';
 import { useListaStore } from '@/app/_store/store';
 
 export const useBusqueda = (query: string = "") => {
+  const termino = query.trim();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState<boolean>(false);
   const { ubicacion } = useListaStore();
+  
+  // Leemos si el persist ya terminó de hidratar, sin agregar nada al store
+  const [hidratado, setHidratado] = useState(
+    () => useListaStore.persist.hasHydrated()
+  );
 
   useEffect(() => {
-    const termino = query.trim();
-    if (termino.length < 3) {
-      setProductos([]);
-      setCargando(false);
-      return;
+    // Si todavía no hidratamos, esperamos el evento
+    if (!hidratado) {
+      const unsub = useListaStore.persist.onFinishHydration(() => {
+        setHidratado(true);
+      });
+      return unsub;
     }
+  }, [hidratado]);
+
+  useEffect(() => {
+    if (!hidratado) return;
+    if (termino.length < 3) return;
 
     const controller = new AbortController();
     let cancelado = false;
@@ -63,7 +75,10 @@ export const useBusqueda = (query: string = "") => {
       cancelado = true;
       controller.abort();
     };
-  }, [query, ubicacion.latitud, ubicacion.longitud, ubicacion.radioBusqueda]);
+  }, [termino, ubicacion.latitud, ubicacion.longitud, ubicacion.radioBusqueda, hidratado]);
 
-  return { productos, cargando };
+  const productosFinal = termino.length < 3 ? [] : productos;
+  const cargandoFinal = termino.length < 3 ? false : cargando;
+
+  return { productos: productosFinal, cargando: cargandoFinal };
 };

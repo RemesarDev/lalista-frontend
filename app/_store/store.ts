@@ -22,6 +22,8 @@ interface ListaState {
   // Estado
   lista: ProductoLista[];
   ubicacion: UbicacionUsuario;
+  _hidratado: boolean; 
+  setHidratado: () => void; 
   
   // Acciones (Funciones para modificar el estado)
   agregarProducto: (producto: Omit<ProductoLista, 'cantidad'>) => void;
@@ -39,6 +41,8 @@ export const useListaStore = create<ListaState>()(
     (set, get) => ({
       // Estado inicial unificado
       lista: [],
+      _hidratado: false, 
+      setHidratado: () => set({ _hidratado: true }), 
       ubicacion: { 
         latitud: null, 
         longitud: null, 

@@ -4,17 +4,15 @@ import { client } from '@/app/_lib/hono-client';
 import { useListaStore } from '@/app/_store/store';
 
 export const useBusqueda = (query: string = "") => {
+  const termino = query.trim();
+
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState<boolean>(false);
-  const { ubicacion } = useListaStore();
+  const { ubicacion, _hidratado } = useListaStore();
 
   useEffect(() => {
-    const termino = query.trim();
-    if (termino.length < 3) {
-      setProductos([]);
-      setCargando(false);
-      return;
-    }
+    if (!_hidratado) return;
+    if (termino.length < 3) return;
 
     const controller = new AbortController();
     let cancelado = false;
@@ -63,7 +61,10 @@ export const useBusqueda = (query: string = "") => {
       cancelado = true;
       controller.abort();
     };
-  }, [query, ubicacion.latitud, ubicacion.longitud, ubicacion.radioBusqueda]);
+  }, [termino, ubicacion.latitud, ubicacion.longitud, ubicacion.radioBusqueda, _hidratado]);
+  
+  const productosFinal = termino.length < 3 ? [] : productos;
+  const cargandoFinal = termino.length < 3 ? false : cargando;
 
-  return { productos, cargando };
+  return { productos: productosFinal, cargando: cargandoFinal };
 };

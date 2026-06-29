@@ -77,7 +77,12 @@ export const useBusqueda = (query: string = "") => {
       cancelado = true;
       controller.abort();
     };
-  }, [query, ubicacion.latitud, ubicacion.longitud, ubicacion.radioBusqueda]);
+  }, [query, 
+      ubicacion.latitud, 
+      ubicacion.longitud, 
+      ubicacion.radioBusqueda,
+      guardarCacheBusquedaPrecios,
+      limpiarCacheBusquedaPrecios,]);
 
   return { productos, cargando };
 };

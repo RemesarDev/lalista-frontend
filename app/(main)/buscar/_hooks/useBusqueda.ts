@@ -4,20 +4,38 @@ import { client } from '@/app/_lib/hono-client';
 import { useListaStore } from '@/app/_store/store';
 
 export const useBusqueda = (query: string = "") => {
+  const termino = query.trim();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState<boolean>(false);
+
+  // 1. Traemos la ubicación y las funciones de caché del store (Feature)
   const {
     ubicacion,
     guardarCacheBusquedaPrecios,
     limpiarCacheBusquedaPrecios,
   } = useListaStore();
+  
+  // 2. Control de hidratación de Zustand para evitar falsos arranques (Main)
+  const [hidratado, setHidratado] = useState(
+    () => useListaStore.persist.hasHydrated()
+  );
 
   useEffect(() => {
-    const termino = query.trim();
+    if (!hidratado) {
+      const unsub = useListaStore.persist.onFinishHydration(() => {
+        setHidratado(true);
+      });
+      return unsub;
+    }
+  }, [hidratado]);
+
+  // 3. Efecto de búsqueda unificado
+  useEffect(() => {
+    // Si no está hidratado o la query es corta, no hacemos la petición HTTP
+    if (!hidratado) return;
     if (termino.length < 3) {
-      setProductos([]);
+      // Si el usuario borra la búsqueda, limpiamos la caché (Feature)
       limpiarCacheBusquedaPrecios();
-      setCargando(false);
       return;
     }
 
@@ -36,7 +54,7 @@ export const useBusqueda = (query: string = "") => {
               lng: ubicacion.longitud.toString(),
               radio: ubicacion.radioBusqueda.toString(),
             },
-          });
+          }, { init: { signal: controller.signal } }); // Abort real a nivel de red
         } else {
           res = await client.api.catalogo.$get({
             query: { search: termino },
@@ -49,6 +67,7 @@ export const useBusqueda = (query: string = "") => {
         const data = (await res.json()) as BusquedaResponse;
         if (data && Array.isArray(data.productos)) {
           setProductos(data.productos);
+          // Guardamos en caché si la respuesta es exitosa (Feature)
           guardarCacheBusquedaPrecios({
             query: termino,
             latitud: ubicacion.latitud,
@@ -63,6 +82,7 @@ export const useBusqueda = (query: string = "") => {
 
       } catch (error) {
         if (cancelado) return;
+        if (error instanceof Error && error.name === 'AbortError') return; // Ignorar si fue cancelado adrede
         console.error('Error al buscar productos:', error);
         setProductos([]);
         limpiarCacheBusquedaPrecios();
@@ -77,12 +97,20 @@ export const useBusqueda = (query: string = "") => {
       cancelado = true;
       controller.abort();
     };
-  }, [query, 
-      ubicacion.latitud, 
-      ubicacion.longitud, 
-      ubicacion.radioBusqueda,
-      guardarCacheBusquedaPrecios,
-      limpiarCacheBusquedaPrecios,]);
+  // Incluimos todas las dependencias necesarias de forma limpia
+  }, [
+    termino, 
+    ubicacion.latitud, 
+    ubicacion.longitud, 
+    ubicacion.radioBusqueda, 
+    hidratado, 
+    guardarCacheBusquedaPrecios, 
+    limpiarCacheBusquedaPrecios
+  ]);
 
-  return { productos, cargando };
+  // 4. Formateo de salida limpia que venía de Main
+  const productosFinal = termino.length < 3 ? [] : productos;
+  const cargandoFinal = termino.length < 3 ? false : cargando;
+
+  return { productos: productosFinal, cargando: cargandoFinal };
 };

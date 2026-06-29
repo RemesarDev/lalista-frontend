@@ -6,12 +6,17 @@ import { useListaStore } from '@/app/_store/store';
 export const useBusqueda = (query: string = "") => {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState<boolean>(false);
-  const { ubicacion } = useListaStore();
+  const {
+    ubicacion,
+    guardarCacheBusquedaPrecios,
+    limpiarCacheBusquedaPrecios,
+  } = useListaStore();
 
   useEffect(() => {
     const termino = query.trim();
     if (termino.length < 3) {
       setProductos([]);
+      limpiarCacheBusquedaPrecios();
       setCargando(false);
       return;
     }
@@ -44,14 +49,23 @@ export const useBusqueda = (query: string = "") => {
         const data = (await res.json()) as BusquedaResponse;
         if (data && Array.isArray(data.productos)) {
           setProductos(data.productos);
+          guardarCacheBusquedaPrecios({
+            query: termino,
+            latitud: ubicacion.latitud,
+            longitud: ubicacion.longitud,
+            radioBusqueda: ubicacion.radioBusqueda,
+            productos: data.productos,
+          });
         } else {
           setProductos([]);
+          limpiarCacheBusquedaPrecios();
         }
 
       } catch (error) {
         if (cancelado) return;
         console.error('Error al buscar productos:', error);
         setProductos([]);
+        limpiarCacheBusquedaPrecios();
       } finally {
         if (!cancelado) setCargando(false);
       }

@@ -94,7 +94,8 @@ export default function DebugPage() {
                 onClick={() => agregarProducto({
                   id: prod.id_producto,
                   nombre: prod.productos_descripcion || 'Producto sin nombre',
-                  url_imagen: null
+                  url_imagen: null,
+                  sucursales: []
                 })}
               >
                 ➕ Agregar a mi Lista

@@ -30,6 +30,8 @@ function ResultadosBusqueda() {
         id: producto.id,
         nombre: producto.nombre,
         url_imagen: producto.url_imagen,
+        // Aseguramos que sea siempre un array, si es nulo o undefined, asignamos un array vacío
+        sucursales: producto.sucursales || [], 
       });
     }
     actualizarCantidad(producto.id, cantidad);

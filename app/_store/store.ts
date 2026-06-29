@@ -7,6 +7,39 @@ export interface ProductoLista {
   nombre: string;     // Nombre del producto (ej: "Leche Entera 1L")
   url_imagen: string | null;
   cantidad: number;   // Cuántas unidades lleva el usuario
+  sucursales: SucursalBusqueda[];  // Precios en sucursales (con TTL de 1 día)
+  actualizadoEn: number;  // Timestamp para validar caché (en ms)
+}
+
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1 día en milisegundos
+
+const esCacheValido = (timestamp: number): boolean => {
+  return Date.now() - timestamp < CACHE_TTL_MS;
+};
+
+export interface SucursalBusqueda {
+  cadena: string;
+  direccion: string;
+  precio: number;
+  id_comercio: number;
+  id_bandera: number;
+}
+
+export interface ProductoBusqueda {
+  id: string;
+  nombre: string;
+  precioMinimo: number | null;
+  sucursales: SucursalBusqueda[];
+  url_imagen: string | null;
+}
+
+export interface CacheBusquedaPrecios {
+  query: string;
+  latitud: number | null;
+  longitud: number | null;
+  radioBusqueda: number;
+  productos: ProductoBusqueda[];
+  actualizadoEn: number;
 }
 
 export interface UbicacionUsuario {
@@ -22,16 +55,18 @@ interface ListaState {
   // Estado
   lista: ProductoLista[];
   ubicacion: UbicacionUsuario;
+  cacheBusquedaPrecios: CacheBusquedaPrecios | null;
   
   // Acciones (Funciones para modificar el estado)
-  agregarProducto: (producto: Omit<ProductoLista, 'cantidad'>) => void;
+  agregarProducto: (producto: Omit<ProductoLista, 'cantidad' | 'actualizadoEn'>) => void;
   eliminarProducto: (id: string) => void;
   actualizarCantidad: (id: string, cantidad: number) => void;
   limpiarLista: () => void;
   cambiarRadioBusqueda: (nuevoRadio: number) => void;
   setUbicacion: (ubicacion: UbicacionUsuario) => void;
   obtenerGpsNavegador: () => void;
-}
+  guardarCacheBusquedaPrecios: (cache: Omit<CacheBusquedaPrecios, 'actualizadoEn'>) => void;
+  limpiarCacheBusquedaPrecios: () => void;  necesitaActualizarPreciosDeLista: () => boolean;}
 
 // 2. Creamos el Store con Persistencia Automática
 export const useListaStore = create<ListaState>()(
@@ -47,6 +82,7 @@ export const useListaStore = create<ListaState>()(
         nombreLugar: null,
         cargandoUbicacion: false 
       },
+      cacheBusquedaPrecios: null,
 
       // Acción: Obtener GPS del Navegador
       obtenerGpsNavegador: () => {
@@ -87,15 +123,28 @@ export const useListaStore = create<ListaState>()(
       // Agregar un producto o sumarle cantidad si ya existe
       agregarProducto: (nuevoProd) => set((state) => {
         const existe = state.lista.find((p) => p.id === nuevoProd.id);
+        const ahora = Date.now();
+        
         if (existe) {
+          // Si existe y la caché sigue válida, no actualices timestamp
+          if (esCacheValido(existe.actualizadoEn)) {
+            return {
+              lista: state.lista.map((p) =>
+                p.id === nuevoProd.id ? { ...p, cantidad: p.cantidad + 1 } : p
+              ),
+            };
+          }
+          // Si la caché expiró, actualiza los precios (que vienen en nuevoProd.sucursales)
           return {
             lista: state.lista.map((p) =>
-              p.id === nuevoProd.id ? { ...p, cantidad: p.cantidad + 1 } : p
+              p.id === nuevoProd.id 
+                ? { ...p, cantidad: p.cantidad + 1, sucursales: nuevoProd.sucursales, actualizadoEn: ahora }
+                : p
             ),
           };
         }
-        // Corregido: Eliminado el "quantity: 1" intruso
-        return { lista: [...state.lista, { ...nuevoProd, cantidad: 1 }] };
+        // Nuevo producto
+        return { lista: [...state.lista, { ...nuevoProd, cantidad: 1, actualizadoEn: ahora }] };
       }),
 
       // Eliminar por ID
@@ -120,6 +169,23 @@ export const useListaStore = create<ListaState>()(
 
       // Guardar los parámetros geográficos manualmente
       setUbicacion: (nuevaUbi) => set({ ubicacion: nuevaUbi }),
+
+      // Cachear el último resultado de búsqueda para reutilizarlo en comparativa
+      guardarCacheBusquedaPrecios: (cache) => set({
+        cacheBusquedaPrecios: {
+          ...cache,
+          actualizadoEn: Date.now(),
+        },
+      }),
+
+      limpiarCacheBusquedaPrecios: () => set({ cacheBusquedaPrecios: null }),
+      
+      // Helper para validar si caché de lista expiró
+      necesitaActualizarPreciosDeLista: () => {
+        const { lista } = get();
+        // Retorna true si algún producto tiene caché expirada
+        return lista.some((prod) => !esCacheValido(prod.actualizadoEn));
+      },
     }),
     {
       name: 'lalista-storage',

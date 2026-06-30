@@ -9,6 +9,15 @@ export const auth = betterAuth({
   }),
   // Le dice a Better Auth que lea las cabeceras de Next.js/Vercel para deducir su propia URL.
   trustedProxyHeaders: true, 
+    user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "user",
+      },
+    },
+  },
   emailAndPassword: { 
     enabled: true 
   },

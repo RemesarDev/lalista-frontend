@@ -7,6 +7,7 @@ import Image from 'next/image';
 interface Props {
   producto: Producto;
   onAgregar: (producto:Producto, cantidad: number) => void;
+  isPriority?: boolean;
 }
 
 const formatearNombreProducto = (texto: string): string => {
@@ -24,7 +25,7 @@ const formatearPrecio = (precio: number): string => {
   }).format(precio);
 };
 
-export const ProductCard = ({ producto, onAgregar }: Props) => {
+export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) => {
   const [cantidad, setCantidad] = useState(0);
 
   const [errorImagen, setErrorImagen] = useState(false);
@@ -57,6 +58,7 @@ export const ProductCard = ({ producto, onAgregar }: Props) => {
               className="object-contain p-1.5 transition-opacity duration-300" // object-contain evita que el producto se deforme
               onError={() => setErrorImagen(true)} // Si el link se rompe, conmuta al placeholder limpio
               unoptimized={false} // Next.js la convierte automáticamente a WebP/AVIF súper ligero
+              priority={isPriority} // Prioriza la carga de las primeras imágenes para mejorar LCP
             />
           ) : (
             // 🧱 Placeholder elegante si no hay imagen en DB o si el enlace falló
@@ -69,7 +71,7 @@ export const ProductCard = ({ producto, onAgregar }: Props) => {
           )}
         </div>
         
-        <h3 className="font-bold text-slate-900 text-xs md:text-sm line-clamp-2 min-h-[2.5rem] leading-tight">
+        <h3 className="font-bold text-slate-900 text-xs md:text-sm line-clamp-3 min-h-[2.5rem] leading-tight">
           {formatearNombreProducto(producto.nombre)}
         </h3>
         
@@ -94,7 +96,7 @@ export const ProductCard = ({ producto, onAgregar }: Props) => {
               href="/ubicacion"
               className="text-[10px] text-center text-primary-500 font-semibold py-1 hover:underline"
             >
-              📍 Configurá tu ubicación para ver precios
+              📍 Ubicate en el mapa tu ubicación para ver precios
             </Link>
           )}
         </div>

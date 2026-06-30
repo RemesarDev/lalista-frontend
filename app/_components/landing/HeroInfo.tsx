@@ -23,7 +23,7 @@ export default function HeroInfo() {
     >
       {/* Badge */}
       <span className="text-[11px] font-bold font-sans uppercase tracking-widest text-primary-400 bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
-        De las bases de datos del gobierno a tu celular.
+        De las bases oficiales del SEPA a tu celular.
       </span>
 
       {/* Headline */}

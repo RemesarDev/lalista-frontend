@@ -31,6 +31,12 @@ const nextConfig: NextConfig = {
         hostname: '*.vteximg.com.br',
         pathname: '/**',
       },
+      // LA Anonima
+      {
+        protocol: 'https',
+        hostname: 'd34zqip92wkcpm.cloudfront.net',
+        pathname: '/**',
+      },
     ],
   },
 };

@@ -1,77 +1,72 @@
-import { useState, useEffect } from 'react';
+'use client';
+import { useState, useEffect, useRef } from 'react';
 import { Producto, BusquedaResponse } from '../_types';
 import { client } from '@/app/_lib/hono-client';
 import { useListaStore } from '@/app/_store/store';
-
 
 export const useBusqueda = (query: string = "") => {
   const termino = query.trim();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState<boolean>(false);
-
-  // 1. Traemos la ubicación y las funciones de caché del store
-  const {
-    ubicacion,
-    guardarCacheBusquedaPrecios,
-    limpiarCacheBusquedaPrecios,
-  } = useListaStore();
   
-  // 2. Control de hidratación de Zustand para evitar falsos arranques
-  const [hidratado, setHidratado] = useState(
-    () => useListaStore.persist.hasHydrated()
-  );
+  // Extraemos solo lo necesario del store
+  const { ubicacion, guardarCacheBusquedaPrecios, limpiarCacheBusquedaPrecios } = useListaStore();
+  
+const [hidratado, setHidratado] = useState(false);
 
   useEffect(() => {
-    if (!hidratado) {
+    // Si ya está hidratado, setea true inmediatamente
+    if (useListaStore.persist.hasHydrated()) {
+      setHidratado(true);
+    } else {
+      // Si no, nos suscribimos al evento que SÍ existe en tu tipo
       const unsub = useListaStore.persist.onFinishHydration(() => {
         setHidratado(true);
       });
       return unsub;
     }
-  }, [hidratado]);
+  }, []);
 
-  // 3. Efecto de búsqueda unificado
   useEffect(() => {
-    if (!hidratado) return;
-    if (termino.length < 3) {
-      limpiarCacheBusquedaPrecios();
+    // Si no está hidratado o el término es muy corto, no hacemos nada
+    if (!hidratado || termino.length < 3) {
+      if (termino.length < 3) limpiarCacheBusquedaPrecios();
       return;
     }
 
     const controller = new AbortController();
     let cancelado = false;
 
-    const fetchProductos = async () => {
+    const fetchProductos = async (intentos = 1) => {
       setCargando(true);
       try {
-        let res;
         const initOpts = { init: { signal: controller.signal } };
-
-        if (ubicacion.latitud && ubicacion.longitud) {
-          res = await client.api.productos.$get({
-            query: {
-              search: termino,
-              lat: ubicacion.latitud.toString(),
-              lng: ubicacion.longitud.toString(),
-              radio: ubicacion.radioBusqueda.toString(),
-            },
-          }, initOpts);
-        } else {
-          res = await client.api.catalogo.$get({
-            query: { search: termino },
-          }, initOpts);
-        }
+        
+        // Ejecución de la consulta según disponibilidad de ubicación
+        const res = (ubicacion.latitud && ubicacion.longitud) 
+          ? await client.api.productos.$get({
+              query: {
+                search: termino,
+                lat: ubicacion.latitud.toString(),
+                lng: ubicacion.longitud.toString(),
+                radio: ubicacion.radioBusqueda.toString(),
+              },
+            }, initOpts)
+          : await client.api.catalogo.$get({ query: { search: termino } }, initOpts);
 
         if (cancelado) return;
 
         if (!res.ok) {
-          const textoError = await res.text().catch(() => 'No se pudo leer la respuesta de error');
-          console.error(`🚨 Error en API Hono (Status ${res.status}):`, textoError);
-          throw new Error(`Error en la respuesta del servidor (Status: ${res.status})`);
+          const textoError = await res.text().catch(() => 'Error desconocido');
+          const esTimeout = textoError.includes('57014') || textoError.includes('timeout');
+          
+          if (esTimeout && intentos > 0) return fetchProductos(intentos - 1);
+          throw new Error(`Status: ${res.status}`);
         }
 
         const data = (await res.json()) as BusquedaResponse;
-        if (data && Array.isArray(data.productos)) {
+        
+        if (data?.productos && Array.isArray(data.productos)) {
           setProductos(data.productos);
           guardarCacheBusquedaPrecios({
             query: termino,
@@ -84,41 +79,33 @@ export const useBusqueda = (query: string = "") => {
           setProductos([]);
           limpiarCacheBusquedaPrecios();
         }
-
       } catch (error) {
-        if (cancelado) return;
-        if (error instanceof Error && error.name === 'AbortError') return;
-        
-        console.error('Error al buscar productos:', error);
-        setProductos([]);
-        limpiarCacheBusquedaPrecios();
+        if (!cancelado && !(error instanceof Error && error.name === 'AbortError')) {
+          console.error('Error en búsqueda:', error);
+          setProductos([]);
+          limpiarCacheBusquedaPrecios();
+        }
       } finally {
         if (!cancelado) setCargando(false);
       }
     };
 
-    // 🛡️ CORRECCIÓN CLAVE: Ejecutamos la función asincrónica que acabamos de definir
     fetchProductos();
 
-    // Limpieza del efecto para abortar peticiones si el usuario sigue tipeando
     return () => {
       cancelado = true;
       controller.abort();
     };
-    
   }, [
     termino, 
+    hidratado, 
     ubicacion.latitud, 
     ubicacion.longitud, 
-    ubicacion.radioBusqueda, 
-    hidratado, 
-    guardarCacheBusquedaPrecios, 
-    limpiarCacheBusquedaPrecios
+    ubicacion.radioBusqueda
   ]);
 
-  // 4. Formateo de salida limpia
-  const productosFinal = termino.length < 3 ? [] : productos;
-  const cargandoFinal = termino.length < 3 ? false : cargando;
-
-  return { productos: productosFinal, cargando: cargandoFinal };
+  return { 
+    productos: termino.length < 3 ? [] : productos, 
+    cargando: termino.length < 3 ? false : cargando 
+  };
 };

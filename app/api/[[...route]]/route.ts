@@ -50,10 +50,9 @@ app.use('*', async (c, next) => {
 // ==========================================
 app.use('*', secureHeaders());
 app.use('*', cors({
-  origin: (origin) => 
-    (origin && /^https?:\/\/(localhost:\d+|.*\.vercel\.app)$/.test(origin))
-      ? origin 
-      : 'https://lalista-frontend.vercel.app',
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://lalista-frontend.vercel.app' 
+    : 'http://localhost:5000',
   credentials: true,
 }));
 

@@ -4,6 +4,9 @@ import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
 import { productosRouter } from './productos';
 import { mapsRouter } from './maps';
+import { auth } from '@/app/_lib/auth';
+
+export const runtime = 'nodejs'; 
 
 const app = new Hono().basePath('/api');
 
@@ -54,15 +57,25 @@ app.use('*', cors({
 }));
 
 // ==========================================
-// 3. ENRUTAMIENTO MODULAR (Chaining)
+// 3. AUTENTICACIÓN (Better Auth) 
+// ==========================================
+app.all('/auth/*', (c) => {
+  return auth.handler(c.req.raw);
+});
+
+// ==========================================
+// 4. ENRUTAMIENTO MODULAR (Chaining)
 // ==========================================
 const routes = app
   .route('/', productosRouter)  // Engancha /productos y /catalogo
   .route('/maps', mapsRouter);  // Engancha todos los /maps/*
 
 // ==========================================
-// 4. EXPORTACIONES PARA NEXT.JS
+// 5. EXPORTACIONES PARA NEXT.JS
 // ==========================================
-export const GET = handle(routes);
-export const POST = handle(routes);
+export const GET = handle(app);
+export const POST = handle(app);
+export const PUT = handle(app);
+export const PATCH = handle(app);
+export const DELETE = handle(app);
 export type AppType = typeof routes;

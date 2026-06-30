@@ -4,6 +4,9 @@ import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
 import { productosRouter } from './productos';
 import { mapsRouter } from './maps';
+import { auth } from '@/app/_lib/auth';
+
+export const runtime = 'nodejs'; 
 
 const app = new Hono().basePath('/api');
 
@@ -47,22 +50,33 @@ app.use('*', async (c, next) => {
 // ==========================================
 app.use('*', secureHeaders());
 app.use('*', cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://lalista-frontend.vercel.app' 
-    : 'http://localhost:5000',
+  origin: (origin) => 
+    (origin && /^https?:\/\/(localhost:\d+|.*\.vercel\.app)$/.test(origin))
+      ? origin 
+      : 'https://lalista-frontend.vercel.app',
   credentials: true,
 }));
 
 // ==========================================
-// 3. ENRUTAMIENTO MODULAR (Chaining)
+// 3. AUTENTICACIÓN (Better Auth) 
+// ==========================================
+app.all('/auth/*', (c) => {
+  return auth.handler(c.req.raw);
+});
+
+// ==========================================
+// 4. ENRUTAMIENTO MODULAR (Chaining)
 // ==========================================
 const routes = app
   .route('/', productosRouter)  // Engancha /productos y /catalogo
   .route('/maps', mapsRouter);  // Engancha todos los /maps/*
 
 // ==========================================
-// 4. EXPORTACIONES PARA NEXT.JS
+// 5. EXPORTACIONES PARA NEXT.JS
 // ==========================================
-export const GET = handle(routes);
-export const POST = handle(routes);
+export const GET = handle(app);
+export const POST = handle(app);
+export const PUT = handle(app);
+export const PATCH = handle(app);
+export const DELETE = handle(app);
 export type AppType = typeof routes;

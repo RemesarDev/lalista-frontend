@@ -7,7 +7,9 @@ interface Props {
   cadenas: SucursalCarritoComparada[];
 }
 
-const formatearPrecio = (precio: number): string => {
+// 🛡️ Modificado para aceptar null de forma segura
+const formatearPrecio = (precio: number | null): string => {
+  if (precio === null) return '';
   return new Intl.NumberFormat('es-AR', {
     maximumFractionDigits: 0
   }).format(precio);
@@ -18,13 +20,13 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
 
   if (!cadenas || cadenas.length === 0) return null;
 
-  // Obtener lista única de productos ordenados
+  // 🛡️ CORRECCIÓN 1: Unificamos los productos de todas las cadenas para no perder 
+  // de vista los ítems que falten en el primer comercio de la lista.
   const productosUnicos = Array.from(
     new Map(
-      cadenas[0].productos.map((p) => [
-        p.id,
-        { id: p.id, nombre: p.nombre },
-      ])
+      cadenas
+        .flatMap((c) => c.productos || [])
+        .map((p) => [p.id, { id: p.id, nombre: p.nombre }])
     ).values()
   );
 
@@ -61,7 +63,9 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                     className="text-center px-3 md:px-4 py-3 font-bold text-slate-700 text-xs md:text-sm"
                   >
                     <div>{cadena.cadena}</div>
-                    <div className="text-xs font-normal text-slate-500">{idx === 0 ? '1º' : idx === 1 ? '2º' : '3º'}</div>
+                    <div className="text-xs font-normal text-slate-500">
+                      {idx === 0 ? '1º' : idx === 1 ? '2º' : '3º'}
+                    </div>
                   </th>
                 ))}
               </tr>
@@ -69,26 +73,44 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
             <tbody className="divide-y divide-slate-200">
               {productosUnicos.map((producto) => (
                 <tr key={producto.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 md:px-6 py-4 font-medium text-slate-900 text-xs md:text-sm">
+                  <td className="px-4 md:px-6 py-4 font-medium text-slate-900 text-xs md:text-sm max-w-(xs)">
                     {producto.nombre}
                   </td>
                   {cadenas.map((cadena) => {
                     const productoEnSucursal = cadena.productos.find((p) => p.id === producto.id);
+                    
+                    // 🛡️ Extraemos la primera palabra para usarla de sugerencia en el buscador
+                    const primeraPalabra = producto.nombre.trim().split(' ')[0] || '';
+
                     return (
                       <td
                         key={`${cadena.id_comercio}-${cadena.id_bandera}`}
-                        className="text-center px-3 md:px-4 py-4 font-semibold text-slate-900"
+                        className="text-center px-3 md:px-4 py-4 font-semibold text-slate-900 vertical-middle"
                       >
-                        {productoEnSucursal?.disponible ? (
-                          <span className="text-sm md:text-base">${formatearPrecio(productoEnSucursal.precio)}</span>
+                        {productoEnSucursal?.disponible && productoEnSucursal.precio !== null ? (
+                          <span className="text-sm md:text-base">
+                            ${formatearPrecio(productoEnSucursal.precio)}
+                          </span>
                         ) : (
-                          <span className="text-xs md:text-sm text-red-500 font-medium">No disponible</span>
+                          // 🛡️ CORRECCIÓN 2: Interfaz adaptada con el mensaje y enlace dinámico
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <span className="text-[10px] md:text-xs text-red-500 font-medium max-w-(120px) inline-block leading-tight balance">
+                              Este producto no está disponible en la sucursal
+                            </span>
+                            <a
+                              href={`/buscar?query=${encodeURIComponent(primeraPalabra)}`}
+                              className="text-xs text-primary-500 font-bold underline hover:text-primary-600 transition-colors"
+                            >
+                              Busque otro
+                            </a>
+                          </div>
                         )}
                       </td>
                     );
                   })}
                 </tr>
               ))}
+              
               {/* Fila de Totales */}
               <tr className="bg-slate-100">
                 <td className="px-4 md:px-6 py-4 font-bold text-slate-900">TOTAL</td>
@@ -97,7 +119,16 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                     key={`total-${cadena.id_comercio}-${cadena.id_bandera}`}
                     className="text-center px-3 md:px-4 py-4 font-black text-slate-900"
                   >
-                    <span className="text-base md:text-lg">${formatearPrecio(cadena.total)}</span>
+                    {cadena.total !== null ? (
+                      <span className="text-base md:text-lg">
+                        ${formatearPrecio(cadena.total)}
+                      </span>
+                    ) : (
+                      // 🛡️ Renderizado seguro si el total es null por un producto faltante
+                      <span className="text-xs text-slate-500 font-normal italic">
+                        Canasta incompleta
+                      </span>
+                    )}
                   </td>
                 ))}
               </tr>

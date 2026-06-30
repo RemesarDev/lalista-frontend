@@ -55,7 +55,7 @@ export default function HeroInfo() {
         </div>
         <button
           type="submit"
-          disabled={query.trim().length < 3}
+          disabled={!!(query.trim().length < 3)}
           className="mt-3 w-full py-3.5 bg-primary-500 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold font-sans rounded-2xl shadow-md active:scale-[0.98] transition-all text-sm"
         >
           Buscar productos

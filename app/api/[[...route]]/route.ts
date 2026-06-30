@@ -63,6 +63,6 @@ const routes = app
 // ==========================================
 // 4. EXPORTACIONES PARA NEXT.JS
 // ==========================================
-export const GET = handle(app);
-export const POST = handle(app);
+export const GET = handle(routes);
+export const POST = handle(routes);
 export type AppType = typeof routes;

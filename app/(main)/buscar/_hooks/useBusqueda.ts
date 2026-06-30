@@ -3,19 +3,20 @@ import { Producto, BusquedaResponse } from '../_types';
 import { client } from '@/app/_lib/hono-client';
 import { useListaStore } from '@/app/_store/store';
 
+
 export const useBusqueda = (query: string = "") => {
   const termino = query.trim();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState<boolean>(false);
 
-  // 1. Traemos la ubicación y las funciones de caché del store (Feature)
+  // 1. Traemos la ubicación y las funciones de caché del store
   const {
     ubicacion,
     guardarCacheBusquedaPrecios,
     limpiarCacheBusquedaPrecios,
   } = useListaStore();
   
-  // 2. Control de hidratación de Zustand para evitar falsos arranques (Main)
+  // 2. Control de hidratación de Zustand para evitar falsos arranques
   const [hidratado, setHidratado] = useState(
     () => useListaStore.persist.hasHydrated()
   );
@@ -31,10 +32,8 @@ export const useBusqueda = (query: string = "") => {
 
   // 3. Efecto de búsqueda unificado
   useEffect(() => {
-    // Si no está hidratado o la query es corta, no hacemos la petición HTTP
     if (!hidratado) return;
     if (termino.length < 3) {
-      // Si el usuario borra la búsqueda, limpiamos la caché (Feature)
       limpiarCacheBusquedaPrecios();
       return;
     }
@@ -46,6 +45,8 @@ export const useBusqueda = (query: string = "") => {
       setCargando(true);
       try {
         let res;
+        const initOpts = { init: { signal: controller.signal } };
+
         if (ubicacion.latitud && ubicacion.longitud) {
           res = await client.api.productos.$get({
             query: {
@@ -54,20 +55,24 @@ export const useBusqueda = (query: string = "") => {
               lng: ubicacion.longitud.toString(),
               radio: ubicacion.radioBusqueda.toString(),
             },
-          }, { init: { signal: controller.signal } }); // Abort real a nivel de red
+          }, initOpts);
         } else {
           res = await client.api.catalogo.$get({
             query: { search: termino },
-          });
+          }, initOpts);
         }
 
         if (cancelado) return;
-        if (!res.ok) throw new Error('Error en la respuesta del servidor');
+
+        if (!res.ok) {
+          const textoError = await res.text().catch(() => 'No se pudo leer la respuesta de error');
+          console.error(`🚨 Error en API Hono (Status ${res.status}):`, textoError);
+          throw new Error(`Error en la respuesta del servidor (Status: ${res.status})`);
+        }
 
         const data = (await res.json()) as BusquedaResponse;
         if (data && Array.isArray(data.productos)) {
           setProductos(data.productos);
-          // Guardamos en caché si la respuesta es exitosa (Feature)
           guardarCacheBusquedaPrecios({
             query: termino,
             latitud: ubicacion.latitud,
@@ -82,7 +87,8 @@ export const useBusqueda = (query: string = "") => {
 
       } catch (error) {
         if (cancelado) return;
-        if (error instanceof Error && error.name === 'AbortError') return; // Ignorar si fue cancelado adrede
+        if (error instanceof Error && error.name === 'AbortError') return;
+        
         console.error('Error al buscar productos:', error);
         setProductos([]);
         limpiarCacheBusquedaPrecios();
@@ -91,13 +97,15 @@ export const useBusqueda = (query: string = "") => {
       }
     };
 
+    // 🛡️ CORRECCIÓN CLAVE: Ejecutamos la función asincrónica que acabamos de definir
     fetchProductos();
 
+    // Limpieza del efecto para abortar peticiones si el usuario sigue tipeando
     return () => {
       cancelado = true;
       controller.abort();
     };
-  // Incluimos todas las dependencias necesarias de forma limpia
+    
   }, [
     termino, 
     ubicacion.latitud, 
@@ -108,7 +116,7 @@ export const useBusqueda = (query: string = "") => {
     limpiarCacheBusquedaPrecios
   ]);
 
-  // 4. Formateo de salida limpia que venía de Main
+  // 4. Formateo de salida limpia
   const productosFinal = termino.length < 3 ? [] : productos;
   const cargandoFinal = termino.length < 3 ? false : cargando;
 

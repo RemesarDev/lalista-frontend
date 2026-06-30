@@ -56,6 +56,8 @@ interface ListaState {
   lista: ProductoLista[];
   ubicacion: UbicacionUsuario;
   cacheBusquedaPrecios: CacheBusquedaPrecios | null;
+  terminoBusqueda: string;
+  setTerminoBusqueda: (termino: string) => void;
   
   // Acciones (Funciones para modificar el estado)
   agregarProducto: (producto: Omit<ProductoLista, 'cantidad' | 'actualizadoEn'>) => void;
@@ -74,6 +76,7 @@ export const useListaStore = create<ListaState>()(
     (set, get) => ({
       // Estado inicial unificado
       lista: [],
+      terminoBusqueda: "",
       ubicacion: { 
         latitud: null, 
         longitud: null, 
@@ -82,6 +85,7 @@ export const useListaStore = create<ListaState>()(
         nombreLugar: null,
         cargandoUbicacion: false 
       },
+      setTerminoBusqueda: (termino) => set({ terminoBusqueda: termino }),
       cacheBusquedaPrecios: null,
 
       // Acción: Obtener GPS del Navegador
@@ -117,6 +121,7 @@ export const useListaStore = create<ListaState>()(
             alert("No pudimos obtener tu ubicación. Por favor, seleccionala manualmente.");
           },
           { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          
         );
       },
 

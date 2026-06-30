@@ -1,11 +1,23 @@
-'use client'; // Necesitamos esto porque usamos hooks
+'use client'; 
+import { useListaStore } from '@/app/_store/store';
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
 
 export default function StickySearch() {
-  const [query, setQuery] = useState("");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Seleccionamos las partes del store que necesitamos
+  const setTerminoBusqueda = useListaStore((state) => state.setTerminoBusqueda);
+  const terminoGuardado = useListaStore((state) => state.terminoBusqueda);
+  
+  const [query, setQuery] = useState(terminoGuardado || "");
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+    setTerminoBusqueda(value); // Sincroniza con el almacenamiento persistente
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +39,7 @@ export default function StickySearch() {
           ref={inputRef}
           type="text" 
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleInputChange} // Ahora solo hay uno
           placeholder="¿Qué producto buscas hoy? (Ej: Leche, Arroz)" 
           className="w-full pl-10 pr-4 py-2.5 bg-white border border-accent-300 rounded-xl text-sm font-sans focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 shadow-sm text-slate-800 placeholder-slate-400 transition"
         />

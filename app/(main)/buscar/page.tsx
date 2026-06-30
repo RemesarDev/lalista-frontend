@@ -13,7 +13,8 @@ export const dynamic = 'force-dynamic';
 function ResultadosBusqueda() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || "";
-  const { productos, cargando } = useBusqueda(query);
+  const terminoStore = useListaStore((state) => state.terminoBusqueda);
+  const { productos, cargando } = useBusqueda(terminoStore || query);
   const lista = useListaStore((state) => state.lista);
   const agregarProducto = useListaStore((state) => state.agregarProducto);
   const actualizarCantidad = useListaStore((state) => state.actualizarCantidad);

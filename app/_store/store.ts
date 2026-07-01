@@ -56,6 +56,9 @@ interface ListaState {
   lista: ProductoLista[];
   ubicacion: UbicacionUsuario;
   cacheBusquedaPrecios: CacheBusquedaPrecios | null;
+  terminoBusqueda:string;
+  setTerminoBusqueda: (termino: string) => void;
+  timeTerminoBusqueda: number;
   
   // Acciones (Funciones para modificar el estado)
   agregarProducto: (producto: Omit<ProductoLista, 'cantidad' | 'actualizadoEn'>) => void;
@@ -74,6 +77,12 @@ export const useListaStore = create<ListaState>()(
     (set, get) => ({
       // Estado inicial unificado
       lista: [],
+      terminoBusqueda:"",
+      timeTerminoBusqueda: 0,
+      setTerminoBusqueda: (termino) => set({ 
+        terminoBusqueda: termino,
+        timeTerminoBusqueda: Date.now() 
+      }),
       ubicacion: { 
         latitud: null, 
         longitud: null, 

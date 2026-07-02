@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { StoreState } from '../store';
+import type{ StoreState } from '../store';
 
 export interface SucursalBusqueda {
   cadena: string;

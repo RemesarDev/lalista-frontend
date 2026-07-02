@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { StoreState } from '../store';
+import type { StoreState } from '../store';
 import { authClient } from '../../_lib/auth-client';
 
 // Ajustá esta interfaz según lo que te devuelva Better Auth

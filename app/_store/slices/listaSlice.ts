@@ -44,6 +44,8 @@ const esCacheValido = (timestamp: number): boolean => {
 export interface ListaSlice {
   lista: ProductoLista[];
   cacheBusquedaPrecios: CacheBusquedaPrecios | null;
+  terminoBusqueda: string;
+  timeTerminoBusqueda: number;
   
   agregarProducto: (producto: Omit<ProductoLista, 'cantidad' | 'actualizadoEn'>) => void;
   eliminarProducto: (id: string) => void;
@@ -52,11 +54,14 @@ export interface ListaSlice {
   guardarCacheBusquedaPrecios: (cache: Omit<CacheBusquedaPrecios, 'actualizadoEn'>) => void;
   limpiarCacheBusquedaPrecios: () => void; 
   necesitaActualizarPreciosDeLista: () => boolean;
+  setTerminoBusqueda: (termino: string) => void;
 }
 
 export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (set, get) => ({
   lista: [],
   cacheBusquedaPrecios: null,
+  terminoBusqueda: "",
+  timeTerminoBusqueda: 0,
 
   agregarProducto: (nuevoProd) => set((state) => {
     const existe = state.lista.find((p) => p.id === nuevoProd.id);
@@ -106,4 +111,9 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
     const { lista } = get();
     return lista.some((prod) => !esCacheValido(prod.actualizadoEn));
   },
+
+  setTerminoBusqueda: (termino) => set({
+    terminoBusqueda: termino,
+    timeTerminoBusqueda: Date.now()
+  }),
 });

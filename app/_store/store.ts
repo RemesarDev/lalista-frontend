@@ -18,7 +18,6 @@ export const useListaStore = create<StoreState>()(
       name: 'lalista-storage',
       // IMPORTANTE: Le decimos a Zustand qué guardar en localStorage.
       // Dejamos afuera a `user` por seguridad (lo maneja Better Auth),
-      // pero incluimos el buscador para que funcione idéntico a la rama main.
       partialize: (state) => ({ 
         lista: state.lista, 
         ubicacion: state.ubicacion,

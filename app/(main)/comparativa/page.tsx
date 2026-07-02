@@ -23,7 +23,7 @@ export default function ComparativaPage() {
   if (!lista || lista.length === 0) {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-6">
-        <div className="max-w-screen-lg mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between gap-3 mb-6">
             <h1 className="text-2xl font-bold text-slate-900">Comparativa de precios</h1>
             <DesktopActionButton
@@ -49,7 +49,7 @@ export default function ComparativaPage() {
   if (topTresCadenas.length === 0) {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-6">
-        <div className="max-w-screen-lg mx-auto">
+        <div className="max-w-5xl mx-auto">
           <h1 className="text-2xl font-bold text-slate-900 mb-6">Comparativa de precios</h1>
           <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-4">
             <div className="text-5xl">📊</div>
@@ -70,7 +70,7 @@ export default function ComparativaPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-24">
-      <div className="max-w-screen-lg mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-3 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Comparativa de precios</h1>
@@ -88,8 +88,8 @@ export default function ComparativaPage() {
 
         {/* Card Ganadora */}
         <div className="mb-8">
-          <CardComercioGanador 
-            sucursal={ganador} 
+          <CardComercioGanador
+            sucursal={ganador}
             totalAlternativa={alternativa1?.total}
           />
         </div>

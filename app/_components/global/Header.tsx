@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import NextImage from 'next/image';
-import { MapPinIcon, UserIcon } from '@phosphor-icons/react/dist/ssr';
+import { ReactNode } from 'react';
+import { MapPinIcon, UserIcon, XIcon } from '@phosphor-icons/react/dist/ssr';
 
 interface HeaderProps {
   locationName?: string;
@@ -56,7 +57,6 @@ export default function Header({ locationName, onLimpiarUbicacion, children }: H
             {children}
           </div>
         )}
-      </div>
     </header>
   );
 }

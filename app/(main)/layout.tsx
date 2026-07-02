@@ -1,6 +1,7 @@
-import Header from "../_components/global/Header";
-import StickySearch from "../_components/global/StickySearch";
+//import Header from "../_components/global/Header";
+//import StickySearch from "../_components/global/StickySearch";
 import Navigation from "../_components/global/Navigation";
+import HeaderUbicacion from "../_components/global/HeaderUbicacion";
 import FooterLanding from "../_components/global/Footer-landing";
 
 export default function MainLayout({
@@ -12,10 +13,10 @@ export default function MainLayout({
     <div className="flex flex-col min-h-screen">
       
       {/* Header fijo superior (Logo + Selector de Ubicación + Login) */}
-      <Header locationName="Ituzaingó" /> 
+      <HeaderUbicacion />
       
       {/* Buscador intermedio que se queda pegado arriba al hacer scroll */}
-      <StickySearch />
+      {/*<StickySearch /> lo sacamos para reordenar*/}
       
       {/* El contenido dinámico de la página cae acá */}
       {/* max-w-md limita el ancho en mobile para simular una app nativa */}

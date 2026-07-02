@@ -2,15 +2,25 @@
 
 import { MagnifyingGlassIcon, XIcon, MapPinIcon } from '@phosphor-icons/react/dist/ssr';
 
+type SugerenciaLugar = {
+  placeId: string;
+  text: { text: string };
+  structuredFormat: {
+    mainText: { text: string };
+    secondaryText?: { text: string };
+  };
+};
+
 interface BuscadorUbicacionProps {
   direccion: string;
   setDireccion: (value: string) => void;
   isFocused: boolean;
   setIsFocused: (value: boolean) => void;
-  sugerencias: any[];
-  setSugerencias: (value: any[]) => void;
+  sugerencias: SugerenciaLugar[];
+  setSugerencias: (value: SugerenciaLugar[]) => void;
   onKeyDownInput: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  onSeleccionDireccion: (sug: any) => void;
+  onSeleccionDireccion: (sug: SugerenciaLugar) => void;
+  errorSugerencias: string | null;
 }
 
 export default function BuscadorUbicacion({
@@ -22,6 +32,7 @@ export default function BuscadorUbicacion({
   setSugerencias,
   onKeyDownInput,
   onSeleccionDireccion,
+  errorSugerencias,
 }: BuscadorUbicacionProps) {
   return (
     <div className="absolute top-4 inset-x-4 pl-14 z-20 max-w-md mx-auto">
@@ -32,7 +43,6 @@ export default function BuscadorUbicacion({
           value={direccion}
           onChange={(e) => setDireccion(e.target.value)}
           onFocus={() => setIsFocused(true)}
-          // El timeout evita que el blur cierre la lista antes de capturar el click en la sugerencia
           onBlur={() => setTimeout(() => setIsFocused(false), 300)}
           onKeyDown={onKeyDownInput} 
           placeholder="Ingresá tu dirección o barrio..." 
@@ -48,7 +58,12 @@ export default function BuscadorUbicacion({
         )}
       </div>
 
-      {/* SUGERENCIAS EN TIEMPO REAL CLÁSICAS */}
+      {errorSugerencias && (
+        <p className="mt-2 px-3 py-2 text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl">
+          {errorSugerencias}
+        </p>
+      )}
+
       {isFocused && sugerencias.length > 0 && (
         <div className="mt-2 bg-white border border-slate-200/80 rounded-xl shadow-xl max-h-60 overflow-y-auto p-1 animate-fade-in">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-2 border-b border-slate-50">
@@ -56,7 +71,7 @@ export default function BuscadorUbicacion({
           </p>
           {sugerencias.map((sug) => (
             <button
-              key={sug.place_id || sug.description}
+              key={sug.placeId}
               type="button"
               onMouseDown={() => onSeleccionDireccion(sug)}
               className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors flex items-center gap-2"
@@ -64,11 +79,11 @@ export default function BuscadorUbicacion({
               <MapPinIcon className="text-slate-400 text-sm flex-shrink-0" />
               <div className="flex flex-col truncate">
                 <span className="font-semibold text-slate-800 truncate">
-                  {sug.structured_formatting?.main_text || sug.description}
+                  {sug.structuredFormat.mainText.text}
                 </span>
-                {sug.structured_formatting?.secondary_text && (
+                {sug.structuredFormat.secondaryText && (
                   <span className="text-[10px] text-slate-400 truncate">
-                    {sug.structured_formatting.secondary_text}
+                    {sug.structuredFormat.secondaryText.text}
                   </span>
                 )}
               </div>

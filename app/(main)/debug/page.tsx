@@ -7,7 +7,6 @@ import { supabase } from '../../_lib/supabase';
 // 1. Mapeamos exactamente los tipos reales de tu base de datos
 interface ProductoBuscado {
   id_producto: string;
-  productos_marca: string | null;
   productos_descripcion: string | null;
 }
 
@@ -37,7 +36,7 @@ export default function DebugPage() {
     try {
       const { data, error } = await supabase
         .from('productos') // Tu tabla de catálogo único
-        .select('id_producto, productos_marca, productos_descripcion')
+        .select('id_producto, productos_descripcion')
         .ilike('productos_descripcion', `%${terminoBusqueda}%`) // Buscador parcial ignorando mayúsculas/minúsculas
         .limit(15);
 
@@ -90,12 +89,13 @@ export default function DebugPage() {
         <ul>
           {resultados.map((prod) => (
             <li key={prod.id_producto} style={{ margin: '12px 0' }}>
-              <strong>{prod.productos_descripcion ?? 'Sin descripción'}</strong> - <em>{prod.productos_marca ?? 'Genérico'}</em>{' '}
+              <strong>{prod.productos_descripcion ?? 'Sin descripción'}</strong> - {' '}
               <button 
                 onClick={() => agregarProducto({
                   id: prod.id_producto,
                   nombre: prod.productos_descripcion || 'Producto sin nombre',
-                  marca: prod.productos_marca || 'Genérico'
+                  url_imagen: null,
+                  sucursales: []
                 })}
               >
                 ➕ Agregar a mi Lista
@@ -124,7 +124,6 @@ export default function DebugPage() {
             <tr>
               <th>ID (SEPA)</th>
               <th>Descripción</th>
-              <th>Marca</th>
               <th>Cantidad</th>
               <th>Operación</th>
             </tr>
@@ -134,7 +133,6 @@ export default function DebugPage() {
               <tr key={item.id}>
                 <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>{item.id}</td>
                 <td>{item.nombre}</td>
-                <td>{item.marca}</td>
                 <td>
                   <input 
                     type="number" 
@@ -153,7 +151,7 @@ export default function DebugPage() {
             ))}
             {lista.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>
+                <td colSpan={4} style={{ textAlign: 'center', padding: '20px' }}>
                   El store local está vacío. Usá el buscador de arriba.
                 </td>
               </tr>

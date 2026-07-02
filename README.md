@@ -54,10 +54,13 @@ npm install
 2. Environment Variables
 
 Create a .env.local file at the root level of the project (at the same level as package.json):
-`
+````
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_public_anonymous_key
-`
+
+DATABASE_URL=postgresql://postgres.bfbfclbmvtfprlxecxse:[secret_key]@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+BETTER_AUTH_SECRET=un_texto_aleatorio_y_largo_para_encriptar_las_cookies_de_sesion
+````
 3. Run Server
 Launch the development compiler instance:
 `

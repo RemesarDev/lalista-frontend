@@ -9,18 +9,24 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hono/zod-validator": "^0.8.0",
     "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.106.2",
     "@vis.gl/react-google-maps": "^1.8.3",
+    "better-auth": "^1.6.23",
+    "hono": "^4.12.27",
     "next": "^16.2.6",
+    "pg": "^8.22.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/google.maps": "^3.64.1",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from 'next/link';
 import NextImage from 'next/image';
@@ -6,9 +6,11 @@ import { MapPinIcon, UserIcon } from '@phosphor-icons/react/dist/ssr';
 
 interface HeaderProps {
   locationName?: string;
+  onLimpiarUbicacion?: () => void;
+  children?: ReactNode;
 }
 
-export default function Header({ locationName }: HeaderProps) {
+export default function Header({ locationName, onLimpiarUbicacion, children }: HeaderProps) {
   return (
     <header className="w-full bg-primary-400 border-b border-accent-300 px-4 py-3 sticky top-0 z-50 shadow-sm">
       <div className="flex items-center justify-between max-w-screen-xl mx-auto">
@@ -17,26 +19,43 @@ export default function Header({ locationName }: HeaderProps) {
           <NextImage src="/img/lalista-logo.png" alt="Logo de LaLista" width={60} height={60} />
         </Link>
 
-        <Link 
-          href="/ubicacion"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition text-xs font-semibold font-sans text-white max-w-[180px] truncate"
-        >
-          <MapPinIcon className="text-white text-lg" weight="regular" />
-          <span className="truncate">
-            {locationName || "Ubicación pendiente"}
-          </span>
-        </Link>
+          <Link 
+            href="/ubicacion"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition text-xs font-semibold font-sans text-white max-w-[180px] truncate"
+          >
+            <MapPinIcon className="text-white text-lg" weight="regular" />
+            <span className="truncate">
+              {locationName || "Ubicación pendiente"}
+            </span>
+          </Link>
 
-        <button 
-          onClick={() => console.log('Ir a login')}
-          className="p-0.5 rounded-full transition-colors"
-          aria-label="Iniciar sesión"
-        >
-          <span className="w-9 h-9 rounded-full border border-white/20 bg-white/10 flex items-center justify-center flex-shrink-0 hover:bg-white/20 transition-colors">
-            <UserIcon className="text-white text-lg" weight="regular" />
-          </span>
-        </button>
+          {onLimpiarUbicacion && (
+            <button
+              onClick={onLimpiarUbicacion}
+              className="p-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition text-white ml-1"
+              aria-label="Limpiar ubicación"
+            >
+              <XIcon weight="bold" className="text-xs" />
+            </button>
+          )}
 
+          <button 
+            onClick={() => console.log('Ir a login')}
+            className="p-0.5 rounded-full transition-colors"
+            aria-label="Iniciar sesión"
+          >
+            <span className="w-9 h-9 rounded-full border border-white/20 bg-white/10 flex items-center justify-center flex-shrink-0 hover:bg-white/20 transition-colors">
+              <UserIcon className="text-white text-lg" weight="regular" />
+            </span>
+          </button>
+        </div>
+
+        {/* Fila del slider (children) integrada debajo */}
+        {children && (
+          <div className="mt-2 flex justify-center items-center">
+            {children}
+          </div>
+        )}
       </div>
     </header>
   );

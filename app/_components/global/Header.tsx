@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { XIcon, MapPinIcon, UserIcon } from '@phosphor-icons/react/dist/ssr';
-import { ReactNode } from 'react';
+import NextImage from 'next/image';
+import { MapPinIcon, UserIcon } from '@phosphor-icons/react/dist/ssr';
 
 interface HeaderProps {
   locationName?: string;
@@ -13,14 +13,11 @@ interface HeaderProps {
 export default function Header({ locationName, onLimpiarUbicacion, children }: HeaderProps) {
   return (
     <header className="w-full bg-primary-400 border-b border-accent-300 px-4 py-3 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-screen-xl mx-auto">
-        <div className="flex items-center justify-between">
-          
-          <Link href="/" className="flex items-center gap-1">
-            <span className="text-2xl font-black tracking-tight font-display text-white">
-              LALI<span className="text-slate-800">sta</span>
-            </span>
-          </Link>
+      <div className="flex items-center justify-between max-w-screen-xl mx-auto">
+        
+        <Link href="/" className="flex items-center gap-1">
+          <NextImage src="/img/lalista-logo.png" alt="Logo de LaLista" width={60} height={60} />
+        </Link>
 
           <Link 
             href="/ubicacion"

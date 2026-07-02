@@ -1,4 +1,5 @@
 'use client'; // Necesitamos esto porque usamos hooks
+import { useListaStore } from '@/app/_store/store';
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
 
@@ -6,11 +7,14 @@ export default function StickySearch() {
   const [query, setQuery] = useState("");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-
+  const setTerminoBusqueda = useListaStore((state) => state.setTerminoBusqueda);
+  
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const terminoLimpio = query.trim();
     if (query.trim().length >= 3) {
       inputRef.current?.blur();
+      setTerminoBusqueda(terminoLimpio);
       router.push(`/buscar?q=${encodeURIComponent(query)}`);
     }
   };

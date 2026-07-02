@@ -12,6 +12,7 @@ import SliderVertical from './_components/SliderVertical';
 import { useUbicacion } from './_hooks/useUbicacion';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useListaStore } from '@/app/_store/store';
 
 export default function UbicacionVista() {
   const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
@@ -100,7 +101,14 @@ function ContenidoMapa() {
           <button
             onClick={() => {
               confirmarUbicacion();
-              router.push('/buscar');
+              
+              const { terminoBusqueda, timeTerminoBusqueda } = useListaStore.getState();
+              const esReciente = (Date.now() - timeTerminoBusqueda) < (60 * 60 * 1000);
+              if (terminoBusqueda && esReciente) {
+                    router.push(`/buscar?q=${encodeURIComponent(terminoBusqueda)}`);
+                  } else {
+                    router.push('/buscar');
+                  }
               }}
             disabled={!coordenadasPendientes}
             className={`px-6 py-3.5 rounded-2xl font-bold text-sm shadow-2xl transition-all duration-300 active:scale-95

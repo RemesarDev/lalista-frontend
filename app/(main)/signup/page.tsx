@@ -20,7 +20,7 @@ export default function SignupPage() {
         const result = await registro(email, password, name);
 
         if (result.success) {
-            router.push('/login');
+            router.push('/');
         } else {
             alert("Error al registrar cuenta: " + (result.error?.message || "Ocurrió un problema"));
         }

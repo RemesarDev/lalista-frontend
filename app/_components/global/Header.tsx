@@ -69,7 +69,9 @@ export default function Header({ locationName, onLimpiarUbicacion, children }: H
               <Link href="/signup" className="text-white text-xs font-semibold hover:underline px-2">
                 Registrarse
               </Link>
-              <UserIcon className="text-white text-lg" weight="regular" />
+              <span className="p-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition text-white inline-flex items-center justify-center">
+                <UserIcon className="text-lg" weight="regular" />
+              </span>
             </div>
           )}
         </div>

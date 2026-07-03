@@ -52,7 +52,7 @@ export default function Header({ locationName, onLimpiarUbicacion, children }: H
         <div className="flex items-center gap-2 flex-shrink-0">
           {user ? (
             <div className="flex items-center gap-3 text-white text-xs font-medium">
-              <span className="hidden sm:inline-block">Hola, {user.name}</span>
+              <span>Hola, {user.name}</span>
               <button
                 onClick={() => logout()}
                 className="p-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition"

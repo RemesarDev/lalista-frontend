@@ -18,7 +18,7 @@ export default function Header({ locationName, onLimpiarUbicacion, children }: H
 
   return (
     <header className="w-full bg-primary-400 border-b border-accent-300 px-4 py-3 sticky top-0 z-50 shadow-sm">
-      <div className="flex items-center gap-3 max-w-7xl mx-auto">
+      <div className="relative flex items-center gap-3 max-w-7xl mx-auto">
 
         {/* Logo a la izquierda */}
         <Link href="/" className="flex items-center gap-1 shrink-0">
@@ -26,10 +26,10 @@ export default function Header({ locationName, onLimpiarUbicacion, children }: H
         </Link>
 
         {/* Selector de ubicación centrado */}
-        <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-1 md:absolute md:left-1/2 md:top-1/2 md:w-max md:flex-none md:-translate-x-1/2 md:-translate-y-1/2">
           <Link
             href="/ubicacion"
-            className="flex min-w-0 max-w-full items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold font-sans text-white transition hover:bg-white/20"
+            className="flex min-w-0 max-w-full items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold font-sans text-white transition hover:bg-white/20 md:max-w-45"
           >
             <MapPinIcon className="text-white text-lg" weight="regular" />
             <span className="min-w-0 truncate">
@@ -49,7 +49,7 @@ export default function Header({ locationName, onLimpiarUbicacion, children }: H
         </div>
 
         {/* Acciones de usuario a la derecha */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           {user ? (
             <div className="flex items-center gap-3 text-white text-xs font-medium">
               <span>Hola, {user.name}</span>

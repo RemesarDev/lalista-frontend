@@ -3,8 +3,12 @@ import { inferAdditionalFields } from "better-auth/client/plugins";
 import type { AuthType } from "@/app/_lib/auth";
 
 export const authClient = createAuthClient({
-    plugins: [
+  // Tomamos la URL del entorno de forma directa
+  baseURL: process.env.NEXT_PUBLIC_BASE_URL, 
+  
+  plugins: [
     inferAdditionalFields<AuthType>()
   ],
 });
+
 export type User = typeof authClient.$Infer.Session.user;

@@ -1,23 +1,23 @@
 import { betterAuth } from "better-auth";
 import { Pool } from "pg";
 
+// Definimos la URL base una sola vez
+const baseURL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000", 
+  baseURL, 
   
-  // Feature nativa: Autorización explícita para orígenes cruzados en desarrollo y producción
-  trustedOrigins: [
-    "http://localhost:3000",
-    "http://localhost:5000",
-    "https://lalista-frontend.vercel.app"
-  ],
+  // Simplificado: solo confiamos en el origen donde está corriendo la app
+  trustedOrigins: [baseURL],
+  
   database: new Pool({
     connectionString: process.env.DATABASE_URL,
-    // Limitamos el pool a 1 porque Vercel levanta múltiples lambdas (Serverless Functions) concurrentes
     max: 1, 
   }),
-  // Le dice a Better Auth que lea las cabeceras de Next.js/Vercel para deducir su propia URL.
+  
   trustedProxyHeaders: true, 
-    user: {
+  
+  user: {
     additionalFields: {
       role: {
         type: "string",
@@ -26,8 +26,10 @@ export const auth = betterAuth({
       },
     },
   },
+  
   emailAndPassword: { 
     enabled: true 
   },
 });
+
 export type AuthType = typeof auth;

@@ -1,22 +1,18 @@
 import { StateCreator } from 'zustand';
 import type { StoreState } from '../store';
-import { authClient } from '../../_lib/auth-client';
-
-// Ajustá esta interfaz según lo que te devuelva Better Auth
-export interface UserSession {
-  id: string;
-  email: string;
-  name: string;
-}
+// Importamos el cliente y el tipo inferido automáticamente
+import { authClient, type User } from '../../_lib/auth-client';
 
 export interface AuthSlice {
-  user: UserSession | null;
-  loadingAuth: boolean; // Reemplaza al useState(false) que teníamos en el hook
+  user: User | null; // Usamos el tipo inferido, no la interfaz manual
+  loadingAuth: boolean;
   
-  setUser: (user: UserSession | null) => void;
+  setUser: (user: User | null) => void;
   loginConEmail: (email: string, password: string) => Promise<{ success: boolean; error?: any }>;
   registroConEmail: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: any }>;
   logout: () => Promise<void>;
+  // Añadimos esta acción vital para sincronizar el estado al cargar la página
+  checkAuth: () => Promise<void>;
 }
 
 export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set, get) => ({
@@ -25,14 +21,19 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
   
   setUser: (user) => set({ user }),
 
-  // 1. Iniciar Sesión (Directo desde Zustand)
+  // NUEVO: Verificación de sesión al montar la app
+  checkAuth: async () => {
+    set({ loadingAuth: true });
+    const { data } = await authClient.getSession();
+    set({ user: data?.user || null, loadingAuth: false });
+  },
+
   loginConEmail: async (email, password) => {
     set({ loadingAuth: true });
     try {
       const { data, error } = await authClient.signIn.email({ email, password });
       if (data) {
-        // Guardamos al usuario y apagamos el loading
-        set({ user: data.user as UserSession, loadingAuth: false });
+        set({ user: data.user, loadingAuth: false }); // Ya no necesitas el "as UserSession"
         return { success: true };
       }
       set({ loadingAuth: false });
@@ -43,14 +44,12 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
     }
   },
 
-  // 2. Registrarse (Directo desde Zustand)
   registroConEmail: async (email, password, name) => {
     set({ loadingAuth: true });
     try {
       const { data, error } = await authClient.signUp.email({ email, password, name });
       if (data) {
-        // Better Auth lo loguea automático
-        set({ user: data.user as UserSession, loadingAuth: false });
+        set({ user: data.user, loadingAuth: false });
         return { success: true };
       }
       set({ loadingAuth: false });
@@ -61,14 +60,12 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
     }
   },
   
-  // 3. Cerrar Sesión (Ahora es asíncrono)
   logout: async () => {
     set({ loadingAuth: true });
     try {
       await authClient.signOut();
     } finally {
       set({ user: null, loadingAuth: false });
-      // Limpiamos el carrito por seguridad interactuando con el otro slice
       get().limpiarLista(); 
     }
   }

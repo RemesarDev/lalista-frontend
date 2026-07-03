@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { Pool } from "pg";
 
 // Definimos la URL base una sola vez
-const baseURL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+const baseURL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export const auth = betterAuth({
   baseURL, 

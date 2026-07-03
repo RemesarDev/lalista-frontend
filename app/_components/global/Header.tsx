@@ -18,7 +18,7 @@ export default function Header({ locationName, onLimpiarUbicacion, children }: H
 
   return (
     <header className="w-full bg-primary-400 border-b border-accent-300 px-4 py-3 sticky top-0 z-50 shadow-sm">
-      <div className="flex items-center justify-between max-w-screen-xl mx-auto">
+      <div className="relative flex items-center justify-between max-w-screen-xl mx-auto">
 
         {/* Logo a la izquierda */}
         <Link href="/" className="flex items-center gap-1">
@@ -26,7 +26,7 @@ export default function Header({ locationName, onLimpiarUbicacion, children }: H
         </Link>
 
         {/* Selector de ubicación centrado */}
-        <div className="flex items-center justify-center flex-1 mx-4">
+        <div className="absolute left-1/2 top-1/2 flex items-center justify-center -translate-x-1/2 -translate-y-1/2">
           <Link
             href="/ubicacion"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition text-xs font-semibold font-sans text-white max-w-[180px] truncate"
@@ -66,7 +66,7 @@ export default function Header({ locationName, onLimpiarUbicacion, children }: H
               <Link href="/login" className="text-white text-xs font-semibold hover:underline px-2">
                 Entrar
               </Link>
-              <Link href="/signup" className="text-white text-xs font-semibold hover:underline px-2">
+              <Link href="/signup" className="hidden sm:inline-flex text-white text-xs font-semibold hover:underline px-2">
                 Registrarse
               </Link>
               <span className="p-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition text-white inline-flex items-center justify-center">

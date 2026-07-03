@@ -4,7 +4,7 @@ import type { AuthType } from "@/app/_lib/auth";
 
 export const authClient = createAuthClient({
   // Tomamos la URL del entorno de forma directa
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL, 
+  baseURL: process.env.NEXT_PUBLIC_APP_URL, 
   
   plugins: [
     inferAdditionalFields<AuthType>()

@@ -13,26 +13,19 @@ const app = new Hono().basePath('/api');
 // ==========================================
 // 1. ESCUDO ANTI-DDOS (Rate Limiter)
 // ==========================================
-// Mantiene un registro en memoria de las IPs para limitar el spam.
 const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const MAX_REQUESTS = 50; // Límite de peticiones permitidas...
-const WINDOW_MS = 60 * 1000; // ...en esta ventana de tiempo (1 minuto).
+const MAX_REQUESTS = 50; 
+const WINDOW_MS = 60 * 1000; 
 
 app.use('*', async (c, next) => {
-  // En Vercel, la IP real del usuario viene en este header:
   const ip = c.req.header('x-forwarded-for') || 'ip-desconocida';
   const now = Date.now();
-
   const userRecord = rateLimitMap.get(ip);
 
   if (!userRecord || now - userRecord.lastReset > WINDOW_MS) {
-    // Si es la primera vez o ya pasó 1 minuto, reiniciamos su contador a 1
     rateLimitMap.set(ip, { count: 1, lastReset: now });
   } else {
-    // Si sigue pidiendo dentro del mismo minuto, sumamos 1
     userRecord.count++;
-    
-    // Si supera el límite de 50 peticiones, cortamos la conexión de raíz
     if (userRecord.count > MAX_REQUESTS) {
       return c.json({ 
         error: 'Too Many Requests', 
@@ -40,21 +33,26 @@ app.use('*', async (c, next) => {
       }, 429);
     }
   }
-  
-  // Si todo está bien, lo dejamos pasar al siguiente paso
   await next();
 });
 
 // ==========================================
-// 2. CAPAS GLOBALES DE SEGURIDAD
+// 2. CAPAS GLOBALES DE SEGURIDAD (Actualizado)
 // ==========================================
 app.use('*', secureHeaders());
+
 app.use('*', cors({
-  origin: (origin) => 
-    (origin && /^https?:\/\/(localhost:\d+|.*\.vercel\.app)$/.test(origin))
-      ? origin 
-      : 'https://lalista-frontend.vercel.app',
-  credentials: true,
+  origin: (origin) => {
+    // Tomamos tu variable de entorno
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
+    // Permitimos peticiones si vienen de tu URL oficial, o de entornos de Preview en Vercel
+    if (!origin || origin === appUrl || /\.vercel\.app$/.test(origin)) {
+      return origin || appUrl;
+    }
+    return appUrl;
+  },
+  credentials: true, // Vital para que las cookies de sesión pasen
 }));
 
 // ==========================================
@@ -68,8 +66,8 @@ app.all('/auth/*', (c) => {
 // 4. ENRUTAMIENTO MODULAR (Chaining)
 // ==========================================
 const routes = app
-  .route('/', productosRouter)  // Engancha /productos y /catalogo
-  .route('/maps', mapsRouter);  // Engancha todos los /maps/*
+  .route('/', productosRouter)  
+  .route('/maps', mapsRouter);  
 
 // ==========================================
 // 5. EXPORTACIONES PARA NEXT.JS

@@ -1,55 +1,33 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
-// Importamos nuestros esquemas centralizados
 import { productosQuerySchema, catalogoQuerySchema } from '@/app/_lib/apiSchemas';
+import { mapToProductoResponse, DbProductoRow } from '@/app/_lib/mappers/productos'; 
+import { Producto } from '@/app/_types/productos';
 
-// Definimos la interfaz del objeto Sucursal para evitar el error de inferencia "never[]"
-interface SucursalResponse {
-  cadena: string;
-  direccion: string;
-  precio: number;
-  id_comercio: number;
-  id_bandera: number;
-}
-
-// Definimos la estructura exacta que el frontend espera recibir
-interface ProductoResponse {
-  id: string;
-  nombre: string;
-  url_imagen: string | null;
-  precioMinimo: number | null;
-  sucursales: SucursalResponse[];
-}
-
+  //CONSULTA CON UBICACION
 export const productosRouter = new Hono()
-  // Endpoint a: Búsqueda con ubicación
   .get('/productos', 
-    zValidator('query', productosQuerySchema), // Validamos usando el esquema importado
+
+    zValidator('query', productosQuerySchema),   
     async (c) => {
       const { search, lat, lng, radio } = c.req.valid('query');
-
+    
       const { data, error } = await supabase.rpc('buscar_productos_por_area', {
-        lat: lat,
-        lng: lng,
-        radio_km: radio,
-        search_term: search ?? null,
+        lat, lng, radio_km: radio, search_term: search ?? null,
       });
 
-      if (error) {
-        console.error("Error en RPC:", error);
-        return c.json({ error: error.message }, 500);
-      }
+      if (error) return c.json({ error: error.message }, 500);
 
-      const mapaProductos = new Map<string, Omit<ProductoResponse, 'precioMinimo'>>();
+      // Usamos DbProductoRow[] en lugar de any
+      const rows = (data as DbProductoRow[]) ?? [];
+      const mapaProductos = new Map<string, Producto>();
 
-      for (const fila of data) {
+      for (const fila of rows) {
         if (!mapaProductos.has(fila.id_producto)) {
           mapaProductos.set(fila.id_producto, {
-            id: fila.id_producto,
-            nombre: fila.productos_descripcion,
-            url_imagen: fila.url_imagen ?? null,
-            sucursales: [], // Aquí TypeScript ya sabe que es de tipo SucursalResponse[]
+            ...mapToProductoResponse(fila), // Pasamos toda la fila directamente
+            sucursales: [] 
           });
         }
 
@@ -57,7 +35,8 @@ export const productosRouter = new Hono()
         const dir = `${fila.sucursales_calle ?? ''} ${fila.sucursales_numero ?? ''}`.trim() || 'Ubicación';
         const huella = `${fila.id_comercio}-${dir}`;
 
-        if (!producto.sucursales.some((s) => `${s.id_comercio}-${s.direccion}` === huella)) {
+        // Tipamos explícitamente el 'some' para eliminar el any
+        if (!producto.sucursales.some((s: { id_comercio: number; direccion: string }) => `${s.id_comercio}-${s.direccion}` === huella)) {
           producto.sucursales.push({
             cadena: fila.comercio_bandera_nombre ?? 'Genérico',
             direccion: dir,
@@ -68,8 +47,7 @@ export const productosRouter = new Hono()
         }
       }
 
-      // Tipamos el array de salida de manera explícita
-      const productos: ProductoResponse[] = Array.from(mapaProductos.values()).map(p => ({
+      const productos = Array.from(mapaProductos.values()).map(p => ({
         ...p,
         precioMinimo: p.sucursales[0]?.precio ?? 0,
       }));
@@ -78,29 +56,19 @@ export const productosRouter = new Hono()
     }
   )
 
-  // Endpoint b: Búsqueda sin ubicación (Catálogo)
+  //CONSULTA SIN UBICACION
   .get('/catalogo', 
-    zValidator('query', catalogoQuerySchema), // Validamos usando el esquema importado
+    zValidator('query', catalogoQuerySchema),
     async (c) => {
       const { search } = c.req.valid('query');
 
-      const { data, error } = await supabase.rpc('buscar_catalogo', {
-        search_term: search,
-      });
+      const { data, error } = await supabase.rpc('buscar_catalogo', { search_term: search });
 
-      if (error) {
-        console.error("Error en catálogo:", error);
-        return c.json({ error: error.message }, 500);
-      }
+      if (error) return c.json({ error: error.message }, 500);
 
-      // Solución definitiva al contrato: Agregamos url_imagen y tipamos el array explícitamente para evitar "never[]"
-      const productos: ProductoResponse[] = (data as any[] ?? []).map(p => ({
-        id: p.id_producto,
-        nombre: p.productos_descripcion,
-        url_imagen: p.url_imagen ?? null, // Cumple el contrato
-        precioMinimo: null,
-        sucursales: [], // Tipado como SucursalResponse[] gracias al mapping explícito
-      }));
+      // 🚀 Ahora el mapping es directo y seguro
+      const rows = (data as DbProductoRow[]) ?? [];
+      const productos = rows.map(p => mapToProductoResponse(p));
 
       return c.json({ productos });
     }

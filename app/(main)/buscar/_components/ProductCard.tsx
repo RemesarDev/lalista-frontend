@@ -1,6 +1,6 @@
 import { PlusIcon, MinusIcon, ShoppingBagIcon } from '@phosphor-icons/react/dist/ssr';
 import { useState } from 'react';
-import { Producto } from '../_types';
+import { Producto } from '@/app/_types/productos';
 import {formatearPrecio} from '@/app/_lib/utils/formatters';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -10,15 +10,6 @@ interface Props {
   onAgregar: (producto:Producto, cantidad: number) => void;
   isPriority?: boolean;
 }
-
-const formatearNombreProducto = (texto: string): string => {
-  if (!texto) return '';
-  return texto
-    .toLowerCase()
-    .split(' ')
-    .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1))
-    .join(' ');
-};
 
 export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) => {
   const [cantidad, setCantidad] = useState(0);
@@ -60,14 +51,14 @@ export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) 
             <div className="flex flex-col items-center gap-1 text-slate-400 select-none">
               <ShoppingBagIcon size={20} weight="thin" />
               <span className="text-[9px] opacity-70">
-                {formatearNombreProducto(producto.nombre).slice(0, 12)}...
+                {producto.nombre.slice(0, 12)}...
               </span>
             </div>
           )}
         </div>
         
         <h3 className="font-bold text-slate-900 text-xs md:text-sm line-clamp-3 min-h-[2.5rem] leading-tight">
-          {formatearNombreProducto(producto.nombre)}
+          {producto.nombre}
         </h3>
         
         <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1.5">

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect} from 'react';
-import { Producto, BusquedaResponse } from '../_types';
+import { Producto, BusquedaResponse } from '@/app/_types/productos';
 import { client } from '@/app/_lib/hono-client';
 import { useListaStore } from '@/app/_store/store';
 

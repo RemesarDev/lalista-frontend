@@ -1,6 +1,7 @@
 import { PlusIcon, MinusIcon, ShoppingBagIcon } from '@phosphor-icons/react/dist/ssr';
 import { useState } from 'react';
 import { Producto } from '../_types';
+import {formatearPrecio} from '@/app/_lib/utils/formatters';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -17,12 +18,6 @@ const formatearNombreProducto = (texto: string): string => {
     .split(' ')
     .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1))
     .join(' ');
-};
-
-const formatearPrecio = (precio: number): string => {
-  return new Intl.NumberFormat('es-AR', {
-    maximumFractionDigits: 0
-  }).format(precio);
 };
 
 export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) => {

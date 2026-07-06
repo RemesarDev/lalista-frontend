@@ -24,18 +24,18 @@ export function useUbicacion() {
   const [errorSugerencias, setErrorSugerencias] = useState<string | null>(null);
 
   const [coordenadasPendientes, setCoordenadasPendientes] = useState<{
-  lat: number;
-  lng: number;
-  texto: string;
-} | null>(null);
+    lat: number;
+    lng: number;
+    texto: string;
+  } | null>(null);
 
   const map = useMap();
 
   // Crea esta pequeña función auxiliar para limpiar la dirección
-  const limpiarDireccion = (direccion: string) => {
+  const limpiarDireccion = useCallback((direccion: string) => {
     const partes = direccion.split(',');
     return partes.slice(0).join(',').trim(); //modificar en caso de recibir una dirección con formato diferente, por ejemplo sin comas. Por ahora asumo que siempre viene con formato "Calle 123, Ciudad, País"
-  };
+  }, []);
 
   const coordenadas = useMemo(() => ({ 
     lat: ubicacion.latitud || -34.6621, 
@@ -101,7 +101,7 @@ export function useUbicacion() {
   }, [setUbicacion]);
 
   //Geolocalización real usando la API de Geolocalización del navegador.
-    const obtenerGeolocalizacionReal = async () => {
+  const obtenerGeolocalizacionReal = async () => {
     if (!navigator.geolocation) return;
     setCargandoGps(true);
     
@@ -157,6 +157,27 @@ export function useUbicacion() {
     }
   };
 
+  // Click/tap directo sobre el mapa: fija coordenadas al toque y resuelve la dirección en segundo plano
+  const manejarClickMapa = useCallback(async (lat: number, lng: number) => {
+    // Feedback inmediato: el marker ya se mueve mientras resolvemos la dirección
+    setCoordenadasPendientes({ lat, lng, texto: 'Ubicación seleccionada en el mapa' });
+    setDireccion('Buscando dirección...');
+
+    try {
+      const res = await fetch(`/api/maps/reverse-geocode?lat=${lat}&lng=${lng}`);
+      if (!res.ok) throw new Error('Error en reverse geocode');
+      const data = await res.json();
+
+      const textoFinal = limpiarDireccion(data.direccion);
+      setDireccion(textoFinal);
+      setCoordenadasPendientes({ lat, lng, texto: textoFinal });
+    } catch (err) {
+      console.error('Error en reverse geocode:', err);
+      setDireccion('Ubicación seleccionada en el mapa');
+      // Dejamos las coordenadas pendientes igual, aunque falle el geocode
+    }
+  }, [limpiarDireccion]);
+
   const confirmarUbicacion = useCallback(() => {
     if (!coordenadasPendientes) return;
     // Leemos el radio fresco directamente del store, no del closure
@@ -189,6 +210,7 @@ export function useUbicacion() {
     obtenerGeolocalizacionReal,
     manejarKeyDownInput,
     manejarSeleccionDireccion,
+    manejarClickMapa,
     guardarUbicacionFiltro,
     coordenadasPendientes,  
     confirmarUbicacion,  

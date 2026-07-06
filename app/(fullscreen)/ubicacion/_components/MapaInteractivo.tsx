@@ -1,7 +1,5 @@
 'use client';
 import { Map, AdvancedMarker, Pin, Circle } from '@vis.gl/react-google-maps';
-import { useMap } from '@vis.gl/react-google-maps';
-import { useEffect } from 'react';
 
 interface Coordenadas {
   lat: number;
@@ -13,6 +11,7 @@ interface MapaInteractivoProps {
   zoom: number;
   setZoom: (value: number) => void;
   radio: number;
+  onMapClick: (lat: number, lng: number) => void;
 }
 
 export default function MapaInteractivo({
@@ -20,16 +19,8 @@ export default function MapaInteractivo({
   zoom,
   setZoom,
   radio,
+  onMapClick,
 }: MapaInteractivoProps) {
-  
-  const map = useMap();
-  useEffect(() => {
-    if (map) {
-      map.setCenter(coordenadas);
-      map.setZoom(13); 
-    }
-  }, [coordenadas.lat, coordenadas.lng, map]);
-
 
   const circleOptions = {
     center: coordenadas,
@@ -44,16 +35,20 @@ export default function MapaInteractivo({
     <div className="absolute inset-0 w-full h-full z-0 select-none">
       <Map
         defaultCenter={coordenadas}
-        key={`${coordenadas.lat}-${coordenadas.lng}`}
         zoom={zoom}
         disableDefaultUI={true}
         mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
         onCameraChanged={(ev) => setZoom(ev.detail.zoom)}
+        onClick={(ev) => {
+          if (ev.detail.latLng) {
+            onMapClick(ev.detail.latLng.lat, ev.detail.latLng.lng);
+          }
+        }}
         gestureHandling={'greedy'}
         className="w-full h-full"
       >
 
-        <AdvancedMarker key={`${coordenadas.lat}-${coordenadas.lng}`} position={coordenadas}>
+        <AdvancedMarker position={coordenadas}>
           {/* Usamos el Pin nativo de Google */}
           <Pin 
             background={'#ef4444'} // Red-500

@@ -136,6 +136,17 @@ export function useUbicacion() {
     );
   };
 
+  const yaSolicitoGpsInicial = useRef(false);
+
+  useEffect(() => {
+    if (yaSolicitoGpsInicial.current) return;
+    if (ubicacion.latitud && ubicacion.longitud) return;
+    
+    yaSolicitoGpsInicial.current = true;
+    queueMicrotask(() => obtenerGeolocalizacionReal());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Geocoding via Hono
   const manejarSeleccionDireccion = async (sug: SugerenciaLugar) => {
     const textoDireccion = sug.text.text;

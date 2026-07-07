@@ -7,6 +7,7 @@ import { CardComercioAlternativo } from './_components/CardComercioAlternativo';
 import { TablaDetalleProductos } from './_components/TablaDetalleProductos';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
 import { ShoppingBagIcon, MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr';
+import BaseContainer from '@/app/_components/global/BaseContainer';
 
 export default function ComparativaPage() {
   const lista = useListaStore((state) => state.lista);
@@ -24,15 +25,6 @@ export default function ComparativaPage() {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-6">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between gap-3 mb-6">
-            <h1 className="text-2xl font-bold text-slate-900">Comparativa de precios</h1>
-            <DesktopActionButton
-              href="/buscar"
-              label="Buscar"
-              icon={<MagnifyingGlassIcon weight="bold" />}
-              variant="solid"
-            />
-          </div>
           <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-4">
             <div className="text-5xl">🛒</div>
             <p className="text-slate-600 font-medium">No hay productos en tu lista</p>
@@ -50,7 +42,6 @@ export default function ComparativaPage() {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-6">
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-2xl font-bold text-slate-900 mb-6">Comparativa de precios</h1>
           <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-4">
             <div className="text-5xl">📊</div>
             <p className="text-slate-600 font-medium">No hay comparativa disponible</p>
@@ -69,46 +60,27 @@ export default function ComparativaPage() {
   const alternativa2 = topTresCadenas[2];
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 pb-24">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between gap-3 mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Comparativa de precios</h1>
-            <p className="text-xs text-slate-500 mt-1">
-              {lista.length} producto{lista.length !== 1 ? 's' : ''} en tu lista
-            </p>
+    <div className="my-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)] lg:items-start">
+        <div className="flex flex-col gap-4">
+          <CardComercioGanador sucursal={ganador} />
+          {alternativa1 && <CardComercioAlternativo sucursal={alternativa1} posicion={2} />}
+          {alternativa2 && <CardComercioAlternativo sucursal={alternativa2} posicion={3} />}
+        </div>
+
+        <div className="lg:sticky lg:top-4 self-start">
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <TablaDetalleProductos cadenas={topTresCadenas} />
           </div>
-          <DesktopActionButton
-            href="/buscar"
-            label="Modificar lista"
-            icon={<MagnifyingGlassIcon weight="bold" />}
-            variant="outline"
-          />
-        </div>
-
-        {/* Card Ganadora */}
-        <div className="mb-8">
-          <CardComercioGanador
-            sucursal={ganador}
-            totalAlternativa={alternativa1?.total}
-          />
-        </div>
-
-        {/* Cards Alternativas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {alternativa1 && (
-            <CardComercioAlternativo sucursal={alternativa1} posicion={2} />
-          )}
-          {alternativa2 && (
-            <CardComercioAlternativo sucursal={alternativa2} posicion={3} />
-          )}
-        </div>
-
-        {/* Tabla Detalles */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <TablaDetalleProductos cadenas={topTresCadenas} />
         </div>
       </div>
-    </main>
+
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-20 right-4 z-50 rounded-full bg-primary-500 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-primary-600 md:bottom-6"
+      >
+        Subir
+      </button>
+    </div>
   );
 }

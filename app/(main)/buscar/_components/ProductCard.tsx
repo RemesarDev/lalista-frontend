@@ -34,7 +34,7 @@ export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) 
     <div className="bg-white border border-slate-200/70 rounded-xl p-3 flex flex-col justify-between shadow-xs h-full">
       <div>
         {/* Contenedor de Imagen Consistente y Adaptativo */}
-        <div className="w-full h-24 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-[10px] font-semibold mb-2 relative overflow-hidden">
+        <div className="w-full h-24 rounded-lg flex items-center justify-center text-slate-400 text-[10px] font-semibold mb-2 relative overflow-hidden">
           {mostrarImagenReal ? (
             <Image
               src={producto.url_imagen!} // URL real de VTEX provista por tu base de datos

@@ -8,7 +8,7 @@ export interface ProductoEnSucursal {
 }
 
 export interface SucursalCarritoComparada extends SucursalBusqueda {
-  total: number | null;
+  total: number;
   productos: ProductoEnSucursal[];
   productosDisponibles: number;
   productosFaltantes: number;
@@ -57,10 +57,7 @@ export const calcularTotalesPorSucursal = (
       const yaProcesado = sucursalData.productos.some(p => p.id === producto.id);
       
       if (!yaProcesado) {
-        // 🛡️ CORRECCIÓN 1: Solo sumamos si el total no fue anulado previamente por un faltante
-        if (sucursalData.total !== null) {
-          sucursalData.total += sucursal.precio * (producto.cantidad || 1);
-        }
+        sucursalData.total += sucursal.precio * (producto.cantidad || 1);
         
         sucursalData.productos.push({
           id: producto.id,
@@ -85,7 +82,6 @@ export const calcularTotalesPorSucursal = (
           disponible: false,
         });
         sucursal.productosFaltantes += 1;
-        sucursal.total = null; // Anula el total permanentemente para esta sucursal
       }
     }
   }
@@ -96,9 +92,8 @@ export const calcularTotalesPorSucursal = (
       const diferenciaCantidad = b.productosDisponibles - a.productosDisponibles;
       if (diferenciaCantidad !== 0) return diferenciaCantidad; 
 
-      // 🛡️ CORRECCIÓN 2: Control seguro de ordenamiento cuando 'total' puede ser null
-      const precioA = a.total ?? Infinity;
-      const precioB = b.total ?? Infinity;
+      const precioA = a.total;
+      const precioB = b.total;
       return precioA - precioB;
     });
 };
@@ -115,9 +110,8 @@ export const obtenerTopTresCadenasMasBaratas = (
       mejoresSucursalesPorCadena.set(sucursal.id_bandera, sucursal);
     } 
     else if (sucursal.productosDisponibles === sucursalActual.productosDisponibles) {
-      // 🛡️ CORRECCIÓN 3: Comparación segura usando Infinity si el total es null
-      const totalNuevo = sucursal.total ?? Infinity;
-      const totalExistente = sucursalActual.total ?? Infinity;
+      const totalNuevo = sucursal.total;
+      const totalExistente = sucursalActual.total;
       
       if (totalNuevo < totalExistente) {
         mejoresSucursalesPorCadena.set(sucursal.id_bandera, sucursal);
@@ -132,9 +126,8 @@ export const obtenerTopTresCadenasMasBaratas = (
 
       if (dispB !== dispA) return dispB - dispA;
       
-      // 🛡️ CORRECCIÓN 4: Fallback seguro para el ordenamiento del top 3 final
-      const totalA = a.total ?? Infinity;
-      const totalB = b.total ?? Infinity;
+      const totalA = a.total;
+      const totalB = b.total;
       return totalA - totalB;
     }).slice(0, 3);
 };

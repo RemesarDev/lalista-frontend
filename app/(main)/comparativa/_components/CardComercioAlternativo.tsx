@@ -6,11 +6,10 @@ interface Props {
   posicion: 2 | 3;
 }
 
-// 🛡️ Ajustamos el formateador para aceptar null de forma segura
 const formatearPrecio = (precio: number | null): string => {
   if (precio === null) return '';
   return new Intl.NumberFormat('es-AR', {
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(precio);
 };
 
@@ -21,52 +20,46 @@ const BadgePosicion = ({ posicion }: { posicion: 2 | 3 }) => {
   };
 
   return (
-    <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm ${colores[posicion]}`}>
+    <div className={`inline-flex h-8 w-8 items-center justify-center rounded-full font-bold text-xs ${colores[posicion]}`}>
       {posicion}
     </div>
   );
 };
 
 export const CardComercioAlternativo = ({ sucursal, posicion }: Props) => {
-  const tieneTotalValido = sucursal.total !== null;
-  const totalProductos = (sucursal.productos || []).length;
-
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 md:p-6 shadow-xs hover:shadow-sm transition-shadow">
-      {/* Badge de Posición */}
-      <div className="flex items-center gap-3 mb-4">
+    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md">
+      <div className="mb-2 flex items-start gap-2">
         <BadgePosicion posicion={posicion} />
-        <h3 className="text-lg md:text-xl font-bold text-slate-900">
-          {sucursal.cadena}
-        </h3>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-base md:text-[1.05rem] font-bold text-slate-900">
+            {sucursal.cadena}
+          </h3>
+        </div>
       </div>
 
-      {/* Ubicación */}
-      <div className="flex items-start gap-2 mb-4">
-        <MapPinIcon weight="fill" size={16} className="flex-shrink-0 mt-0.5 text-slate-500" />
-        <p className="text-xs md:text-sm text-slate-600">
+      <div className="mb-2 flex items-start gap-2">
+        <MapPinIcon weight="fill" size={15} className="mt-0.5 shrink-0 text-slate-500" />
+        <p className="text-[11px] md:text-xs leading-snug text-slate-600 line-clamp-2">
           {sucursal.direccion}
         </p>
       </div>
 
-      {/* Total - Destacado */}
-      <div className="bg-slate-50 rounded-lg p-3 mb-4">
-        <p className="text-xs font-semibold text-slate-500 mb-1">Total</p>
-        <p className="text-2xl md:text-3xl font-black text-slate-900">
-          {tieneTotalValido ? (
-            `$${formatearPrecio(sucursal.total)}`
-          ) : (
-            // 🛡️ Fallback visual elegante si la sucursal alternativa no tiene toda tu lista
-            <span className="text-base md:text-lg font-bold italic text-slate-500 tracking-normal">
-              Canasta incompleta
-            </span>
-          )}
+      <div className="mb-2 rounded-xl bg-slate-50 px-3 py-2">
+        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+          Total de tu compra
+        </p>
+        <p className="text-xl md:text-[1.6rem] font-black leading-none text-primary-600">
+          ${formatearPrecio(sucursal.total)}
         </p>
       </div>
 
-      {/* Resumen de Productos (sin detalles) */}
-      <p className="text-xs text-slate-500">
-        {totalProductos} producto{totalProductos !== 1 ? 's' : ''} en lista
+      <p className="text-[10px] md:text-[11px] font-medium leading-snug text-slate-600">
+        Esta sucursal tiene disponibles{' '}
+        <span className="font-black text-slate-900">{sucursal.productosDisponibles}</span>{' '}
+        de{' '}
+        <span className="font-black text-slate-900">{sucursal.productos.length}</span>{' '}
+        productos de tu lista
       </p>
     </div>
   );

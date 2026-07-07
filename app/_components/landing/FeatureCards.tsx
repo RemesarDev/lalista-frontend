@@ -30,7 +30,7 @@ export default function FeatureCards() {
   ];
 
   return (
-    <section id="como-funciona" className="py-6 border-t border-accent-300">
+    <section id="como-funciona" className="py-6 mx-8 border-t border-accent-300">
       <h2 className="text-lg font-black font-display text-slate-800 mb-5 text-center md:text-left">
         ¿Cómo optimizar tu compra?
       </h2>

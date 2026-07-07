@@ -1,5 +1,3 @@
-//import Header from "../_components/global/Header";
-//import StickySearch from "../_components/global/StickySearch";
 import Navigation from "../_components/global/Navigation";
 import HeaderUbicacion from "../_components/global/HeaderUbicacion";
 import FooterLanding from "../_components/global/Footer-landing";
@@ -10,24 +8,25 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col min-h-screen">
+    // bg-slate-50 unifica el fondo de toda la pantalla
+    <div className="flex flex-col min-h-screen bg-slate-50/50">
       
-      {/* Header fijo superior (Logo + Selector de Ubicación + Login) */}
+      {/* Header fijo superior con el nuevo breakpoint lg */}
       <HeaderUbicacion />
       
-      {/* Buscador intermedio que se queda pegado arriba al hacer scroll */}
-      {/*<StickySearch /> lo sacamos para reordenar*/}
-      
-      {/* El contenido dinámico de la página cae acá */}
-      {/* max-w-md limita el ancho en mobile para simular una app nativa */}
-      <main className="flex-grow w-full max-w-md mx-auto px-4 pt-2 pb-24 md:max-w-screen-xl">
+      {/* Contenedor estructural: 
+        - Eliminamos cualquier min-h forzado en mobile.
+        - pb-24 asegura el espacio seguro sobre el Navigation flotante en mobile/tablet.
+        - md:pb-6 normaliza el espacio en escritorio.
+      */}
+      <main className="w-full max-w-7xl mx-auto flex-initial pb-24 md:pb-6 px-4 sm:px-6">
         {children}
       </main>
-      
-      {/* Barra de navegación inferior (Fija en mobile, oculta en desktop) */}
+
+      {/* Barra de navegación inferior fija para mobile/tablet */}
       <Navigation />
 
-      {/* Footer visible solo en desktop */}
+      {/* Footer exclusivo de escritorio */}
       <div className="hidden md:block">
         <FooterLanding />
       </div>

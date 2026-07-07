@@ -10,7 +10,7 @@ export default function StickySearch() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const setTerminoBusqueda = useListaStore((state) => state.setTerminoBusqueda);
-  
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const terminoLimpio = query.trim();
@@ -21,7 +21,7 @@ export default function StickySearch() {
     }
   };
 
-return (
+  return (
     <div className="sticky top-[57px] z-40 w-full backdrop-blur-md px-2 py-2">
       <div className="mx-auto flex max-w-5xl flex-col gap-2 md:flex-row md:items-center md:justify-center md:gap-3">
         <form
@@ -62,7 +62,7 @@ return (
             icon={<ShoppingCartIcon weight="bold" />}
             color="lila"
             variant="solid"
-            className="w-full md:w-auto"
+            className="hidden w-full md:inline-flex md:w-auto"
           />
         </div>
       </div>

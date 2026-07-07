@@ -1,6 +1,7 @@
 import Navigation from "../_components/global/Navigation";
-import HeaderUbicacion from "../_components/global/HeaderUbicacion";
+
 import FooterLanding from "../_components/global/Footer-landing";
+import Header from "../_components/global/header/Header";
 
 export default function MainLayout({
   children,
@@ -12,7 +13,7 @@ export default function MainLayout({
     <div className="flex flex-col min-h-screen bg-slate-50/50">
       
       {/* Header fijo superior con el nuevo breakpoint lg */}
-      <HeaderUbicacion />
+      <Header />
       
       {/* Contenedor estructural: 
         - Eliminamos cualquier min-h forzado en mobile.

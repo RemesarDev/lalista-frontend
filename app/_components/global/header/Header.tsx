@@ -14,8 +14,8 @@ export default function Header() {
           <HeaderNavUser />
         </div>
 
-        {/* Fila 2: Solo contenido de ubicación (Buscador + Slider) */}
-        <div className="w-full border-t border-white/10 pt-3 md:border-t-0 md:pt-0">
+    {/* Fila 2: Apéndice de ubicación */}
+        <div className="w-full pb-0 px-0 md:hidden"> {/* Menos padding para que esté más pegado */}
           <HeaderLocation />
         </div>
       </div>

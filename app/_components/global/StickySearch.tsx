@@ -2,8 +2,8 @@
 import { useListaStore } from '@/app/_store/store';
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
-import { ShoppingCartIcon } from '@phosphor-icons/react/dist/ssr';
 import { DesktopActionButton } from './DesktopActionButton';
+import { ShoppingCartIcon } from '@phosphor-icons/react';
 
 export default function StickySearch() {
   const [query, setQuery] = useState("");

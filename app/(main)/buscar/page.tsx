@@ -76,13 +76,6 @@ export default function BuscarVista() {
     <>
       <StickySearch />
       <BaseContainer>
-          {/* Título renovado estilo Aplicación de Compra */}
-          <div className="mb-6 flex flex-row items-center justify-between gap-4 px-1 w-full border-b border-slate-50 pb-3">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Resultados en tu zona
-            </h1>
-          </div>
-
           <Suspense fallback={<p className="text-center text-slate-400">Cargando buscador...</p>}>
             <ResultadosBusqueda />
           </Suspense>

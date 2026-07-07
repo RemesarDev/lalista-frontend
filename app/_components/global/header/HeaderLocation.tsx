@@ -20,26 +20,20 @@ export default function HeaderLocation() {
   };
 
   return (
-    <div className="flex items-center gap-3 w-full justify-center md:justify-end">
-      {/* Selector de Dirección */}
-      <div
-        role="button"
-        onClick={irAUbicacion}
-        className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-white border border-white/10 text-sm hover:bg-white/20 transition cursor-pointer min-w-0 flex-1 max-w-[250px]"
-      >
-        <MapPinIcon className="text-base shrink-0 opacity-80" />
-        <span className="truncate font-semibold text-xs">
-          {ubicacion.nombreLugar || "Buscar..."}
+// Dentro de HeaderLocation.tsx
+// Ajustamos las clases de los elementos internos
+    <div className="flex items-center gap-2 w-full justify-between px-2"> 
+      
+      {/* Selector de Dirección (Compacto en móvil) */}
+      <div className="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 text-xs text-white border border-white/10 cursor-pointer flex-1 mr-2">
+        <MapPinIcon className="text-[10px] shrink-0" />
+        <span className="truncate font-medium">
+          {ubicacion.nombreLugar || "Ubicación..."}
         </span>
-        {ubicacion.nombreLugar && (
-          <button onClick={limpiarUbicacion} className="p-0.5 rounded-full hover:bg-white/20">
-            <XIcon className="text-xs" />
-          </button>
-        )}
       </div>
 
-      {/* Slider integrado */}
-      <div className="w-32 shrink-0">
+      {/* Slider (Ajustado a un tamaño más pequeño) */}
+      <div className="w-24 shrink-0 scale-90">
         <SliderHorizontal 
           value={ubicacion.radioBusqueda}
           min={1} max={10} step={1}

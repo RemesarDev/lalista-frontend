@@ -3,10 +3,9 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useBusqueda } from './_hooks/useBusqueda';
 import { ProductCard } from './_components/ProductCard';
-import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
 import { useListaStore } from '@/app/_store/store';
-import { ShoppingCartIcon } from '@phosphor-icons/react/dist/ssr';
 import StickySearch from '@/app/_components/global/StickySearch';
+import BaseContainer from '@/app/_components/global/BaseContainer';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,13 +52,19 @@ function ResultadosBusqueda() {
   );
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
+    /* 
+      Cambiamos la grilla para que sea:
+      - 2 columnas por defecto (mobile)
+      - 3 columnas en pantallas medianas (md: tablets)[cite: 13]
+      - 4 columnas en pantallas grandes (lg: desktop en adelante)
+    */
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
       {productos.map((prod, index) => (
         <ProductCard
           key={prod.id}
           producto={prod}
           onAgregar={handleAgregar}
-          isPriority={index < 2}
+          isPriority={index < 2} // Mantené el lazy loading optimizado para las primeras imágenes[cite: 13]
         />
       ))}
     </div>
@@ -70,25 +75,18 @@ export default function BuscarVista() {
   return (
     <>
       <StickySearch />
-      <div className="min-h-screen bg-slate-50 font-sans pb-16">
-        <main className="max-w-screen-xl mx-auto px-2 mt-4">
-          <div className="mb-3 flex items-start justify-between gap-3 px-1">
-            <h2 className="text-sm font-bold font-display text-slate-400 uppercase tracking-wider">
+      <BaseContainer>
+          {/* Título renovado estilo Aplicación de Compra */}
+          <div className="mb-6 flex flex-row items-center justify-between gap-4 px-1 w-full border-b border-slate-50 pb-3">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               Resultados en tu zona
-            </h2>
-            <DesktopActionButton
-              href="/mi-lista"
-              label="Ir a mi lista"
-              icon={<ShoppingCartIcon weight="bold" />}
-              variant="outline"
-            />
+            </h1>
           </div>
 
           <Suspense fallback={<p className="text-center text-slate-400">Cargando buscador...</p>}>
             <ResultadosBusqueda />
           </Suspense>
-        </main>
-      </div>
+      </BaseContainer>
     </>
   );
 }

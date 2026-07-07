@@ -2,8 +2,6 @@
 import { useListaStore } from '@/app/_store/store';
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
-import { ShoppingCartIcon } from '@phosphor-icons/react/dist/ssr';
-import { DesktopActionButton } from './DesktopActionButton';
 
 export default function StickySearch() {
   const [query, setQuery] = useState("");
@@ -54,17 +52,6 @@ return (
             className="w-full rounded-xl border border-accent-300 bg-white py-2.5 pl-10 pr-4 text-sm font-sans text-slate-800 shadow-sm transition placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </form>
-
-        <div className="w-full md:w-auto md:shrink-0">
-          <DesktopActionButton
-            href="/mi-lista"
-            label="Ver mi lista"
-            icon={<ShoppingCartIcon weight="bold" />}
-            color="lila"
-            variant="solid"
-            className="w-full md:w-auto"
-          />
-        </div>
       </div>
     </div>
   );

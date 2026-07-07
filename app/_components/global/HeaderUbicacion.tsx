@@ -24,7 +24,6 @@ export default function HeaderUbicacion() {
       locationName={ubicacion.nombreLugar ?? undefined}
       onLimpiarUbicacion={ubicacion.nombreLugar ? limpiarUbicacion : undefined}
     >
-      {/* Esto aparecerá automáticamente dentro del header pero debajo de la fila superior */}
       <SliderHorizontal 
         value={ubicacion.radioBusqueda}
         min={1}

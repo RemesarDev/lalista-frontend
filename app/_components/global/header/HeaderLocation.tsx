@@ -21,16 +21,16 @@ export default function HeaderLocation() {
   };
 
   return (
-    <div className="flex items-center gap-2 w-full justify-between px-2"> 
+    <div className="flex items-center gap-2 w-full justify-between px-2 min-w-0"> 
       
       {/* Selector de Dirección: Ahora sí usa la función */}
       <div 
         role="button"
         onClick={irAUbicacion}
-        className="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 text-xs text-white border border-white/10 cursor-pointer flex-1 mr-2"
+        className="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 text-xs text-white border border-white/10 cursor-pointer flex-1 mr-2 min-w-0"
       >
         <MapPinIcon className="text-[10px] shrink-0" />
-        <span className="truncate font-medium">
+        <span className="truncate font-medium block">
           {ubicacion.nombreLugar || "Ubicación..."}
         </span>
         

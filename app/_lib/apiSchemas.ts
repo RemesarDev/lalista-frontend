@@ -36,6 +36,12 @@ export const catalogoQuerySchema = z.object({
   search: z.string().min(3, { message: 'El término debe tener al menos 3 caracteres' })
 });
 
+export const preciosPorIdsQuerySchema = z.object({
+  ids: z.string().transform((val) => val.split(',')),
+  lat: z.coerce.number({ message: 'Latitud inválida' }),
+  lng: z.coerce.number({ message: 'Longitud inválida' }),
+  radio: z.coerce.number({ message: 'Radio inválido' }),
+});
 // ==========================================
 // 3. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================

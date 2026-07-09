@@ -18,7 +18,7 @@ export default function SignupPage() {
     const registro = useListaStore((state) => state.registroConEmail);
     const loading = useListaStore((state) => state.loadingAuth);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
         setMensajeError('');
 

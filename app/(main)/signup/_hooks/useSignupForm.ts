@@ -8,7 +8,7 @@ export function useSignupForm() {
     const [reglasPass, setReglasPass] = useState({ length: false, upper: false, number: false });
 
     // 2. Precarga de Zod en segundo plano
-    const obtenerValidador = usePrefetch(() => import("./validarRegistro")); // Ajusta la ruta
+    const obtenerValidador = usePrefetch(() => import("@/app/_lib/utils/validarRegistro"));
 
     const limpiarCampo = (campo: string) => {
         setErroresTexto((prev) => {

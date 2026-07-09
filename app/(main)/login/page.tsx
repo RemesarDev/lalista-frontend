@@ -31,7 +31,7 @@ export default function LoginPage() {
         if (result.success) {
             router.push('/');
         } else {
-            setMensajeError(traducirErrorAuth(result.error?.message));
+            setMensajeError(traducirErrorAuth(result.error));
         }
     };
 

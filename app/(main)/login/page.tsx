@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
-import { Eye, EyeSlash } from '@phosphor-icons/react'; // Importamos los íconos
+import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react'; // Importamos los íconos
 
 export default function LoginPage() {
     const router = useRouter();
@@ -82,9 +82,9 @@ export default function LoginPage() {
                                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 focus:outline-none transition-colors"
                             >
                                 {mostrarPass ? (
-                                    <EyeSlash size={22} weight="regular" />
+                                    <EyeSlashIcon size={22} weight="regular" />
                                 ) : (
-                                    <Eye size={22} weight="regular" />
+                                    <EyeIcon size={22} weight="regular" />
                                 )}
                             </button>
                         </div>

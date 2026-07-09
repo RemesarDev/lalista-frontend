@@ -1,12 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import { useSignupForm } from './_hooks/useSignupForm';
+import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
 
 export default function SignupPage() {
     const router = useRouter();
+    const [mensajeError, setMensajeError] = useState('');
 
     // 1. Extraemos todo de nuestro custom hook
     const { form, erroresTexto, reglasPass, manejarInput, validarSubmit } = useSignupForm();
@@ -17,6 +20,7 @@ export default function SignupPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setMensajeError('');
 
         // 3. Ejecutamos la validación de Zod antes de tocar la API
         const esValido = await validarSubmit();
@@ -29,7 +33,7 @@ export default function SignupPage() {
         if (result.success) {
             router.push('/');
         } else {
-            alert("Error al registrar cuenta: " + (result.error?.message || "Ocurrió un problema"));
+            setMensajeError(traducirErrorAuth(result.error?.message));
         }
     };
 
@@ -119,6 +123,12 @@ export default function SignupPage() {
                     >
                         {loading ? "Creando cuenta..." : "Registrarse"}
                     </button>
+
+                    {mensajeError && (
+                        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {mensajeError}
+                        </p>
+                    )}
                 </form>
 
                 <div className="mt-6 text-center text-sm text-slate-600">

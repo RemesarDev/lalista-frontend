@@ -33,7 +33,7 @@ export default function SignupPage() {
         if (result.success) {
             router.push('/');
         } else {
-            setMensajeError(traducirErrorAuth(result.error?.message));
+            setMensajeError(traducirErrorAuth(result.error));
         }
     };
 

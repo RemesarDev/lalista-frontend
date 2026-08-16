@@ -41,7 +41,7 @@ export default function PerfilPage() {
 
     const handleLogout = async () => {
         await logout();
-        router.push('/');
+        router.replace('/');
     };
 
     const handleBorrarCuenta = async () => {

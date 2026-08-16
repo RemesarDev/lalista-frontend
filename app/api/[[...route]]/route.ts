@@ -43,16 +43,20 @@ app.use('*', secureHeaders());
 
 app.use('*', cors({
   origin: (origin) => {
-    // Tomamos tu variable de entorno
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    
-    // Permitimos peticiones si vienen de tu URL oficial, o de entornos de Preview en Vercel
-    if (!origin || origin === appUrl || /\.vercel\.app$/.test(origin)) {
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const allowedOrigins = new Set([
+      appUrl,
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+    ]);
+
+    if (!origin || allowedOrigins.has(origin) || /\.vercel\.app$/.test(origin)) {
       return origin || appUrl;
     }
+
     return appUrl;
   },
-  credentials: true, // Vital para que las cookies de sesión pasen
+  credentials: true,
 }));
 
 // ==========================================

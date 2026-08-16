@@ -1,7 +1,12 @@
 import { betterAuth } from "better-auth";
 import { Pool } from "pg";
 
-const baseURL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+const localOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
+const trustedOrigins = Array.from(
+  new Set([appUrl, ...localOrigins].filter(Boolean))
+);
+
 const databaseUrl = process.env.DATABASE_URL;
 const authSecret = process.env.BETTER_AUTH_SECRET;
 
@@ -14,9 +19,9 @@ if (!authSecret) {
 }
 
 export const auth = betterAuth({
-  baseURL,
+  baseURL: appUrl,
   secret: authSecret,
-  trustedOrigins: [baseURL],
+  trustedOrigins,
   database: new Pool({
     connectionString: databaseUrl,
     max: 1,
@@ -34,9 +39,15 @@ export const auth = betterAuth({
         defaultValue: "user",
       },
     },
+    deleteUser: {
+      enabled: true,
+    },
   },
   emailAndPassword: {
     enabled: true,
+  },
+  advanced: {
+    useSecureCookies: process.env.NODE_ENV === "production",
   },
 });
 

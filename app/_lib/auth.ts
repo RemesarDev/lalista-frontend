@@ -39,6 +39,9 @@ export const auth = betterAuth({
         defaultValue: "user",
       },
     },
+    deleteUser: {
+      enabled: true,
+    },
   },
   emailAndPassword: {
     enabled: true,

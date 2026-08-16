@@ -1,4 +1,3 @@
-// app/(main)/perfil/page.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -12,6 +11,7 @@ export default function PerfilPage() {
     const user = useListaStore((state) => state.user);
     const loadingAuth = useListaStore((state) => state.loadingAuth);
     const logout = useListaStore((state) => state.logout);
+    const borrarCuenta = useListaStore((state) => state.borrarCuenta);
     const checkAuth = useListaStore((state) => state.checkAuth);
 
     useEffect(() => {
@@ -47,8 +47,23 @@ export default function PerfilPage() {
     const handleBorrarCuenta = async () => {
         const confirmar = window.confirm('¿Seguro que querés borrar tu cuenta? Esta acción no se puede deshacer.');
         if (!confirmar) return;
-        // placeholder hasta que agregues el endpoint
-        alert('Funcionalidad en construcción.');
+
+        const password = window.prompt('Ingresá tu contraseña actual para confirmar la eliminación:');
+        if (!password || !password.trim()) {
+            alert('La contraseña es obligatoria para borrar la cuenta.');
+            return;
+        }
+
+        const result = await borrarCuenta(password);
+
+        if (result.success) {
+            alert('Tu cuenta fue eliminada correctamente.');
+            router.replace('/');
+            return;
+        }
+
+        const message = result.error?.message || 'No se pudo borrar la cuenta.';
+        alert(message);
     };
 
     return (

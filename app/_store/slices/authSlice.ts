@@ -12,7 +12,7 @@ export interface AuthSlice {
   registroConEmail: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: any }>;
   logout: () => Promise<void>;
   // Añadimos esta acción vital para sincronizar el estado al cargar la página
-  checkAuth: () => Promise<void>;
+  checkAuth: () => Promise<User | null>;
 }
 
 export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set, get) => ({
@@ -21,11 +21,20 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
   
   setUser: (user) => set({ user }),
 
-  // NUEVO: Verificación de sesión al montar la app
+  // Verificación de sesión al montar la app
   checkAuth: async () => {
     set({ loadingAuth: true });
-    const { data } = await authClient.getSession();
-    set({ user: data?.user || null, loadingAuth: false });
+    try {
+      const { data } = await authClient.getSession();
+      const nextUser = data?.user || null;
+      set({ user: nextUser });
+      return nextUser;
+    } catch {
+      set({ user: null });
+      return null;
+    } finally {
+      set({ loadingAuth: false });
+    }
   },
 
   loginConEmail: async (email, password) => {

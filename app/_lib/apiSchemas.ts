@@ -27,13 +27,17 @@ export const reverseGeocodeQuerySchema = z.object({
 
 export const productosQuerySchema = z.object({
   search: z.string().optional(),
-  lat: z.coerce.number({ message: 'Latitud inválida' }),
-  lng: z.coerce.number({ message: 'Longitud inválida' }),
-  radio: z.coerce.number({ message: 'Radio inválido' })
+  lat: z.string(),
+  lng: z.string(),
+  radio: z.string(),
+  page: z.string().optional().default('1'),
+  limit: z.string().optional().default('20'),
 });
 
 export const catalogoQuerySchema = z.object({
-  search: z.string().min(3, { message: 'El término debe tener al menos 3 caracteres' })
+  search: z.string(),
+  page: z.string().optional().default('1'),
+  limit: z.string().optional().default('20'),
 });
 
 export const preciosPorIdsQuerySchema = z.object({

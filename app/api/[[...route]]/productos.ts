@@ -7,72 +7,84 @@ import { Producto } from '@/app/_types/productos';
 
   //CONSULTA CON UBICACION
 export const productosRouter = new Hono()
-  .get('/productos', 
+// /productos
+  .get('/productos', zValidator('query', productosQuerySchema), async (c) => {
+    const { search, lat, lng, radio, page, limit } = c.req.valid('query');
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const offset = (pageNum - 1) * limitNum;
 
-    zValidator('query', productosQuerySchema),   
-    async (c) => {
-      const { search, lat, lng, radio } = c.req.valid('query');
-    
-      const { data, error } = await supabase.rpc('buscar_productos_por_area', {
-        lat, lng, radio_km: radio, search_term: search ?? null,
-      });
+    const { data, error } = await supabase.rpc('buscar_productos_por_area', {
+      lat: parseFloat(lat),
+      lng: parseFloat(lng),
+      radio_km: parseFloat(radio),
+      search_term: search ?? null,
+      p_limit: limitNum,
+      p_offset: offset,
+    });
 
-      if (error) return c.json({ error: error.message }, 500);
+    if (error) return c.json({ error: error.message }, 500);
 
-      // Usamos DbProductoRow[] en lugar de any
-      const rows = (data as DbProductoRow[]) ?? [];
-      const mapaProductos = new Map<string, Producto>();
+    const rows = (data as DbProductoRow[]) ?? [];
+    const mapaProductos = new Map<string, Producto>();
 
-      for (const fila of rows) {
-        if (!mapaProductos.has(fila.id_producto)) {
-          mapaProductos.set(fila.id_producto, {
-            ...mapToProductoResponse(fila), // Pasamos toda la fila directamente
-            sucursales: [] 
-          });
-        }
-
-        const producto = mapaProductos.get(fila.id_producto)!;
-        const dir = `${fila.sucursales_calle ?? ''} ${fila.sucursales_numero ?? ''}`.trim() || 'Ubicación';
-        const huella = `${fila.id_comercio}-${dir}`;
-
-        // Tipamos explícitamente el 'some' para eliminar el any
-        if (!producto.sucursales.some((s: { id_comercio: number; direccion: string }) => `${s.id_comercio}-${s.direccion}` === huella)) {
-          producto.sucursales.push({
-            cadena: fila.comercio_bandera_nombre ?? 'Genérico',
-            direccion: dir,
-            precio: fila.productos_precio_lista ?? 0,
-            id_comercio: fila.id_comercio,
-            id_bandera: fila.id_bandera,
-          });
-        }
+    for (const fila of rows) {
+      if (!mapaProductos.has(fila.id_producto)) {
+        mapaProductos.set(fila.id_producto, {
+          ...mapToProductoResponse(fila),
+          sucursales: []
+        });
       }
 
-      const productos = Array.from(mapaProductos.values()).map(p => ({
-        ...p,
-        precioMinimo: p.sucursales[0]?.precio ?? 0,
-      }));
+      const producto = mapaProductos.get(fila.id_producto)!;
+      const dir = `${fila.sucursales_calle ?? ''} ${fila.sucursales_numero ?? ''}`.trim() || 'Ubicación';
+      const huella = `${fila.id_comercio}-${dir}`;
 
-      return c.json({ productos });
+      if (!producto.sucursales.some((s) => `${s.id_comercio}-${s.direccion}` === huella)) {
+        producto.sucursales.push({
+          cadena: fila.comercio_bandera_nombre ?? 'Genérico',
+          direccion: dir,
+          precio: fila.productos_precio_lista ?? 0,
+          id_comercio: fila.id_comercio,
+          id_bandera: fila.id_bandera,
+        });
+      }
     }
-  )
 
-  //CONSULTA SIN UBICACION
-  .get('/catalogo', 
-    zValidator('query', catalogoQuerySchema),
-    async (c) => {
-      const { search } = c.req.valid('query');
+    const productos = Array.from(mapaProductos.values()).map(p => ({
+      ...p,
+      precioMinimo: p.sucursales[0]?.precio ?? 0,
+    }));
 
-      const { data, error } = await supabase.rpc('buscar_catalogo', { search_term: search });
+    return c.json({ 
+      productos,
+      hasMore: productos.length === limitNum 
+    });
+  })
 
-      if (error) return c.json({ error: error.message }, 500);
+  // /catalogo
+  .get('/catalogo', zValidator('query', catalogoQuerySchema), async (c) => {
+    const { search, page, limit } = c.req.valid('query');
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const offset = (pageNum - 1) * limitNum;
 
-      // 🚀 Ahora el mapping es directo y seguro
-      const rows = (data as DbProductoRow[]) ?? [];
-      const productos = rows.map(p => mapToProductoResponse(p));
+    const { data, error } = await supabase.rpc('buscar_catalogo', {
+      search_term: search,
+      p_limit: limitNum,
+      p_offset: offset,
+    });
 
-      return c.json({ productos });
-    }
-  )
+    if (error) return c.json({ error: error.message }, 500);
+
+    const rows = (data as DbProductoRow[]) ?? [];
+    const productos = rows.map(p => mapToProductoResponse(p));
+
+    return c.json({ 
+      productos,
+      hasMore: productos.length === limitNum
+    });
+  })
 //CONSULTA POR IDS CON UBICACION PARA COMPARAR PRECIOS
   .get('/precios-por-ids-area',
   zValidator('query', preciosPorIdsQuerySchema),

@@ -26,6 +26,20 @@ export const useBusqueda = (query: string = "") => {
     }
   }, []);
 
+  // Helper para validar si la ubicación geográfica es segura y válida
+  const tieneUbicacionValida = useCallback(() => {
+    const lat = Number(ubicacion.latitud);
+    const lng = Number(ubicacion.longitud);
+    return (
+      ubicacion.latitud !== null &&
+      ubicacion.longitud !== null &&
+      !isNaN(lat) &&
+      !isNaN(lng) &&
+      lat !== 0 &&
+      lng !== 0
+    );
+  }, [ubicacion.latitud, ubicacion.longitud]);
+
   // Búsqueda inicial (Página 1) al cambiar término o ubicación
   useEffect(() => {
     if (!hidratado || termino.length < 3) {
@@ -40,30 +54,40 @@ export const useBusqueda = (query: string = "") => {
     const controller = new AbortController();
     let cancelado = false;
 
-    const fetchProductos = async () => {
+    // Función interna con reintento para tolerar el cold-start de la DB
+    const fetchProductos = async (reintentos = 2): Promise<void> => {
       setCargando(true);
-      setPagina(1); // Reiniciar a la primera página
+      setPagina(1);
 
       try {
         const initOpts = { init: { signal: controller.signal } };
+        const usaGps = tieneUbicacionValida();
 
         const queryParams = {
           search: termino,
           page: '1',
           limit: '20',
-          ...(ubicacion.latitud && ubicacion.longitud ? {
-            lat: ubicacion.latitud.toString(),
-            lng: ubicacion.longitud.toString(),
-            radio: ubicacion.radioBusqueda.toString(),
+          ...(usaGps ? {
+            lat: ubicacion.latitud!.toString(),
+            lng: ubicacion.longitud!.toString(),
+            radio: (ubicacion.radioBusqueda || 5).toString(),
           } : {})
         };
 
-        const res = (ubicacion.latitud && ubicacion.longitud) 
+        const res = usaGps 
           ? await client.api.productos.$get({ query: queryParams as any }, initOpts)
           : await client.api.catalogo.$get({ query: { search: termino, page: '1', limit: '20' } }, initOpts);
 
         if (cancelado) return;
-        if (!res.ok) throw new Error(`Status: ${res.status}`);
+
+        // Si dio error 500 y tenemos reintentos disponibles (ej. cold start)
+        if (!res.ok) {
+          if (reintentos > 0) {
+            await new Promise((r) => setTimeout(r, 800)); // Esperar 800ms antes de reintentar
+            if (!cancelado) return fetchProductos(reintentos - 1);
+          }
+          throw new Error(`Status: ${res.status}`);
+        }
 
         const data = (await res.json()) as BusquedaResponse & { hasMore?: boolean };
 
@@ -105,7 +129,10 @@ export const useBusqueda = (query: string = "") => {
     hidratado, 
     ubicacion.latitud, 
     ubicacion.longitud, 
-    ubicacion.radioBusqueda
+    ubicacion.radioBusqueda,
+    tieneUbicacionValida,
+    guardarCacheBusquedaPrecios,
+    limpiarCacheBusquedaPrecios
   ]);
 
   // Función para cargar la siguiente página (Scroll Infinito)
@@ -116,18 +143,20 @@ export const useBusqueda = (query: string = "") => {
     const siguientePagina = pagina + 1;
 
     try {
+      const usaGps = tieneUbicacionValida();
+
       const queryParams = {
         search: termino,
         page: siguientePagina.toString(),
         limit: '20',
-        ...(ubicacion.latitud && ubicacion.longitud ? {
-          lat: ubicacion.latitud.toString(),
-          lng: ubicacion.longitud.toString(),
-          radio: ubicacion.radioBusqueda.toString(),
+        ...(usaGps ? {
+          lat: ubicacion.latitud!.toString(),
+          lng: ubicacion.longitud!.toString(),
+          radio: (ubicacion.radioBusqueda || 5).toString(),
         } : {})
       };
 
-      const res = (ubicacion.latitud && ubicacion.longitud)
+      const res = usaGps
         ? await client.api.productos.$get({ query: queryParams as any })
         : await client.api.catalogo.$get({ query: { search: termino, page: siguientePagina.toString(), limit: '20' } });
 
@@ -145,7 +174,7 @@ export const useBusqueda = (query: string = "") => {
     } finally {
       setCargandoMas(false);
     }
-  }, [cargando, cargandoMas, hayMas, pagina, termino, ubicacion]);
+  }, [cargando, cargandoMas, hayMas, pagina, termino, ubicacion, tieneUbicacionValida]);
 
   return { 
     productos: termino.length < 3 ? [] : productos, 

@@ -5,6 +5,7 @@ export interface Sucursal {
   precio: number;
   id_comercio: number;
   id_bandera: number;
+  distancia?: number | null;
 }
 
 export interface Producto {

@@ -114,6 +114,7 @@ export const productosRouter = new Hono()
           precio: fila.productos_precio_lista ?? 0,
           id_comercio: fila.id_comercio,
           id_bandera: fila.id_bandera,
+          distancia: fila.distancia_km ?? null,
         });
       }
     }

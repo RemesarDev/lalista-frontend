@@ -1,3 +1,4 @@
+import { formatearDistancia } from '@/app/_lib/utils/formatters';
 import { type SucursalCarritoComparada } from '../_lib/Funciones-comparacion';
 import { MapPinIcon } from '@phosphor-icons/react/dist/ssr';
 
@@ -27,6 +28,7 @@ const BadgePosicion = ({ posicion }: { posicion: 2 | 3 }) => {
 };
 
 export const CardComercioAlternativo = ({ sucursal, posicion }: Props) => {
+  const distanciaTexto = formatearDistancia(sucursal.distancia);
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md">
       <div className="mb-2 flex items-start gap-2">
@@ -42,6 +44,11 @@ export const CardComercioAlternativo = ({ sucursal, posicion }: Props) => {
         <MapPinIcon weight="fill" size={15} className="mt-0.5 shrink-0 text-slate-500" />
         <p className="text-[11px] md:text-xs leading-snug text-slate-600 line-clamp-2">
           {sucursal.direccion}
+          {distanciaTexto && (
+              <span className="ml-1 text-slate-500 font-medium">
+                (a {distanciaTexto})
+              </span>
+            )}
         </p>
       </div>
 

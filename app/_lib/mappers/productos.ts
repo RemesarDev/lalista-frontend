@@ -12,6 +12,7 @@ export interface DbProductoRow {
   sucursales_numero?: string;
   id_comercio: number;
   id_bandera: number;
+  distancia_km?: number | null;
 }
 
 export const mapToProductoResponse = (data: DbProductoRow): Producto => ({

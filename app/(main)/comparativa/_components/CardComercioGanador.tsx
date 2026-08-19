@@ -1,4 +1,4 @@
-import { formatearDistancia } from '@/app/_lib/utils/formatters';
+import { formatearDistancia, formatearPrecio } from '@/app/_lib/utils/formatters';
 import { type SucursalCarritoComparada } from '../_lib/Funciones-comparacion';
 import { CrownIcon, MapPinIcon } from '@phosphor-icons/react/dist/ssr';
 
@@ -6,12 +6,6 @@ interface Props {
   sucursal: SucursalCarritoComparada;
 }
 
-const formatearPrecio = (precio: number | null): string => {
-  if (precio === null) return '';
-  return new Intl.NumberFormat('es-AR', {
-    maximumFractionDigits: 0,
-  }).format(precio);
-};
 
 export const CardComercioGanador = ({ sucursal }: Props) => {
  const distanciaTexto = formatearDistancia(sucursal.distancia);

@@ -10,12 +10,18 @@ interface ListItemProps {
   onIncrementar: (id: string) => void;
   onDecrementar: (id: string) => void;
   onEliminar: (id: string) => void;
+  onToggleComprado?: (id: string) => void;
 }
 
-export function ListItem({ producto, onIncrementar, onDecrementar, onEliminar }: ListItemProps) {
-  const [completado, setCompletado] = useState(false);
+export function ListItem({ 
+  producto, 
+  onIncrementar, 
+  onDecrementar, 
+  onEliminar, 
+  onToggleComprado
+ }: ListItemProps) {
   const [errorImagen, setErrorImagen] = useState(false);
-
+  const esComprado = Boolean(producto.comprado);
   const mostrarImagen = Boolean(producto.url_imagen) && !errorImagen;
 
   return (
@@ -26,12 +32,12 @@ export function ListItem({ producto, onIncrementar, onDecrementar, onEliminar }:
         {/* 1. Checkbox */}
         <button
           type="button"
-          onClick={() => setCompletado((estado) => !estado)}
+          onClick={() => onToggleComprado?.(producto.id)}
           className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition ${
-            completado ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 bg-white text-transparent'
+            esComprado ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 bg-white text-transparent'
           }`}
-          aria-pressed={completado}
-          aria-label={completado ? 'Marcar como no comprado' : 'Marcar como comprado'}
+          aria-pressed={esComprado}
+          aria-label={esComprado ? 'Marcar como no comprado' : 'Marcar como comprado'}
         >
           <CheckIcon weight="bold" size={12} />
         </button>
@@ -57,7 +63,7 @@ export function ListItem({ producto, onIncrementar, onDecrementar, onEliminar }:
         {/* 3. Información y controles: Forzamos la misma altura que la imagen (h-12 en mobile) */}
         <div className="flex flex-col justify-between h-12 sm:h-14 min-w-0 flex-1 px-1">
           {/* Nombre arriba (TOP) -> min-w-0 y truncate impiden que empuje al botón de eliminar */}
-          <h3 className={`text-xs sm:text-sm font-bold text-slate-900 truncate ${completado ? 'line-through opacity-40' : ''}`}>
+          <h3 className={`text-xs sm:text-sm font-bold text-slate-900 truncate ${esComprado ? 'line-through opacity-40' : ''}`}>
             {producto.nombre}
           </h3>
 

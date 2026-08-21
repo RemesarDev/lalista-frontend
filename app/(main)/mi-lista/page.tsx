@@ -11,6 +11,7 @@ function ListaProductos() {
   const lista = useListaStore((state) => state.lista);
   const actualizarCantidad = useListaStore((state) => state.actualizarCantidad);
   const eliminarProducto = useListaStore((state) => state.eliminarProducto);
+  const toggleComprado = useListaStore((state) => state.toggleComprado);
 
   if (!lista.length) {
     return (
@@ -50,6 +51,7 @@ function ListaProductos() {
             actualizarCantidad(id, actual.cantidad - 1);
           }}
           onEliminar={eliminarProducto}
+          onToggleComprado={toggleComprado}
         />
       ))}
     </div>

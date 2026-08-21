@@ -25,6 +25,7 @@ export interface ProductoLista {
   cantidad: number;  // Cuántas unidades lleva el usuario
   sucursales: SucursalBusqueda[];  // Precios en sucursales (con TTL de 1 día)
   actualizadoEn: number;  // Timestamp para validar caché (en ms)
+  comprado?: boolean;  // Indica si el producto ya fue comprado
 }
 
 export interface CacheBusquedaPrecios {
@@ -51,6 +52,7 @@ export interface ListaSlice {
   agregarProducto: (producto: Omit<ProductoLista, 'cantidad' | 'actualizadoEn'>) => void;
   eliminarProducto: (id: string) => void;
   actualizarCantidad: (id: string, cantidad: number) => void;
+  toggleComprado: (id: string) => void;
   limpiarLista: () => void;
   guardarCacheBusquedaPrecios: (cache: Omit<CacheBusquedaPrecios, 'actualizadoEn'>) => void;
   limpiarCacheBusquedaPrecios: () => void; 
@@ -94,6 +96,12 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
   actualizarCantidad: (id, cantidad) => set((state) => ({
     lista: state.lista.map((p) =>
       p.id === id ? { ...p, cantidad: Math.max(1, cantidad) } : p
+    ),
+  })),
+
+  toggleComprado: (id) => set((state) => ({
+    lista: state.lista.map((p) =>
+      p.id === id ? { ...p, comprado: !p.comprado } : p
     ),
   })),
 

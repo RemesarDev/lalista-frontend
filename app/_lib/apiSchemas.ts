@@ -47,7 +47,21 @@ export const preciosPorIdsQuerySchema = z.object({
   radio: z.coerce.number({ message: 'Radio inválido' }),
 });
 // ==========================================
-// 3. INFERENCIA DE TIPOS PARA EL FRONTEND
+// 3. ESQUEMAS DE LISTAS (Supabase DB)
+// ==========================================
+export const guardarListaSchema = z.object({
+  nombre: z.string().min(1, 'El nombre es obligatorio').max(100),
+  items: z.array(z.object({
+    id_producto: z.string(),
+    cantidad: z.number().int().min(1),
+    is_checked: z.boolean(),
+  })).min(1, 'La lista debe tener al menos un producto'),
+});
+
+export type GuardarListaBody = z.infer<typeof guardarListaSchema>;
+
+// ==========================================
+// 4. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================
 // Exportamos las interfaces generadas automáticamente por Zod.
 // Los hooks de la carpeta `_hooks` podrán importar estos tipos 

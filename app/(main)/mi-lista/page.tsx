@@ -1,11 +1,12 @@
 'use client';
 
-import { Suspense } from 'react';
-import { MagnifyingGlassIcon, ScalesIcon, ShoppingCartIcon } from '@phosphor-icons/react/dist/ssr';
+import { Suspense, useState, useEffect } from 'react';
+import { MagnifyingGlassIcon, ScalesIcon, ShoppingCartIcon, FloppyDiskIcon } from '@phosphor-icons/react/dist/ssr';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
 import { useListaStore } from '@/app/_store/store';
 import { ListItem } from './_components/ListItem';
 import BaseContainer from '@/app/_components/global/BaseContainer';
+import { ModalGuardarLista } from './_components/ModalGuardarLista';
 
 function ListaProductos() {
   const lista = useListaStore((state) => state.lista);
@@ -60,8 +61,18 @@ function ListaProductos() {
 
 export default function MiListaPage() {
   const totalEnLista = useListaStore((state) => state.lista.length);
+  const lista = useListaStore((state) => state.lista);
   const limpiarLista = useListaStore((state) => state.limpiarLista);
+  const user = useListaStore((state) => state.user);
+  const checkAuth = useListaStore((state) => state.checkAuth);
   const isListaVacia = totalEnLista === 0;
+
+  const [modalGuardarOpen, setModalGuardarOpen] = useState(false);
+  const [loadingGuardar, setLoadingGuardar] = useState(false);
+
+  useEffect(() => {
+    checkAuth(); // solo sincroniza, no redirige
+  }, []);
 
   const handleLimpiarLista = () => {
     if (isListaVacia) return;
@@ -69,28 +80,49 @@ export default function MiListaPage() {
     if (confirmar) limpiarLista();
   };
 
+  const handleGuardarLista = async (nombre: string) => {
+    setLoadingGuardar(true);
+    try {
+      const items = lista.map((p) => ({
+        id_producto: p.id,
+        cantidad: p.cantidad,
+        is_checked: p.comprado ?? false,
+      }));
+
+      const res = await fetch('/api/listas', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, items }),
+      });
+
+      if (!res.ok) throw new Error('Error al guardar la lista');
+      setModalGuardarOpen(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingGuardar(false);
+    }
+  };
+
   return (
     <BaseContainer>
-      {/* Encabezado con estética profesional e integrada */}
       <div className="mb-6 flex flex-row items-center justify-between gap-4 px-1 w-full border-b border-slate-50 pb-3">
-        
-        {/* Título renovado estilo Aplicación de Compra */}
+
         <div className="flex flex-col">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Mi lista
           </h1>
           <p className="text-[11px] sm:text-xs font-medium text-slate-400 mt-0.5">
-            {totalEnLista === 0 
-              ? 'Sin productos guardados' 
+            {totalEnLista === 0
+              ? 'Sin productos guardados'
               : `${totalEnLista} producto${totalEnLista === 1 ? '' : 's'} listo${totalEnLista === 1 ? '' : 's'} para comparar`
             }
           </p>
         </div>
 
-        {/* Grupo de Botones de Acción */}
         <div className="flex items-center gap-2 shrink-0">
-          
-          {/* Con la corrección del componente, 'hidden md:inline-flex' ahora sí va a funcionar al 100% */}
+
           <DesktopActionButton
             href="/comparativa"
             label="Conocé el mejor precio"
@@ -108,7 +140,17 @@ export default function MiListaPage() {
             className="hidden md:inline-flex"
           />
 
-          {/* Este es el único botón que se mantendrá visible en mobile */}
+          {user && !isListaVacia && (
+            <DesktopActionButton
+              onClick={() => setModalGuardarOpen(true)}
+              label="Guardar lista"
+              icon={<FloppyDiskIcon weight="bold" />}
+              color="lila"
+              variant="solid"
+              className="inline-flex"
+            />
+          )}
+
           <DesktopActionButton
             onClick={handleLimpiarLista}
             label="Vaciar lista"
@@ -118,13 +160,20 @@ export default function MiListaPage() {
             disabled={isListaVacia}
             className="inline-flex"
           />
-          
+
         </div>
       </div>
 
       <Suspense fallback={<p className="text-center text-sm text-slate-400 py-4">Cargando tus productos...</p>}>
         <ListaProductos />
       </Suspense>
+
+      <ModalGuardarLista
+        isOpen={modalGuardarOpen}
+        onClose={() => setModalGuardarOpen(false)}
+        onConfirm={handleGuardarLista}
+        loading={loadingGuardar}
+      />
     </BaseContainer>
   );
 }

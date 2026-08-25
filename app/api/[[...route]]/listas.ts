@@ -32,6 +32,7 @@ export const listasRouter = new Hono()
 
     const { data, error } = await supabase.rpc('get_items_lista', {
       p_list_id: listId,
+      p_user_id: session.user.id,
     });
 
     if (error) return c.json({ error: error.message }, 500);

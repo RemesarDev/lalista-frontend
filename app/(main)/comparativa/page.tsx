@@ -6,24 +6,27 @@ import { obtenerTopTresCadenasMasBaratas, type SucursalCarritoComparada } from '
 import { CardComercioGanador } from './_components/CardComercioGanador';
 import { CardComercioAlternativo } from './_components/CardComercioAlternativo';
 import { TablaDetalleProductos } from './_components/TablaDetalleProductos';
-import BaseContainer from '@/app/_components/global/BaseContainer';
 
 export default function ComparativaPage() {
   const lista = useListaStore((state) => state.lista);
-  const ids = useMemo(() => lista.map((p) => p.id), [lista]);
+  
+  // 1. Filtrado de productos No comprados (el checkbox)
+  const listaPendiente = useMemo(() => lista.filter((p) => !p.comprado), [lista]);
+  const ids = useMemo(() => listaPendiente.map((p) => p.id), [listaPendiente]);
+  
   const { productos: precios, cargando } = useComparativa(ids);
 
   // Mergeamos cantidad (del store) con sucursales frescas (del fetch)
   const listaConPreciosActualizados = useMemo(() => {
     const mapaPrecios = new Map(precios.map((p) => [p.id, p]));
-    return lista.map((item) => {
+    return listaPendiente.map((item) => {
       const actualizado = mapaPrecios.get(item.id);
       return {
         ...item,
         sucursales: actualizado?.sucursales ?? [],
       };
     });
-  }, [lista, precios]);
+  }, [listaPendiente, precios]);
 
   const topTresCadenas: SucursalCarritoComparada[] = useMemo(() => {
     if (listaConPreciosActualizados.length === 0) return [];
@@ -31,15 +34,19 @@ export default function ComparativaPage() {
   }, [listaConPreciosActualizados]);
 
   // 1. Estado vacío: sin lista
-  if (!lista || lista.length === 0) {
+  if (!lista || lista.length === 0 || listaPendiente.length === 0) {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-4">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-slate-200 bg-white p-6 text-center">
             <div className="text-5xl">🛒</div>
-            <p className="text-slate-600 font-medium">No hay productos en tu lista</p>
+            <p className="font-medium text-slate-600">
+              {lista?.length > 0 ? '¡Ya compraste todos los productos de tu lista!' : 'No hay productos en tu lista'}
+            </p>
             <p className="text-sm text-slate-500">
-              Agregá productos a tu lista para comparar dónde comprar al mejor precio.
+              {lista?.length > 0
+                ? 'Desmarcá algún producto como comprado si querés volver a incluirlo en la comparativa.'
+                : 'Agregá productos a tu lista para comparar dónde comprar al mejor precio.'}
             </p>
           </div>
         </div>

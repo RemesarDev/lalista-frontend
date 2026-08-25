@@ -3,17 +3,12 @@ import { useState } from 'react';
 import { type SucursalCarritoComparada } from '../_lib/Funciones-comparacion';
 import { useListaStore } from '@/app/_store/store';
 import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr';
+import { formatearPrecio } from '@/app/_lib/utils/formatters';
 
 interface Props {
   cadenas: SucursalCarritoComparada[];
 }
 
-const formatearPrecio = (precio: number | null): string => {
-  if (precio === null) return '';
-  return new Intl.NumberFormat('es-AR', {
-    maximumFractionDigits: 0,
-  }).format(precio);
-};
 
 export const TablaDetalleProductos = ({ cadenas }: Props) => {
   const [expandida, setExpandida] = useState(true);

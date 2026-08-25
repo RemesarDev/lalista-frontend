@@ -12,3 +12,11 @@ export const formatearNombreProducto = (texto: string): string => {
     .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1))
     .join(' ');
 };
+
+export const formatearDistancia = (distanciaKm?: number | null): string => {
+  if (distanciaKm === undefined || distanciaKm === null) return '';
+  if (distanciaKm < 1) {
+    return `${Math.round(distanciaKm * 1000)} m`;
+  }
+  return `${distanciaKm.toFixed(1)} km`;
+};

@@ -59,21 +59,22 @@ export const listasRouter = new Hono()
     return c.json({ id: data }, 201);
   })
 
-  // DELETE /listas/:id — borrar lista propia
+    // DELETE /listas/:id — abandonar lista (owner la borra, member se desuscribe)
   .delete('/listas/:id', async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) return c.json({ error: 'No autorizado' }, 401);
 
     const listId = c.req.param('id');
 
-    const { error } = await supabase
-      .from('listas')
-      .delete()
-      .eq('id', listId)
-      .eq('owner_id', session.user.id);
+    const { data, error } = await supabase.rpc('abandonar_lista', {
+      p_list_id: listId,
+      p_user_id: session.user.id,
+    });
 
     if (error) return c.json({ error: error.message }, 500);
+    if (data === 'not_found') return c.json({ error: 'Lista no encontrada' }, 404);
 
-    return c.json({ success: true }, 200);
+    return c.json({ result: data }, 200);
+    // result es 'deleted' si el owner la borró o 'left' si el member se desuscribió
   });
   

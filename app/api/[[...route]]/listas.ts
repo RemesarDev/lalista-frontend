@@ -56,4 +56,23 @@ export const listasRouter = new Hono()
     if (error) return c.json({ error: error.message }, 500);
 
     return c.json({ id: data }, 201);
+  })
+
+  // DELETE /listas/:id — borrar lista propia
+  .delete('/listas/:id', async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: 'No autorizado' }, 401);
+
+    const listId = c.req.param('id');
+
+    const { error } = await supabase
+      .from('listas')
+      .delete()
+      .eq('id', listId)
+      .eq('owner_id', session.user.id);
+
+    if (error) return c.json({ error: error.message }, 500);
+
+    return c.json({ success: true }, 200);
   });
+  

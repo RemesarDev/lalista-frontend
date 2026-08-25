@@ -5,6 +5,7 @@ import { secureHeaders } from 'hono/secure-headers';
 import { productosRouter } from './productos';
 import { mapsRouter } from './maps';
 import { auth } from '@/app/_lib/auth';
+import { listasRouter } from './listas';
 
 export const runtime = 'nodejs'; 
 
@@ -71,6 +72,7 @@ app.all('/auth/*', (c) => {
 // ==========================================
 const routes = app
   .route('/', productosRouter)  
+  .route('/', listasRouter)
   .route('/maps', mapsRouter);  
 
 // ==========================================

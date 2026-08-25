@@ -1,45 +1,11 @@
 // app/api/[[...route]]/listas.ts
 import { Hono } from 'hono';
-import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
 import { auth } from '@/app/_lib/auth';
+import { guardarListaSchema } from '@/app/_lib/apiSchemas';
+import { DbLista, DbItemLista, mapearLista, mapearItemLista } from '@/app/_lib/mappers/listas';
 
-// ==========================================
-// TIPOS DE RESPUESTA (DB → TS)
-// ==========================================
-interface DbLista {
-  id: string;
-  nombre: string;
-  owner_id: string;
-  created_at: string;
-  rol: 'owner' | 'editor' | 'viewer';
-}
-
-interface DbItemLista {
-  item_id: string;
-  id_producto: string;
-  descripcion: string;
-  imagen: string | null;
-  cantidad: number;
-  is_checked: boolean;
-}
-
-// ==========================================
-// SCHEMAS DE VALIDACIÓN
-// ==========================================
-const guardarListaSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es obligatorio').max(100),
-  items: z.array(z.object({
-    id_producto: z.string(),
-    cantidad: z.number().int().min(1),
-    is_checked: z.boolean(),
-  })).min(1, 'La lista debe tener al menos un producto'),
-});
-
-// ==========================================
-// ROUTER
-// ==========================================
 export const listasRouter = new Hono()
 
   // GET /listas — listas del usuario autenticado
@@ -53,7 +19,8 @@ export const listasRouter = new Hono()
 
     if (error) return c.json({ error: error.message }, 500);
 
-    return c.json({ listas: (data as DbLista[]) ?? [] });
+    const listas = ((data as DbLista[]) ?? []).map(mapearLista);
+    return c.json({ listas });
   })
 
   // GET /listas/:id/items — items de una lista
@@ -69,7 +36,8 @@ export const listasRouter = new Hono()
 
     if (error) return c.json({ error: error.message }, 500);
 
-    return c.json({ items: (data as DbItemLista[]) ?? [] });
+    const items = ((data as DbItemLista[]) ?? []).map(mapearItemLista);
+    return c.json({ items });
   })
 
   // POST /listas — guardar lista nueva

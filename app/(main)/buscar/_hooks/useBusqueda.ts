@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 import { Producto, BusquedaResponse } from '@/app/_types/productos';
 import { client } from '@/app/_lib/hono-client';
@@ -12,7 +13,7 @@ export const useBusqueda = (query: string = "") => {
   const [pagina, setPagina] = useState<number>(1);
   const [hayMas, setHayMas] = useState<boolean>(false);
 
-  const { ubicacion, guardarCacheBusquedaPrecios, limpiarCacheBusquedaPrecios } = useListaStore();
+  const { sucursalesIds, guardarCacheBusquedaPrecios, limpiarCacheBusquedaPrecios } = useListaStore();
   const [hidratado, setHidratado] = useState(false);
 
   useEffect(() => {
@@ -26,21 +27,9 @@ export const useBusqueda = (query: string = "") => {
     }
   }, []);
 
-  // Helper para validar si la ubicación geográfica es segura y válida
-  const tieneUbicacionValida = useCallback(() => {
-    const lat = Number(ubicacion.latitud);
-    const lng = Number(ubicacion.longitud);
-    return (
-      ubicacion.latitud !== null &&
-      ubicacion.longitud !== null &&
-      !isNaN(lat) &&
-      !isNaN(lng) &&
-      lat !== 0 &&
-      lng !== 0
-    );
-  }, [ubicacion.latitud, ubicacion.longitud]);
+  const tieneSucursales = sucursalesIds && sucursalesIds.length > 0;
 
-  // Búsqueda inicial (Página 1) al cambiar término o ubicación
+  // Búsqueda inicial (Página 1)
   useEffect(() => {
     if (!hidratado || termino.length < 3) {
       if (termino.length < 3) {
@@ -54,36 +43,31 @@ export const useBusqueda = (query: string = "") => {
     const controller = new AbortController();
     let cancelado = false;
 
-    // Función interna con reintento para tolerar el cold-start de la DB
     const fetchProductos = async (reintentos = 2): Promise<void> => {
       setCargando(true);
       setPagina(1);
 
       try {
         const initOpts = { init: { signal: controller.signal } };
-        const usaGps = tieneUbicacionValida();
 
-        const queryParams = {
-          search: termino,
-          page: '1',
-          limit: '20',
-          ...(usaGps ? {
-            lat: ubicacion.latitud!.toString(),
-            lng: ubicacion.longitud!.toString(),
-            radio: (ubicacion.radioBusqueda || 5).toString(),
-          } : {})
-        };
-
-        const res = usaGps 
-          ? await client.api.productos.$get({ query: queryParams as any }, initOpts)
-          : await client.api.catalogo.$get({ query: { search: termino, page: '1', limit: '20' } }, initOpts);
+        const res = tieneSucursales
+          ? await client.api.productos.$get({
+              query: {
+                search: termino,
+                page: '1',
+                limit: '20',
+                sucursales_ids: sucursalesIds.join(','),
+              }
+            }, initOpts)
+          : await client.api.catalogo.$get({
+              query: { search: termino, page: '1', limit: '20' }
+            }, initOpts);
 
         if (cancelado) return;
 
-        // Si dio error 500 y tenemos reintentos disponibles (ej. cold start)
         if (!res.ok) {
           if (reintentos > 0) {
-            await new Promise((r) => setTimeout(r, 800)); // Esperar 800ms antes de reintentar
+            await new Promise((r) => setTimeout(r, 800));
             if (!cancelado) return fetchProductos(reintentos - 1);
           }
           throw new Error(`Status: ${res.status}`);
@@ -94,11 +78,13 @@ export const useBusqueda = (query: string = "") => {
         if (data?.productos && Array.isArray(data.productos)) {
           setProductos(data.productos);
           setHayMas(!!data.hasMore);
+          
+          const ubi = useListaStore.getState().ubicacion;
           guardarCacheBusquedaPrecios({
             query: termino,
-            latitud: ubicacion.latitud,
-            longitud: ubicacion.longitud,
-            radioBusqueda: ubicacion.radioBusqueda,
+            latitud: ubi.latitud,
+            longitud: ubi.longitud,
+            radioBusqueda: ubi.radioBusqueda,
             productos: data.productos,
           });
         } else {
@@ -127,15 +113,13 @@ export const useBusqueda = (query: string = "") => {
   }, [
     termino, 
     hidratado, 
-    ubicacion.latitud, 
-    ubicacion.longitud, 
-    ubicacion.radioBusqueda,
-    tieneUbicacionValida,
+    sucursalesIds,
+    tieneSucursales,
     guardarCacheBusquedaPrecios,
     limpiarCacheBusquedaPrecios
   ]);
 
-  // Función para cargar la siguiente página (Scroll Infinito)
+  // Carga para Scroll Infinito
   const cargarMas = useCallback(async () => {
     if (cargando || cargandoMas || !hayMas || termino.length < 3) return;
 
@@ -143,22 +127,18 @@ export const useBusqueda = (query: string = "") => {
     const siguientePagina = pagina + 1;
 
     try {
-      const usaGps = tieneUbicacionValida();
-
-      const queryParams = {
-        search: termino,
-        page: siguientePagina.toString(),
-        limit: '20',
-        ...(usaGps ? {
-          lat: ubicacion.latitud!.toString(),
-          lng: ubicacion.longitud!.toString(),
-          radio: (ubicacion.radioBusqueda || 5).toString(),
-        } : {})
-      };
-
-      const res = usaGps
-        ? await client.api.productos.$get({ query: queryParams as any })
-        : await client.api.catalogo.$get({ query: { search: termino, page: siguientePagina.toString(), limit: '20' } });
+      const res = tieneSucursales
+        ? await client.api.productos.$get({
+            query: {
+              search: termino,
+              page: siguientePagina.toString(),
+              limit: '20',
+              sucursales_ids: sucursalesIds.join(','),
+            }
+          })
+        : await client.api.catalogo.$get({
+            query: { search: termino, page: siguientePagina.toString(), limit: '20' }
+          });
 
       if (!res.ok) throw new Error(`Status: ${res.status}`);
 
@@ -174,7 +154,7 @@ export const useBusqueda = (query: string = "") => {
     } finally {
       setCargandoMas(false);
     }
-  }, [cargando, cargandoMas, hayMas, pagina, termino, ubicacion, tieneUbicacionValida]);
+  }, [cargando, cargandoMas, hayMas, pagina, termino, sucursalesIds, tieneSucursales]);
 
   return { 
     productos: termino.length < 3 ? [] : productos, 

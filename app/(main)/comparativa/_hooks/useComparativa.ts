@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { Producto } from '@/app/_types/productos';
 import { client } from '@/app/_lib/hono-client';
@@ -9,7 +10,8 @@ export const useComparativa = (ids: string[]) => {
   const [cargando, setCargando] = useState<boolean>(false);
   const [hidratado, setHidratado] = useState(false);
 
-  const { ubicacion } = useListaStore();
+  // Extraemos únicamente sucursalesIds del Store
+  const { sucursalesIds } = useListaStore();
 
   useEffect(() => {
     if (useListaStore.persist.hasHydrated()) {
@@ -22,15 +24,12 @@ export const useComparativa = (ids: string[]) => {
     }
   }, []);
 
-  useEffect(() => {
-    // 1. Extraemos y validamos
-    const lat = ubicacion.latitud;
-    const lng = ubicacion.longitud;
-    const rad = ubicacion.radioBusqueda;
+  const idsClave = ids.join(',');
+  const sucursalesClave = sucursalesIds.join(',');
 
-    // 2. Si alguna es null/undefined/0, salimos. 
-    // TypeScript ahora sabe que lat, lng y rad no son nulos aquí.
-    if (!hidratado || ids.length === 0 || !lat || !lng) {
+  useEffect(() => {
+    // Si no está hidratado, no hay IDs de productos o no hay sucursales disponibles, limpiamos y salimos.
+    if (!hidratado || ids.length === 0 || sucursalesIds.length === 0) {
       if (productos.length > 0) setProductos([]);
       return;
     }
@@ -41,22 +40,22 @@ export const useComparativa = (ids: string[]) => {
     const fetchPrecios = async () => {
       setCargando(true);
       try {
-        // 3. Ahora usamos las variables locales que ya validamos
-    const res = await client.api['precios-por-ids-area'].$get({
-    query: {
-        ids: ids.join(','), 
-        lat: lat.toString(),
-        lng: lng.toString(),
-        radio: (rad ?? 5).toString(),
-    },
-    }, { init: { signal: controller.signal } });
+        const res = await client.api['precios-por-ids-area'].$get(
+          {
+            query: {
+              ids: idsClave,
+              sucursales_ids: sucursalesClave,
+            },
+          },
+          { init: { signal: controller.signal } }
+        );
 
         if (cancelado) return;
 
         if (!res.ok) throw new Error(`Error ${res.status}`);
 
         const data = await res.json();
-        
+
         if (data?.productos && Array.isArray(data.productos)) {
           setProductos(data.productos);
         } else {
@@ -78,13 +77,7 @@ export const useComparativa = (ids: string[]) => {
       cancelado = true;
       controller.abort();
     };
-  }, [
-    ids.join(','),
-    hidratado, 
-    ubicacion.latitud, 
-    ubicacion.longitud, 
-    ubicacion.radioBusqueda
-  ]);
+  }, [idsClave, sucursalesClave, hidratado]);
 
   return { productos, cargando };
 };

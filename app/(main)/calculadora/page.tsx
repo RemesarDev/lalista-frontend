@@ -41,8 +41,16 @@ export default function CalculadoraPage() {
     }
   };
 
-  const { series, toggleSerie, cargandoIndec, errorIndec, actualizandoPrecios, tieneUbicacionValida } =
-    useInflacion(changuitoSeleccionado, registrarPunto);
+  const {
+    series,
+    toggleSerie,
+    cargandoIndec,
+    errorIndec,
+    actualizandoPrecios,
+    tieneUbicacionValida,
+    cargandoHistoricoReal,
+    tieneHistoricoReal,
+  } = useInflacion(changuitoSeleccionado, registrarPunto);
 
   const {
     series: seriesProductosIndec,
@@ -158,7 +166,7 @@ export default function CalculadoraPage() {
                   />
                 ))}
 
-                {(cargandoIndec || actualizandoPrecios) && (
+                {(cargandoIndec || actualizandoPrecios || cargandoHistoricoReal) && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400">
                     <ArrowsClockwiseIcon size={12} className="animate-spin" />
                     Actualizando…
@@ -175,9 +183,11 @@ export default function CalculadoraPage() {
               <GraficoInflacion series={series} />
 
               <p className="mt-2 px-1 text-[10px] leading-relaxed text-slate-300">
-                {changuitoSeleccionado.historialPorSupermercado[0]?.puntos.length < 3
-                  ? 'Todavía es un seguimiento nuevo, por eso las líneas son cortas — van a ir creciendo un punto por mes. '
-                  : ''}
+                {tieneHistoricoReal
+                  ? 'Las líneas incluyen precios históricos reales (SEPA) de antes de que empezaras a seguir este changuito, además del seguimiento propio mes a mes. '
+                  : changuitoSeleccionado.historialPorSupermercado[0]?.puntos.length < 3
+                    ? 'Todavía es un seguimiento nuevo, por eso las líneas son cortas — van a ir creciendo un punto por mes. '
+                    : ''}
                 Cada línea sigue el precio real de los mismos productos en el mismo supermercado, mes a mes
                 {tieneUbicacionValida ? '' : ' (activá tu ubicación para que el precio se actualice)'}.
               </p>

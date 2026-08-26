@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { client } from '@/app/_lib/hono-client';
 import { useListaStore } from '@/app/_store/store';
 import { obtenerSerieIndec } from '../_lib/indec';
+import { useHistoricoRealSupermercados } from './useHistoricoRealSupermercados';
 import type { Changuito, PuntoMensual } from '../_types/changuito';
 import type { PuntoSerie, SerieInflacion } from '../_types/inflacion';
 
@@ -19,6 +20,19 @@ function puntosMensualesAPorcentaje(puntos: PuntoMensual[]): PuntoSerie[] {
     fecha: `${p.mes}-01`,
     porcentaje: Math.round(((p.precioTotal / base - 1) * 100) * 10) / 10,
   }));
+}
+
+/** Antepone el histórico REAL (SEPA, desde antes de empezar a seguir el
+ * changuito) a los puntos propios (los que fuimos registrando mes a mes
+ * desde que se creó el changuito). Solo se agregan los meses del
+ * histórico real que sean ANTERIORES al primer punto propio — así nunca
+ * se pisa ni se duplica un mes que ya tenemos de primera mano. */
+function combinarConHistoricoReal(historicoReal: PuntoMensual[], puntosPropios: PuntoMensual[]): PuntoMensual[] {
+  if (!historicoReal.length) return puntosPropios;
+  if (!puntosPropios.length) return historicoReal;
+  const primerMesPropio = puntosPropios[0].mes;
+  const historicoAntesDePropios = historicoReal.filter((p) => p.mes < primerMesPropio);
+  return [...historicoAntesDePropios, ...puntosPropios];
 }
 
 export function useInflacion(changuito: Changuito | null, registrarPunto: (id: string, clave: string, total: number) => void) {
@@ -40,6 +54,9 @@ export function useInflacion(changuito: Changuito | null, registrarPunto: (id: s
   const [cargandoIndec, setCargandoIndec] = useState(false);
   const [errorIndec, setErrorIndec] = useState<string | null>(null);
   const [actualizandoPrecios, setActualizandoPrecios] = useState(false);
+
+  const { historicoPorClave: historicoReal, cargando: cargandoHistoricoReal } =
+    useHistoricoRealSupermercados(changuito);
 
   const tieneUbicacionValida =
     hidratado &&
@@ -129,12 +146,13 @@ export function useInflacion(changuito: Changuito | null, registrarPunto: (id: s
 
     const lista: SerieInflacion[] = changuito.supermercados.map((super_, i) => {
       const historial = changuito.historialPorSupermercado.find((h) => h.clave === super_.clave);
+      const puntosCombinados = combinarConHistoricoReal(historicoReal[super_.clave] ?? [], historial?.puntos ?? []);
       return {
         id: super_.clave,
         nombre: super_.cadena,
         color: COLORES_SUPERMERCADO[i % COLORES_SUPERMERCADO.length],
         estiloLinea: 'solido',
-        puntos: puntosMensualesAPorcentaje(historial?.puntos ?? []),
+        puntos: puntosMensualesAPorcentaje(puntosCombinados),
         visible: seriesVisibles[super_.clave] ?? true,
       };
     });
@@ -151,11 +169,13 @@ export function useInflacion(changuito: Changuito | null, registrarPunto: (id: s
     }
 
     return lista;
-  }, [changuito, puntosIndec, seriesVisibles]);
+  }, [changuito, puntosIndec, seriesVisibles, historicoReal]);
 
   const toggleSerie = (id: string) => {
     setSeriesVisibles((actual) => ({ ...actual, [id]: !(actual[id] ?? true) }));
   };
+
+  const tieneHistoricoReal = Object.keys(historicoReal).length > 0;
 
   return {
     series,
@@ -164,5 +184,7 @@ export function useInflacion(changuito: Changuito | null, registrarPunto: (id: s
     errorIndec,
     actualizandoPrecios,
     tieneUbicacionValida,
+    cargandoHistoricoReal,
+    tieneHistoricoReal,
   };
 }

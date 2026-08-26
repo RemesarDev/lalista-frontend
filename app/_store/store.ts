@@ -14,11 +14,17 @@ import type {
   ProductoLista, 
   SucursalBusqueda 
 } from './slices/listaSlice';
-import type { UbicacionSlice, UbicacionUsuario } from './slices/ubicacionSlice';
+import type { UbicacionSlice, UbicacionUsuario, SucursalCercana } from './slices/ubicacionSlice';
 import type { AuthSlice } from './slices/authSlice';
 
 export type StoreState = ListaSlice & UbicacionSlice & AuthSlice;
-export type { CacheBusquedaPrecios, ProductoBusqueda, ProductoLista, SucursalBusqueda, UbicacionUsuario };
+export type { 
+  CacheBusquedaPrecios, 
+  ProductoBusqueda, 
+  ProductoLista, 
+  SucursalBusqueda, 
+  UbicacionUsuario,
+  SucursalCercana };
 
 export const useListaStore = create<StoreState>()(
   persist(

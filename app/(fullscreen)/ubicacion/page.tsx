@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { APIProvider } from '@vis.gl/react-google-maps';
 import { CrosshairIcon, ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Componentes y Hooks modulares
 import BuscadorUbicacion from './_components/BuscadorUbicacion';
@@ -10,8 +12,6 @@ import ControlesZoom from './_components/ControlesZoom';
 import MapaInteractivo from './_components/MapaInteractivo';
 import SliderVertical from './_components/SliderVertical';
 import { useUbicacion } from './_hooks/useUbicacion';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 
 export default function UbicacionVista() {
@@ -26,6 +26,7 @@ export default function UbicacionVista() {
 function ContenidoMapa() {
   const [isFocused, setIsFocused] = useState(false);
   const router = useRouter();
+
   const {
     radio, setRadio,
     zoom, setZoom,
@@ -38,8 +39,9 @@ function ContenidoMapa() {
     manejarSeleccionDireccion,
     errorSugerencias,
     coordenadasPendientes,
-    confirmarUbicacion,
     manejarClickMapa,
+    confirmarYBuscarSucursales,
+    cargandoSucursales,
   } = useUbicacion();
   
   return (
@@ -51,7 +53,8 @@ function ContenidoMapa() {
         zoom={zoom} 
         setZoom={setZoom} 
         radio={radio} 
-        onMapClick={manejarClickMapa}/>
+        onMapClick={manejarClickMapa}
+      />
 
       {/* CONTROLES ZOOM MANUAL */}
       <ControlesZoom zoom={zoom} setZoom={setZoom} />
@@ -90,7 +93,7 @@ function ContenidoMapa() {
       {/* BOTÓN GPS */}
       <button 
         onClick={obtenerGeolocalizacionReal}
-        disabled={cargandoGps}
+        disabled={cargandoGps || cargandoSucursales}
         style={{ bottom: 'calc(8rem + env(safe-area-inset-bottom))' }}
         className={`absolute right-4 z-30 bg-slate-900 hover:bg-slate-800 active:scale-[0.92] text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 border border-slate-800 cursor-pointer 
           ${isFocused ? 'opacity-10 pointer-events-none' : 'opacity-100'} 
@@ -99,33 +102,47 @@ function ContenidoMapa() {
         <CrosshairIcon weight="fill" className={`text-xl text-red-400 ${cargandoGps ? 'animate-spin' : ''}`} />
       </button>
 
-          {/* BOTÓN GUARDAR UBICACIÓN FILTRO */}
+      {/* BOTÓN GUARDAR UBICACIÓN FILTRO */}
       <div 
         className={`absolute bottom-0 left-0 right-0 z-30 flex justify-center pb-6 transition-all duration-300 ${isFocused ? 'opacity-10 pointer-events-none' : 'opacity-100'}`}
         style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
       >
-          <button
-            onClick={() => {
-              confirmarUbicacion();
-              
-              const { terminoBusqueda, timeTerminoBusqueda } = useListaStore.getState();
-              const esReciente = (Date.now() - timeTerminoBusqueda) < (60 * 60 * 1000);
-              if (terminoBusqueda && esReciente) {
-                    router.push(`/buscar?q=${encodeURIComponent(terminoBusqueda)}`);
-                  } else {
-                    router.push('/buscar');
-                  }
-              }}
-            disabled={!coordenadasPendientes}
-            className={`px-6 py-3.5 rounded-2xl font-bold text-sm shadow-2xl transition-all duration-300 active:scale-95
-              ${coordenadasPendientes 
-                ? 'bg-slate-900 text-white border border-slate-800 hover:bg-slate-800' 
-                : 'bg-white text-slate-400 border border-slate-200 cursor-not-allowed'
-              }`}
-          >
-            {coordenadasPendientes ? '📍 Guardar ubicación para filtrar' : 'Elegí una ubicación'}
-          </button>
-        </div>
+        <button
+          onClick={async () => {
+            if (!coordenadasPendientes) return;
+
+            // 1. Ejecuta la confirmación + la búsqueda de sucursales en Supabase
+            await confirmarYBuscarSucursales();
+
+            // 2. Redirección manteniendo la búsqueda previa si es reciente
+            const { terminoBusqueda, timeTerminoBusqueda } = useListaStore.getState();
+            const esReciente = (Date.now() - timeTerminoBusqueda) < (60 * 60 * 1000);
+
+            if (terminoBusqueda && esReciente) {
+              router.push(`/buscar?q=${encodeURIComponent(terminoBusqueda)}`);
+            } else {
+              router.push('/buscar');
+            }
+          }}
+          disabled={!coordenadasPendientes || cargandoSucursales}
+          className={`px-6 py-3.5 rounded-2xl font-bold text-sm shadow-2xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2
+            ${coordenadasPendientes && !cargandoSucursales
+              ? 'bg-slate-900 text-white border border-slate-800 hover:bg-slate-800 cursor-pointer' 
+              : 'bg-white text-slate-400 border border-slate-200 cursor-not-allowed'
+            }`}
+        >
+          {cargandoSucursales ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Buscando sucursales...
+            </>
+          ) : coordenadasPendientes ? (
+            '📍 Guardar ubicación para filtrar'
+          ) : (
+            'Elegí una ubicación'
+          )}
+        </button>
+      </div>
     </div>
   );
 }

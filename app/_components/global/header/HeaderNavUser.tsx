@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { SignOutIcon, UserIcon } from '@phosphor-icons/react/dist/ssr';
+import { SignOutIcon, ListIcon, UserIcon } from '@phosphor-icons/react/dist/ssr';
 import { useListaStore } from '@/app/_store/store';
 
 export default function HeaderUser() {
@@ -77,6 +77,15 @@ export default function HeaderUser() {
           >
             <UserIcon className="text-base" />
             Perfil
+          </Link>
+
+          <Link
+            href="/mis-listas"
+            onClick={() => setMenuOpen(false)}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          >
+            <ListIcon className="text-base" />
+            Mis listas
           </Link>
 
           <button

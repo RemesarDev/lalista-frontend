@@ -85,18 +85,17 @@ export default function MiListaPage() {
   const handleGuardarLista = async (nombre: string) => {
     setLoadingGuardar(true);
     try {
-      // Formateamos los grupos disyuntivos para la API
-      const items = lista.flatMap((grupo) =>
-        grupo.opciones.map((opcion, index) => ({
-          item_id: grupo.grupoId,
+      const items = lista.map((grupo) => ({
+        item_id: grupo.grupoId,
+        cantidad: grupo.cantidad,
+        comprado: grupo.comprado ?? false,
+        opciones: grupo.opciones.map((opcion, index) => ({
           id_producto: opcion.id,
           descripcion: opcion.nombre,
-          imagen: opcion.url_imagen,
-          cantidad: grupo.cantidad,
-          is_checked: grupo.comprado ?? false,
+          imagen: opcion.url_imagen ?? null,
           es_principal: index === 0,
-        }))
-      );
+        })),
+      }));
 
       const res = await fetch('/api/listas', {
         method: 'POST',

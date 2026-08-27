@@ -46,12 +46,12 @@ export const listasRouter = new Hono()
 
     // 1. Agrupar filas de DB por su item_id (UUID del grupo)
     const gruposMap = new Map<string, DbItemLista[]>();
-    for (const row of rawRows) {
-      if (!gruposMap.has(row.item_id)) {
-        gruposMap.set(row.item_id, []);
-      }
-      gruposMap.get(row.item_id)!.push(row);
-    }
+for (const row of rawRows) {
+  if (!gruposMap.has(row.grupo_id)) {
+    gruposMap.set(row.grupo_id, []);
+  }
+  gruposMap.get(row.grupo_id)!.push(row); 
+}
 
     // 2. Mapear cada grupo a la estructura ItemLista con opciones disyuntivas
     const items = Array.from(gruposMap.values()).map(mapearGrupoItemsLista);

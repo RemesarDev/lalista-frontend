@@ -8,10 +8,10 @@ export interface OpcionProducto {
 
 // Representación para persistencia/API (Supabase)
 export interface ItemLista {
-  itemId: string;           // UUID del grupo/ítem en la lista
+  grupoId: string;  // 👈 era itemId
   cantidad: number;
   comprado: boolean;
-  opciones: OpcionProducto[]; // La posición 0 es la principal
+  opciones: OpcionProducto[];
 }
 
 export interface ListaCompras {

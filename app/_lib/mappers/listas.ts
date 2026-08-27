@@ -58,7 +58,7 @@ export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
   }));
 
   return {
-    itemId: base.grupo_id,
+    grupoId: base.grupo_id,
     cantidad: base.cantidad,
     comprado: base.comprado,
     opciones,
@@ -71,7 +71,7 @@ export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
  */
 export const mapearItemListaADb = (item: ItemLista): DbItemLista[] => {
   return item.opciones.map((opcion) => ({
-    grupo_id: item.itemId,
+    grupo_id: item.grupoId,
     id_producto: opcion.id,
     descripcion: opcion.nombre,
     imagen: opcion.url_imagen ?? null,

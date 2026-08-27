@@ -1,17 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Producto } from '@/app/_types/productos';
+import { useState, useEffect, useMemo } from 'react';
 import { client } from '@/app/_lib/hono-client';
-import { useListaStore } from '@/app/_store/store';
+import { useListaStore, type SucursalBusqueda } from '@/app/_store/store';
+
+// Estructura que devuelve el endpoint de comparativa
+export interface ProductoComparativa {
+  id: string;
+  nombre?: string;
+  sucursales: SucursalBusqueda[];
+}
 
 export const useComparativa = (ids: string[]) => {
-  const [productos, setProductos] = useState<Producto[]>([]);
+  const [productos, setProductos] = useState<ProductoComparativa[]>([]);
   const [cargando, setCargando] = useState<boolean>(false);
   const [hidratado, setHidratado] = useState(false);
 
-  // Extraemos únicamente sucursalesIds del Store
-  const { sucursalesIds } = useListaStore();
+  // Extraemos las sucursales cercanas de la ubicación actual del usuario desde el store
+  const sucursalesCercanas = useListaStore((state) => state.sucursalesCercanas);
+
+  // Derivamos los IDs de sucursales para la consulta HTTP
+  const sucursalesIds = useMemo(
+    () => (sucursalesCercanas ? sucursalesCercanas.map((s) => s.id_comercio || s.id_bandera) : []),
+    [sucursalesCercanas]
+  );
 
   useEffect(() => {
     if (useListaStore.persist.hasHydrated()) {
@@ -28,8 +40,8 @@ export const useComparativa = (ids: string[]) => {
   const sucursalesClave = sucursalesIds.join(',');
 
   useEffect(() => {
-    // Si no está hidratado, no hay IDs de productos o no hay sucursales disponibles, limpiamos y salimos.
-    if (!hidratado || ids.length === 0 || sucursalesIds.length === 0) {
+    // Si no se ha hidratado, o no hay IDs de productos o sucursales, reseteamos y evitamos el fetch.
+    if (!hidratado || !idsClave || !sucursalesClave) {
       if (productos.length > 0) setProductos([]);
       return;
     }
@@ -52,7 +64,7 @@ export const useComparativa = (ids: string[]) => {
 
         if (cancelado) return;
 
-        if (!res.ok) throw new Error(`Error ${res.status}`);
+        if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
 
         const data = await res.json();
 

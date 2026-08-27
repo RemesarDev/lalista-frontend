@@ -15,14 +15,12 @@ type SugerenciaLugar = {
 };
 
 export function useUbicacion() {
-  const { 
-    ubicacion, 
-    setUbicacion, 
-    cambiarRadioBusqueda,
-    cargandoSucursales,
-    setCargandoSucursales,
-    setSucursalesCercanas
-  } = useListaStore();
+  const ubicacion = useListaStore((state) => state.ubicacion);
+  const setUbicacion = useListaStore((state) => state.setUbicacion);
+  const cambiarRadioBusqueda = useListaStore((state) => state.cambiarRadioBusqueda);
+  const cargandoSucursales = useListaStore((state) => state.cargandoSucursales);
+  const setCargandoSucursales = useListaStore((state) => state.setCargandoSucursales);
+  const setSucursalesCercanas = useListaStore((state) => state.setSucursalesCercanas);
   
   const [direccion, setDireccion] = useState<string>(ubicacion.nombreLugar || '');
   const [sugerencias, setSugerencias] = useState<SugerenciaLugar[]>([]);

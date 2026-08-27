@@ -65,14 +65,13 @@ for (const row of rawRows) {
     if (!session) return c.json({ error: 'No autorizado' }, 401);
 
     const { nombre, items } = c.req.valid('json');
-    console.log('ITEMS:', JSON.stringify(items, null, 2));
 
     const { data, error } = await supabase.rpc('guardar_lista_usuario', {
       p_user_id: session.user.id,
       p_nombre: nombre,
       p_items: items, // El JSON validado por Zod ya coincide con el formato que la RPC espera
     });
-    console.log('RPC ERROR:', error); 
+
     if (error) return c.json({ error: error.message }, 500);
 
     return c.json({ id: data }, 201);

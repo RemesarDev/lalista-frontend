@@ -30,7 +30,11 @@ export const COINCIDENCIAS_INDEC: CoincidenciaIndec[] = [
   { claves: ['limon'], serieId: '105.1_I2L_2016_M_14', nombreGenerico: 'Limón' },
   { claves: ['papa'], serieId: '105.1_I2P_2016_M_13', nombreGenerico: 'Papa' },
   { claves: ['batata'], serieId: '105.1_I2BAT_2016_M_15', nombreGenerico: 'Batata' },
-  { claves: ['yerba'], serieId: '105.1_I2YM_2016_M_19', nombreGenerico: 'Yerba mate' },
+  {
+    claves: ['yerba', 'mate listo', 'mate cocido'],
+    serieId: '105.1_I2YM_2016_M_19',
+    nombreGenerico: 'Yerba mate',
+  },
   { claves: ['cafe'], serieId: '105.1_I2CM_2016_M_20', nombreGenerico: 'Café molido' },
   {
     claves: ['gaseosa', 'cola'],
@@ -63,11 +67,19 @@ function normalizar(texto: string): string {
     .replace(/[̀-ͯ]/g, '');
 }
 
+/** Coincide `clave` como palabra completa dentro de `normalizado` — no como
+ * substring suelto (evita falsos positivos tipo "cola" adentro de
+ * "chocolate", o "mate" adentro de "toMATE"). */
+function contienePalabra(normalizado: string, clave: string): boolean {
+  const escapada = normalizar(clave).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`\\b${escapada}\\b`).test(normalizado);
+}
+
 /** Busca, por nombre de producto, si hay una categoría genérica del INDEC
  * que le corresponda (match por palabra clave, no por marca exacta). */
 export function buscarCoincidenciaIndec(nombreProducto: string): CoincidenciaIndec | null {
   const normalizado = normalizar(nombreProducto);
   return (
-    COINCIDENCIAS_INDEC.find((c) => c.claves.some((clave) => normalizado.includes(normalizar(clave)))) ?? null
+    COINCIDENCIAS_INDEC.find((c) => c.claves.some((clave) => contienePalabra(normalizado, clave))) ?? null
   );
 }

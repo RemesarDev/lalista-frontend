@@ -8,8 +8,7 @@ import { useHistoricoRealSupermercados } from './useHistoricoRealSupermercados';
 import type { Changuito, PuntoMensual } from '../_types/changuito';
 import type { PuntoSerie, SerieInflacion } from '../_types/inflacion';
 
-// Colores fijos por posición — nunca se reasignan según qué serie esté oculta,
-// para que la identidad de cada supermercado no cambie al tocar los toggles.
+
 const COLORES_SUPERMERCADO = ['var(--color-accent-600)', 'var(--color-orange-500)', 'var(--color-primary-400)'];
 const COLOR_INDEC = 'var(--color-sky-600)';
 
@@ -55,8 +54,11 @@ export function useInflacion(changuito: Changuito | null, registrarPunto: (id: s
   const [errorIndec, setErrorIndec] = useState<string | null>(null);
   const [actualizandoPrecios, setActualizandoPrecios] = useState(false);
 
-  const { historicoPorClave: historicoReal, cargando: cargandoHistoricoReal } =
-    useHistoricoRealSupermercados(changuito);
+  const {
+    historicoPorClave: historicoReal,
+    historicoPorProductoPorClave,
+    cargando: cargandoHistoricoReal,
+  } = useHistoricoRealSupermercados(changuito);
 
   const tieneUbicacionValida =
     hidratado &&
@@ -92,8 +94,6 @@ export function useInflacion(changuito: Changuito | null, registrarPunto: (id: s
 
   // 2. Repreguntar el precio de hoy de los productos de ESTE changuito en
   //    CADA UNO de sus supermercados congelados, y sumar un punto mensual.
-  //    (La API pide ahora `sucursales_ids` en vez de lat/lng/radio — esos
-  //    ids salen del store, que los llena HeaderLocation al elegir ubicación.)
   useEffect(() => {
     if (!changuito || !tieneUbicacionValida || !sucursalesIds.length) return;
     let vigente = true;
@@ -186,5 +186,6 @@ export function useInflacion(changuito: Changuito | null, registrarPunto: (id: s
     tieneUbicacionValida,
     cargandoHistoricoReal,
     tieneHistoricoReal,
+    historicoPorProductoPorClave,
   };
 }

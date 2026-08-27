@@ -11,7 +11,7 @@ const historicoQuerySchema = z.object({
 });
 
 interface FilaHistoricoSepa {
-  periodo: string; // "YYYY-MM-DD"
+  periodo: string; // "año-mes-dia"
   id_producto: string;
   precio_lista_mediana: number;
 }

@@ -6,7 +6,6 @@ import { buscarCoincidenciaIndec } from '../_lib/indecProductos';
 import type { Changuito } from '../_types/changuito';
 import type { SerieInflacion } from '../_types/inflacion';
 
-// Mismos colores validados que ya usamos en el resto de la calculadora.
 const COLORES = [
   'var(--color-accent-600)',
   'var(--color-orange-500)',

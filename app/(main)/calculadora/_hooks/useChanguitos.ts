@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ProductoLista } from '@/app/_store/store';
+import type { GrupoLista } from '@/app/_store/store';
 import { obtenerTopTresCadenasMasBaratas } from '@/app/(main)/comparativa/_lib/Funciones-comparacion';
-import type { Changuito } from '../_types/changuito';
+import type { Changuito, ProductoChanguito } from '../_types/changuito';
 
 const STORAGE_KEY = 'lalista-changuitos';
 
@@ -41,7 +41,7 @@ export function useChanguitos() {
         if (lista.length) setSeleccionadoId(lista[lista.length - 1].id);
       }
     } catch {
-      // localStorage no disponible — seguimos sin persistencia
+      
     }
     setCargado(true);
   }, []);
@@ -51,21 +51,35 @@ export function useChanguitos() {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevos));
     } catch {
-      // sin persistencia disponible
+      
     }
   }, []);
 
   const iniciarSeguimiento = useCallback(
-    (lista: ProductoLista[]) => {
+    (lista: GrupoLista[]) => {
       const top3 = obtenerTopTresCadenasMasBaratas(lista);
       const fecha = hoyISO();
       const mes = mesActual();
+
+      // Cada item de `lista` es un GRUPO (puede tener una opción principal +
+      // alternativas). Para el changuito nos quedamos con la opción
+      // principal de cada grupo (`opciones[0]`) — es la misma que usa el
+      // resto de la app como "el producto elegido". Si algún grupo quedó
+      // sin ninguna opción cargada (no debería pasar, pero por las dudas),
+      // lo salteamos en vez de romper el changuito entero.
+      const productos: ProductoChanguito[] = lista
+        .map((grupo) => {
+          const principal = grupo.opciones[0];
+          if (!principal) return null;
+          return { id: principal.id, nombre: principal.nombre, urlImagen: principal.url_imagen, cantidad: grupo.cantidad };
+        })
+        .filter((p): p is ProductoChanguito => p !== null);
 
       const nuevo: Changuito = {
         id: `${Date.now()}`,
         nombre: `Changuito del ${formatearFechaCorta(fecha)}`,
         fechaInicio: fecha,
-        productos: lista.map((p) => ({ id: p.id, nombre: p.nombre, urlImagen: p.url_imagen, cantidad: p.cantidad })),
+        productos,
         supermercados: top3.map((s) => ({
           clave: `${s.id_comercio}-${s.id_bandera}`,
           idComercio: s.id_comercio,
@@ -109,7 +123,7 @@ export function useChanguitos() {
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevos));
       } catch {
-        // sin persistencia disponible
+        
       }
       return nuevos;
     });

@@ -174,13 +174,11 @@ function ResultadosBusqueda() {
 
 export default function BuscarVista() {
   return (
-    <>
+    <Suspense fallback={<p className="text-center text-slate-400 py-10">Cargando...</p>}>
       <StickySearch />
       <BaseContainer>
-        <Suspense fallback={<p className="text-center text-slate-400">Cargando buscador...</p>}>
-          <ResultadosBusqueda />
-        </Suspense>
+        <ResultadosBusqueda />
       </BaseContainer>
-    </>
+    </Suspense>
   );
 }

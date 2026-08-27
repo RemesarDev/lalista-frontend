@@ -13,10 +13,15 @@ export const formatearNombreProducto = (texto: string): string => {
     .join(' ');
 };
 
-export const formatearDistancia = (distanciaKm?: number | null): string => {
-  if (distanciaKm === undefined || distanciaKm === null) return '';
+export function formatearDistancia(distanciaKm?: number | null): string | null {
+  if (distanciaKm == null || isNaN(distanciaKm)) return null;
+
   if (distanciaKm < 1) {
-    return `${Math.round(distanciaKm * 1000)} m`;
+    // Si es menor a 1 km, lo mostramos en metros (ej: 450 m)
+    const metros = Math.round(distanciaKm * 1000);
+    return `${metros} m`;
   }
+
+  // Si es 1 km o más, mostramos 1 o 2 decimales según preferencia (ej: 2.3 km)
   return `${distanciaKm.toFixed(1)} km`;
-};
+}

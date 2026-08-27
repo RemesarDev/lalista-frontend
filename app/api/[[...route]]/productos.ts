@@ -25,9 +25,16 @@ function agruparProductosConSucursales(rows: any[]): Producto[] {
 
     // Caso 1: La RPC devuelve un array de sucursales en formato JSON
     if (Array.isArray(fila.sucursales_json)) {
-      producto.sucursales = fila.sucursales_json;
+      // Nos aseguramos de mantener las distancias si ya venían en el JSON
+      producto.sucursales = fila.sucursales_json.map((s: any) => ({
+        ...s,
+        distancia: s.distancia ?? s.distancia_km ?? null
+      }));
     } else if (Array.isArray(fila.sucursales)) {
-      producto.sucursales = fila.sucursales;
+      producto.sucursales = fila.sucursales.map((s: any) => ({
+        ...s,
+        distancia: s.distancia ?? s.distancia_km ?? null
+      }));
     } else {
       // Caso 2: La RPC devuelve filas aplanadas (JOIN tradicional)
       const dir = `${fila.sucursales_calle ?? ''} ${fila.sucursales_numero ?? ''}`.trim() || fila.direccion || 'Ubicación';
@@ -42,6 +49,8 @@ function agruparProductosConSucursales(rows: any[]): Producto[] {
           id_bandera: fila.id_bandera,
           latitud: fila.latitud,
           longitud: fila.longitud,
+          // Agregamos la distancia. Soporta nombres de columna "distancia_km" o "distancia"
+          distancia: fila.distancia_km ?? fila.distancia ?? null, 
         });
       }
     }
@@ -115,14 +124,19 @@ export const productosRouter = new Hono()
   })
 
   .get('/precios-por-ids-area', zValidator('query', preciosPorIdsQuerySchema), async (c) => {
-    const { ids, sucursales_ids } = c.req.valid('query');
+    const { ids, sucursales_ids,lat, lng } = c.req.valid('query');
 
     const arrayIds = ids.split(',').map((id) => id.trim()).filter(Boolean);
     const arraySucursales = sucursales_ids.split(',').map((id) => id.trim()).filter(Boolean);
 
+    const parsedLat = lat ? parseFloat(lat) : null;
+    const parsedLng = lng ? parseFloat(lng) : null;
+
     const { data, error } = await supabase.rpc('buscar_precios_por_ids_sucursales', {
       ids_productos: arrayIds,
       p_sucursales_ids: arraySucursales,
+      p_lat: parsedLat,
+      p_lng: parsedLng,
     });
 
     if (error) {

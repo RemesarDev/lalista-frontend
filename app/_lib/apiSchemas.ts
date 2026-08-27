@@ -45,6 +45,8 @@ export const catalogoQuerySchema = z.object({
 export const preciosPorIdsQuerySchema = z.object({
   ids: z.string().min(1, 'Se requiere al menos un ID de producto'),
   sucursales_ids: z.string().min(1, 'Se requiere al menos un ID de sucursal'),
+  lat: z.string().optional(),
+  lng: z.string().optional(),
 });
 
 // ==========================================

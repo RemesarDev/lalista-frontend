@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { client } from '@/app/_lib/hono-client';
 import { useListaStore, type SucursalBusqueda } from '@/app/_store/store';
 
-// Estructura que devuelve el endpoint de comparativa
 export interface ProductoComparativa {
   id: string;
   nombre?: string;
@@ -16,14 +15,18 @@ export const useComparativa = (ids: string[]) => {
   const [cargando, setCargando] = useState<boolean>(false);
   const [hidratado, setHidratado] = useState(false);
 
-  // Extraemos las sucursales cercanas de la ubicación actual del usuario desde el store
+  // 1. Extraemos las propiedades exactas definidas en UbicacionSlice
+  const ubicacion = useListaStore((state) => state.ubicacion);
   const sucursalesCercanas = useListaStore((state) => state.sucursalesCercanas);
+  const sucursalesIdsStore = useListaStore((state) => state.sucursalesIds);
 
-  // Derivamos los IDs de sucursales para la consulta HTTP
-  const sucursalesIds = useMemo(
-    () => (sucursalesCercanas ? sucursalesCercanas.map((s) => s.id_comercio || s.id_bandera) : []),
-    [sucursalesCercanas]
-  );
+  // 2. Derivamos los IDs (usando sucursalesIds del store o extrayéndolos de id_unico / id_comercio)
+  const sucursalesIds = useMemo(() => {
+    if (sucursalesIdsStore && sucursalesIdsStore.length > 0) {
+      return sucursalesIdsStore;
+    }
+    return sucursalesCercanas ? sucursalesCercanas.map((s) => s.id_unico || `${s.id_comercio}-${s.id_bandera}`) : [];
+  }, [sucursalesIdsStore, sucursalesCercanas]);
 
   useEffect(() => {
     if (useListaStore.persist.hasHydrated()) {
@@ -39,8 +42,11 @@ export const useComparativa = (ids: string[]) => {
   const idsClave = ids.join(',');
   const sucursalesClave = sucursalesIds.join(',');
 
+  // 3. Mapeamos latitud y longitud desde ubicacion
+  const lat = ubicacion?.latitud != null ? String(ubicacion.latitud) : undefined;
+  const lng = ubicacion?.longitud != null ? String(ubicacion.longitud) : undefined;
+
   useEffect(() => {
-    // Si no se ha hidratado, o no hay IDs de productos o sucursales, reseteamos y evitamos el fetch.
     if (!hidratado || !idsClave || !sucursalesClave) {
       if (productos.length > 0) setProductos([]);
       return;
@@ -57,6 +63,8 @@ export const useComparativa = (ids: string[]) => {
             query: {
               ids: idsClave,
               sucursales_ids: sucursalesClave,
+              lat,
+              lng,
             },
           },
           { init: { signal: controller.signal } }
@@ -89,7 +97,7 @@ export const useComparativa = (ids: string[]) => {
       cancelado = true;
       controller.abort();
     };
-  }, [idsClave, sucursalesClave, hidratado]);
+  }, [idsClave, sucursalesClave, lat, lng, hidratado]);
 
   return { productos, cargando };
 };

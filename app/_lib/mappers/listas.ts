@@ -13,14 +13,13 @@ export interface DbLista {
 
 // Representación de una fila en la tabla 'lista_items'
 export interface DbItemLista {
-  item_id: string;        // UUID del grupo/contenedor de la canasta
+  grupo_id: string;       // UUID del grupo/contenedor de la canasta
   id_producto: string;    // ID del producto (SEPA/Supabase)
   descripcion: string;    // Nombre del producto
   imagen: string | null;  // URL de la imagen
   cantidad: number;       // Cantidad deseada para el grupo
   comprado: boolean;      // Estado de chequeo
   es_principal?: boolean; // Opción principal vs alternativa
-  created_at?: string;    // Para ordenar alternativas si no existe es_principal
 }
 
 // ==========================================
@@ -35,7 +34,7 @@ export const mapearLista = (raw: DbLista): ListaCompras => ({
 });
 
 /**
- * Mapea un grupo de filas de DB (que comparten el mismo item_id)
+ * Mapea un grupo de filas de DB (que comparten el mismo grupo_id)
  * hacia una única estructura `ItemLista` con sus opciones disyuntivas.
  */
 export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
@@ -59,7 +58,7 @@ export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
   }));
 
   return {
-    itemId: base.item_id,
+    itemId: base.grupo_id,
     cantidad: base.cantidad,
     comprado: base.comprado,
     opciones,
@@ -72,7 +71,7 @@ export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
  */
 export const mapearItemListaADb = (item: ItemLista): DbItemLista[] => {
   return item.opciones.map((opcion) => ({
-    item_id: item.itemId,
+    grupo_id: item.itemId,
     id_producto: opcion.id,
     descripcion: opcion.nombre,
     imagen: opcion.url_imagen ?? null,

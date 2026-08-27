@@ -11,14 +11,14 @@ export interface DbLista {
   rol: 'owner' | 'editor' | 'viewer';
 }
 
-// Representación de una fila en la tabla 'items_lista'
+// Representación de una fila en la tabla 'lista_items'
 export interface DbItemLista {
   item_id: string;        // UUID del grupo/contenedor de la canasta
   id_producto: string;    // ID del producto (SEPA/Supabase)
   descripcion: string;    // Nombre del producto
   imagen: string | null;  // URL de la imagen
   cantidad: number;       // Cantidad deseada para el grupo
-  is_checked: boolean;    // Estado de chequeo
+  comprado: boolean;      // Estado de chequeo
   es_principal?: boolean; // Opción principal vs alternativa
   created_at?: string;    // Para ordenar alternativas si no existe es_principal
 }
@@ -35,7 +35,7 @@ export const mapearLista = (raw: DbLista): ListaCompras => ({
 });
 
 /**
- * Mapea un grupo de filas de DB (que comparten el mismo item_id) 
+ * Mapea un grupo de filas de DB (que comparten el mismo item_id)
  * hacia una única estructura `ItemLista` con sus opciones disyuntivas.
  */
 export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
@@ -43,7 +43,6 @@ export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
     throw new Error("No se pueden mapear ítems vacíos");
   }
 
-  // Ordenamos para asegurar que la opción principal quede en la posición 0
   const itemsOrdenados = [...rawItems].sort((a, b) => {
     if (a.es_principal) return -1;
     if (b.es_principal) return 1;
@@ -62,13 +61,13 @@ export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
   return {
     itemId: base.item_id,
     cantidad: base.cantidad,
-    isChecked: base.is_checked,
+    comprado: base.comprado,
     opciones,
   };
 };
 
 /**
- * Transforma un ItemLista (Frontend) a un arreglo de objetos listos 
+ * Transforma un ItemLista (Frontend) a un arreglo de objetos listos
  * para persistir o hacer UPSERT en Supabase.
  */
 export const mapearItemListaADb = (item: ItemLista): DbItemLista[] => {
@@ -78,7 +77,7 @@ export const mapearItemListaADb = (item: ItemLista): DbItemLista[] => {
     descripcion: opcion.nombre,
     imagen: opcion.url_imagen ?? null,
     cantidad: item.cantidad,
-    is_checked: item.isChecked,
+    comprado: item.comprado,
     es_principal: opcion.esPrincipal ?? false,
   }));
 };

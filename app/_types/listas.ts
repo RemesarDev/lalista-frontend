@@ -10,7 +10,7 @@ export interface OpcionProducto {
 export interface ItemLista {
   itemId: string;           // UUID del grupo/ítem en la lista
   cantidad: number;
-  isChecked: boolean;
+  comprado: boolean;
   opciones: OpcionProducto[]; // La posición 0 es la principal
 }
 

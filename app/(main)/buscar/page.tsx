@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useEffect, useRef } from 'react';
 import { useBusqueda } from './_hooks/useBusqueda';
 import { ProductCard } from './_components/ProductCard';
@@ -11,18 +11,22 @@ import BaseContainer from '@/app/_components/global/BaseContainer';
 export const dynamic = 'force-dynamic';
 
 function ResultadosBusqueda() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || "";
   
-  // 1. Desestructuramos los nuevos estados del hook
+  // Parametros para agregar alternativas
+  const modo = searchParams.get('modo');
+  const grupoId = searchParams.get('grupoId');
+  const esModoAlternativa = modo === 'alternativa' && Boolean(grupoId);
+
   const { productos, cargando, cargandoMas, hayMas, cargarMas } = useBusqueda(query);
   
   const lista = useListaStore((state) => state.lista);
   const agregarProducto = useListaStore((state) => state.agregarProducto);
-  const actualizarCantidad = useListaStore((state) => state.actualizarCantidad);
-  const eliminarProducto = useListaStore((state) => state.eliminarProducto);
+  const actualizarCantidadGrupo = useListaStore((state) => state.actualizarCantidadGrupo);
+  const eliminarOpcion = useListaStore((state) => state.eliminarOpcion);
 
-  // 2. Ref e IntersectionObserver para trigger de Scroll Infinito
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -39,7 +43,7 @@ function ResultadosBusqueda() {
       },
       {
         root: null,
-        rootMargin: '250px', // Dispara la carga 250px antes del final
+        rootMargin: '250px',
         threshold: 0.1,
       }
     );
@@ -51,21 +55,52 @@ function ResultadosBusqueda() {
     };
   }, [hayMas, cargandoMas, cargando, cargarMas]);
 
-  const handleAgregar = (producto: (typeof productos)[number], cantidad: number) => {
-    const existente = lista.find((item) => item.id === producto.id);
-    if (cantidad <= 0) {
-      if (existente) eliminarProducto(producto.id);
+    const handleAgregar = (producto: (typeof productos)[number], cantidad: number) => {
+    // En modo alternativa, buscamos si ya existe dentro del grupo de destino específico
+    if (esModoAlternativa && grupoId) {
+      const grupoDestino = lista.find((g) => g.grupoId === grupoId);
+      const yaExisteEnGrupo = grupoDestino?.opciones.some((op) => op.id === producto.id);
+
+      if (cantidad <= 0) {
+        if (yaExisteEnGrupo) eliminarOpcion(grupoId as string, producto.id);
+        return;
+      }
+
+      if (!yaExisteEnGrupo) {
+        agregarProducto(
+          {
+            id: producto.id,
+            nombre: producto.nombre,
+            url_imagen: producto.url_imagen,
+            sucursales: producto.sucursales || [],
+          },
+          grupoId as string
+        );
+        router.push('/mi-lista');
+      }
       return;
     }
-    if (!existente) {
+
+    // Flujo normal fuera del modo alternativa
+    const grupoAsociado = lista.find((grupo) =>
+      grupo.opciones.some((opcion) => opcion.id === producto.id)
+    );
+
+    if (cantidad <= 0) {
+      if (grupoAsociado) eliminarOpcion(grupoAsociado.grupoId, producto.id);
+      return;
+    }
+
+    if (!grupoAsociado) {
       agregarProducto({
         id: producto.id,
         nombre: producto.nombre,
         url_imagen: producto.url_imagen,
-        sucursales: producto.sucursales || [], 
+        sucursales: producto.sucursales || [],
       });
+    } else {
+      actualizarCantidadGrupo(grupoAsociado.grupoId, cantidad);
     }
-    actualizarCantidad(producto.id, cantidad);
   };
 
   if (cargando) return (
@@ -85,6 +120,21 @@ function ResultadosBusqueda() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Banner de Modo Alternativa */}
+      {esModoAlternativa && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center justify-between text-xs text-amber-600 dark:text-amber-400">
+          <span>
+            💡 Seleccioná un producto para agregarlo como <strong>alternativa</strong> a la lista.
+          </span>
+          <button
+            onClick={() => router.push('/mi-lista')}
+            className="underline font-semibold hover:opacity-80 transition-opacity"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+
       {/* Grilla de productos */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
         {productos.map((prod, index) => (
@@ -124,13 +174,11 @@ function ResultadosBusqueda() {
 
 export default function BuscarVista() {
   return (
-    <>
+    <Suspense fallback={<p className="text-center text-slate-400 py-10">Cargando...</p>}>
       <StickySearch />
       <BaseContainer>
-        <Suspense fallback={<p className="text-center text-slate-400">Cargando buscador...</p>}>
-          <ResultadosBusqueda />
-        </Suspense>
+        <ResultadosBusqueda />
       </BaseContainer>
-    </>
+    </Suspense>
   );
 }

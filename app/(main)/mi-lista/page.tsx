@@ -4,15 +4,16 @@ import { Suspense, useState, useEffect } from 'react';
 import { MagnifyingGlassIcon, ScalesIcon, ShoppingCartIcon, FloppyDiskIcon } from '@phosphor-icons/react/dist/ssr';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
 import { useListaStore } from '@/app/_store/store';
-import { ListItem } from './_components/ListItem';
 import BaseContainer from '@/app/_components/global/BaseContainer';
 import { ModalGuardarLista } from './_components/ModalGuardarLista';
+import { GrupoListItem } from './_components/GrupoListItem';
 
 function ListaProductos() {
   const lista = useListaStore((state) => state.lista);
-  const actualizarCantidad = useListaStore((state) => state.actualizarCantidad);
-  const eliminarProducto = useListaStore((state) => state.eliminarProducto);
-  const toggleComprado = useListaStore((state) => state.toggleComprado);
+  const actualizarCantidadGrupo = useListaStore((state) => state.actualizarCantidadGrupo);
+  const eliminarOpcion = useListaStore((state) => state.eliminarOpcion);
+  const eliminarGrupo = useListaStore((state) => state.eliminarGrupo);
+  const toggleCompradoGrupo = useListaStore((state) => state.toggleCompradoGrupo);
 
   if (!lista.length) {
     return (
@@ -33,26 +34,27 @@ function ListaProductos() {
   }
 
   return (
-    <div className="flex flex-col">
-      {lista.map((producto) => (
-        <ListItem
-          key={producto.id}
-          producto={producto}
-          onIncrementar={(id) => {
-            const actual = lista.find((item) => item.id === id);
-            if (actual) actualizarCantidad(id, actual.cantidad + 1);
+    <div className="flex flex-col gap-3">
+      {lista.map((grupo) => (
+        <GrupoListItem
+          key={grupo.grupoId}
+          grupo={grupo}
+          onIncrementar={(grupoId) => {
+            const actual = lista.find((g) => g.grupoId === grupoId);
+            if (actual) actualizarCantidadGrupo(grupoId, actual.cantidad + 1);
           }}
-          onDecrementar={(id) => {
-            const actual = lista.find((item) => item.id === id);
+          onDecrementar={(grupoId) => {
+            const actual = lista.find((g) => g.grupoId === grupoId);
             if (!actual) return;
             if (actual.cantidad <= 1) {
-              eliminarProducto(id);
+              eliminarGrupo(grupoId);
               return;
             }
-            actualizarCantidad(id, actual.cantidad - 1);
+            actualizarCantidadGrupo(grupoId, actual.cantidad - 1);
           }}
-          onEliminar={eliminarProducto}
-          onToggleComprado={toggleComprado}
+          onEliminarOpcion={eliminarOpcion}
+          onEliminarGrupo={eliminarGrupo}
+          onToggleComprado={toggleCompradoGrupo}
         />
       ))}
     </div>
@@ -71,8 +73,8 @@ export default function MiListaPage() {
   const [loadingGuardar, setLoadingGuardar] = useState(false);
 
   useEffect(() => {
-    checkAuth(); // solo sincroniza, no redirige
-  }, []);
+    checkAuth();
+  }, [checkAuth]);
 
   const handleLimpiarLista = () => {
     if (isListaVacia) return;
@@ -83,10 +85,16 @@ export default function MiListaPage() {
   const handleGuardarLista = async (nombre: string) => {
     setLoadingGuardar(true);
     try {
-      const items = lista.map((p) => ({
-        id_producto: p.id,
-        cantidad: p.cantidad,
-        is_checked: p.comprado ?? false,
+      const items = lista.map((grupo) => ({
+        item_id: grupo.grupoId,
+        cantidad: grupo.cantidad,
+        comprado: grupo.comprado ?? false,
+        opciones: grupo.opciones.map((opcion, index) => ({
+          id_producto: opcion.id,
+          descripcion: opcion.nombre,
+          imagen: opcion.url_imagen ?? null,
+          es_principal: index === 0,
+        })),
       }));
 
       const res = await fetch('/api/listas', {
@@ -108,7 +116,6 @@ export default function MiListaPage() {
   return (
     <BaseContainer>
       <div className="mb-6 flex flex-row items-center justify-between gap-4 px-1 w-full border-b border-slate-50 pb-3">
-
         <div className="flex flex-col">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Mi lista
@@ -116,13 +123,12 @@ export default function MiListaPage() {
           <p className="text-[11px] sm:text-xs font-medium text-slate-400 mt-0.5">
             {totalEnLista === 0
               ? 'Sin productos guardados'
-              : `${totalEnLista} producto${totalEnLista === 1 ? '' : 's'} listo${totalEnLista === 1 ? '' : 's'} para comparar`
+              : `${totalEnLista} ítem${totalEnLista === 1 ? '' : 's'} listo${totalEnLista === 1 ? '' : 's'} para comparar`
             }
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-
           <DesktopActionButton
             href="/comparativa"
             label="Conocé el mejor precio"
@@ -160,7 +166,6 @@ export default function MiListaPage() {
             disabled={isListaVacia}
             className="inline-flex"
           />
-
         </div>
       </div>
 

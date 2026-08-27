@@ -1,6 +1,6 @@
 'use client'; // Necesitamos esto porque usamos hooks
 import { useListaStore } from '@/app/_store/store';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useRef } from 'react';
 import { DesktopActionButton } from './DesktopActionButton';
 import { ShoppingCartIcon } from '@phosphor-icons/react';
@@ -8,6 +8,7 @@ import { ShoppingCartIcon } from '@phosphor-icons/react';
 export default function StickySearch() {
   const [query, setQuery] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const setTerminoBusqueda = useListaStore((state) => state.setTerminoBusqueda);
 
@@ -17,7 +18,16 @@ export default function StickySearch() {
     if (query.trim().length >= 3) {
       inputRef.current?.blur();
       setTerminoBusqueda(terminoLimpio);
-      router.push(`/buscar?q=${encodeURIComponent(query)}`);
+
+      const modo = searchParams.get('modo');
+      const grupoId = searchParams.get('grupoId');
+
+      const params = new URLSearchParams({q: terminoLimpio});
+      if (modo === 'alternativa' && grupoId) {
+        params.set('modo', modo);
+        params.set('grupoId', grupoId);
+      }
+      router.push(`/buscar?${params.toString()}`);
     }
   };
 

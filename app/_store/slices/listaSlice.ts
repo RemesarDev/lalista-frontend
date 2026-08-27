@@ -1,16 +1,18 @@
 import { StateCreator } from 'zustand';
-import type{ StoreState } from '../store';
+import type { StoreState } from '../store';
 
-export interface SucursalBusqueda {
+export interface SucursalBusqueda { //se recomienda a futuro importar esto de types
   cadena: string;
   direccion: string;
   precio: number;
   id_comercio: number;
   id_bandera: number;
   distancia?: number | null;
+  latitud?: number | null;
+  longitud?: number | null;
 }
 
-export interface ProductoBusqueda {
+export interface ProductoBusqueda {//se recomienda a futuro importar esto de types
   id: string;
   nombre: string;
   precioMinimo: number | null;
@@ -18,14 +20,21 @@ export interface ProductoBusqueda {
   url_imagen: string | null;
 }
 
-export interface ProductoLista {
-  id: string;        // ID único del producto (viene del SEPA / Supabase)
-  nombre: string;    // Nombre del producto (ej: "Leche Entera 1L")
+// Representa un producto (sea el principal o una alternativa)
+export interface ProductoOpcion {
+  id: string;
+  nombre: string;
   url_imagen: string | null;
-  cantidad: number;  // Cuántas unidades lleva el usuario
-  sucursales: SucursalBusqueda[];  // Precios en sucursales (con TTL de 1 día)
-  actualizadoEn: number;  // Timestamp para validar caché (en ms)
-  comprado?: boolean;  // Indica si el producto ya fue comprado
+  sucursales: SucursalBusqueda[];
+  actualizadoEn: number;
+}
+
+// Representa un Grupo Disyuntivo en la lista (Canasta)
+export interface GrupoLista {
+  grupoId: string;           // ID único del grupo (ej: crypto.randomUUID())
+  cantidad: number;          // Cantidad solicitada para el grupo
+  comprado?: boolean;        // Estado de chequeo general
+  opciones: ProductoOpcion[];// opciones[0] es la principal, 1..N son alternativas
 }
 
 export interface CacheBusquedaPrecios {
@@ -37,25 +46,32 @@ export interface CacheBusquedaPrecios {
   actualizadoEn: number;
 }
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1 día en milisegundos
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 const esCacheValido = (timestamp: number): boolean => {
   return Date.now() - timestamp < CACHE_TTL_MS;
 };
 
 export interface ListaSlice {
-  lista: ProductoLista[];
+  lista: GrupoLista[];
   cacheBusquedaPrecios: CacheBusquedaPrecios | null;
   terminoBusqueda: string;
   timeTerminoBusqueda: number;
-  
-  agregarProducto: (producto: Omit<ProductoLista, 'cantidad' | 'actualizadoEn'>) => void;
-  eliminarProducto: (id: string) => void;
-  actualizarCantidad: (id: string, cantidad: number) => void;
-  toggleComprado: (id: string) => void;
+
+  // Acciones de Grupo / Producto
+  agregarProducto: (
+    producto: Omit<ProductoOpcion, 'actualizadoEn'>,
+    targetGrupoId?: string // Si viene, se agrega como ALTERNATIVA a este grupo
+  ) => void;
+  eliminarOpcion: (grupoId: string, productoId: string) => void;
+  eliminarGrupo: (grupoId: string) => void;
+  actualizarCantidadGrupo: (grupoId: string, cantidad: number) => void;
+  toggleCompradoGrupo: (grupoId: string) => void;
   limpiarLista: () => void;
+
+  // Métodos de caché y búsqueda
   guardarCacheBusquedaPrecios: (cache: Omit<CacheBusquedaPrecios, 'actualizadoEn'>) => void;
-  limpiarCacheBusquedaPrecios: () => void; 
+  limpiarCacheBusquedaPrecios: () => void;
   necesitaActualizarPreciosDeLista: () => boolean;
   setTerminoBusqueda: (termino: string) => void;
 }
@@ -66,42 +82,78 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
   terminoBusqueda: "",
   timeTerminoBusqueda: 0,
 
-  agregarProducto: (nuevoProd) => set((state) => {
-    const existe = state.lista.find((p) => p.id === nuevoProd.id);
+  agregarProducto: (nuevoProd, targetGrupoId) => set((state) => {
     const ahora = Date.now();
-    
-    if (existe) {
-      if (esCacheValido(existe.actualizadoEn)) {
-        return {
-          lista: state.lista.map((p) =>
-            p.id === nuevoProd.id ? { ...p, cantidad: p.cantidad + 1 } : p
-          ),
-        };
-      }
+    const prodOpcion: ProductoOpcion = { ...nuevoProd, actualizadoEn: ahora };
+
+    // CASO 1: Se agrega como ALTERNATIVA a un grupo existente
+    if (targetGrupoId) {
       return {
-        lista: state.lista.map((p) =>
-          p.id === nuevoProd.id 
-            ? { ...p, cantidad: p.cantidad + 1, sucursales: nuevoProd.sucursales, actualizadoEn: ahora }
-            : p
+        lista: state.lista.map((grupo) => {
+          if (grupo.grupoId !== targetGrupoId) return grupo;
+
+          // Si el producto ya existe dentro del grupo, no lo duplicamos
+          const existeProd = grupo.opciones.some((p) => p.id === nuevoProd.id);
+          if (existeProd) return grupo;
+
+          return {
+            ...grupo,
+            opciones: [...grupo.opciones, prodOpcion],
+          };
+        }),
+      };
+    }
+
+    // CASO 2: Agregar como NUEVO GRUPO (o incrementar si el producto principal ya existía como grupo principal)
+    const grupoExistente = state.lista.find((g) => g.opciones[0]?.id === nuevoProd.id);
+
+    if (grupoExistente) {
+      return {
+        lista: state.lista.map((g) =>
+          g.grupoId === grupoExistente.grupoId
+            ? { ...g, cantidad: g.cantidad + 1 }
+            : g
         ),
       };
     }
-    return { lista: [...state.lista, { ...nuevoProd, cantidad: 1, actualizadoEn: ahora }] };
+
+    // Crear un nuevo grupo disyuntivo
+    const nuevoGrupo: GrupoLista = {
+      grupoId: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `grupo-${Date.now()}-${Math.random()}`,
+      cantidad: 1,
+      comprado: false,
+      opciones: [prodOpcion],
+    };
+
+    return { lista: [...state.lista, nuevoGrupo] };
   }),
 
-  eliminarProducto: (id) => set((state) => ({
-    lista: state.lista.filter((p) => p.id !== id),
+  // Elimina un producto específico (principal o alternativa). Si era la última opción, elimina el grupo.
+  eliminarOpcion: (grupoId, productoId) => set((state) => ({
+    lista: state.lista
+      .map((g) => {
+        if (g.grupoId !== grupoId) return g;
+        return {
+          ...g,
+          opciones: g.opciones.filter((p) => p.id !== productoId),
+        };
+      })
+      .filter((g) => g.opciones.length > 0), // Si no le quedan productos al grupo, se descarta
   })),
 
-  actualizarCantidad: (id, cantidad) => set((state) => ({
-    lista: state.lista.map((p) =>
-      p.id === id ? { ...p, cantidad: Math.max(1, cantidad) } : p
+  eliminarGrupo: (grupoId) => set((state) => ({
+    lista: state.lista.filter((g) => g.grupoId !== grupoId),
+  })),
+
+  actualizarCantidadGrupo: (grupoId, cantidad) => set((state) => ({
+    lista: state.lista.map((g) =>
+      g.grupoId === grupoId ? { ...g, cantidad: Math.max(1, cantidad) } : g
     ),
   })),
 
-  toggleComprado: (id) => set((state) => ({
-    lista: state.lista.map((p) =>
-      p.id === id ? { ...p, comprado: !p.comprado } : p
+  toggleCompradoGrupo: (grupoId) => set((state) => ({
+    lista: state.lista.map((g) =>
+      g.grupoId === grupoId ? { ...g, comprado: !g.comprado } : g
     ),
   })),
 
@@ -115,14 +167,16 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
   }),
 
   limpiarCacheBusquedaPrecios: () => set({ cacheBusquedaPrecios: null }),
-  
+
   necesitaActualizarPreciosDeLista: () => {
     const { lista } = get();
-    return lista.some((prod) => !esCacheValido(prod.actualizadoEn));
+    return lista.some((grupo) =>
+      grupo.opciones.some((prod) => !esCacheValido(prod.actualizadoEn))
+    );
   },
 
   setTerminoBusqueda: (termino) => set({
     terminoBusqueda: termino,
-    timeTerminoBusqueda: Date.now()
+    timeTerminoBusqueda: Date.now(),
   }),
 });

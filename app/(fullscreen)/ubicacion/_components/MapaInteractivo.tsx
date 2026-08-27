@@ -1,5 +1,6 @@
 'use client';
 import { Map, AdvancedMarker, Pin, Circle } from '@vis.gl/react-google-maps';
+import { useMemo } from 'react';
 
 interface Coordenadas {
   lat: number;
@@ -22,20 +23,20 @@ export default function MapaInteractivo({
   onMapClick,
 }: MapaInteractivoProps) {
 
-  const circleOptions = {
-    center: coordenadas,
-    radius: radio * 1000, // Convertimos Km a metros
-    fillColor: '#64748b', 
-    fillOpacity: 0.2,
-    strokeColor: '#1e293b', 
-    strokeWeight: 2,
-  };
+    const circleOptions = useMemo(() => ({
+      center: coordenadas,
+      radius: radio * 1000,
+      fillColor: '#64748b', 
+      fillOpacity: 0.2,
+      strokeColor: '#1e293b', 
+      strokeWeight: 2,
+    }), [coordenadas, radio]);
 
   return (
     <div className="absolute inset-0 w-full h-full z-0 select-none">
       <Map
         defaultCenter={coordenadas}
-        zoom={zoom}
+        defaultZoom={zoom}
         disableDefaultUI={true}
         mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
         onCameraChanged={(ev) => setZoom(ev.detail.zoom)}

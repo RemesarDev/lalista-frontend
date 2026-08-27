@@ -1,17 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Producto } from '@/app/_types/productos';
+import { useState, useEffect, useMemo } from 'react';
 import { client } from '@/app/_lib/hono-client';
-import { useListaStore } from '@/app/_store/store';
+import { useListaStore, type SucursalBusqueda } from '@/app/_store/store';
+
+export interface ProductoComparativa {
+  id: string;
+  nombre?: string;
+  sucursales: SucursalBusqueda[];
+}
 
 export const useComparativa = (ids: string[]) => {
-  const [productos, setProductos] = useState<Producto[]>([]);
+  const [productos, setProductos] = useState<ProductoComparativa[]>([]);
   const [cargando, setCargando] = useState<boolean>(false);
   const [hidratado, setHidratado] = useState(false);
 
-  // Extraemos únicamente sucursalesIds del Store
-  const { sucursalesIds } = useListaStore();
+  // 1. Extraemos las propiedades exactas definidas en UbicacionSlice
+  const ubicacion = useListaStore((state) => state.ubicacion);
+  const sucursalesCercanas = useListaStore((state) => state.sucursalesCercanas);
+  const sucursalesIdsStore = useListaStore((state) => state.sucursalesIds);
+
+  // 2. Derivamos los IDs (usando sucursalesIds del store o extrayéndolos de id_unico / id_comercio)
+  const sucursalesIds = useMemo(() => {
+    if (sucursalesIdsStore && sucursalesIdsStore.length > 0) {
+      return sucursalesIdsStore;
+    }
+    return sucursalesCercanas ? sucursalesCercanas.map((s) => s.id_unico || `${s.id_comercio}-${s.id_bandera}`) : [];
+  }, [sucursalesIdsStore, sucursalesCercanas]);
 
   useEffect(() => {
     if (useListaStore.persist.hasHydrated()) {
@@ -27,9 +42,12 @@ export const useComparativa = (ids: string[]) => {
   const idsClave = ids.join(',');
   const sucursalesClave = sucursalesIds.join(',');
 
+  // 3. Mapeamos latitud y longitud desde ubicacion
+  const lat = ubicacion?.latitud != null ? String(ubicacion.latitud) : undefined;
+  const lng = ubicacion?.longitud != null ? String(ubicacion.longitud) : undefined;
+
   useEffect(() => {
-    // Si no está hidratado, no hay IDs de productos o no hay sucursales disponibles, limpiamos y salimos.
-    if (!hidratado || ids.length === 0 || sucursalesIds.length === 0) {
+    if (!hidratado || !idsClave || !sucursalesClave) {
       if (productos.length > 0) setProductos([]);
       return;
     }
@@ -45,6 +63,8 @@ export const useComparativa = (ids: string[]) => {
             query: {
               ids: idsClave,
               sucursales_ids: sucursalesClave,
+              lat,
+              lng,
             },
           },
           { init: { signal: controller.signal } }
@@ -52,7 +72,7 @@ export const useComparativa = (ids: string[]) => {
 
         if (cancelado) return;
 
-        if (!res.ok) throw new Error(`Error ${res.status}`);
+        if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
 
         const data = await res.json();
 
@@ -77,7 +97,7 @@ export const useComparativa = (ids: string[]) => {
       cancelado = true;
       controller.abort();
     };
-  }, [idsClave, sucursalesClave, hidratado]);
+  }, [idsClave, sucursalesClave, lat, lng, hidratado]);
 
   return { productos, cargando };
 };

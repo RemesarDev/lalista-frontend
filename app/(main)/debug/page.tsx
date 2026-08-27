@@ -16,8 +16,8 @@ export default function DebugPage() {
     lista, 
     ubicacion, 
     agregarProducto, 
-    eliminarProducto, 
-    actualizarCantidad, 
+    eliminarGrupo,
+    actualizarCantidadGrupo,
     limpiarLista,
     obtenerGpsNavegador 
   } = useListaStore();
@@ -130,20 +130,20 @@ export default function DebugPage() {
           </thead>
           <tbody>
             {lista.map((item) => (
-              <tr key={item.id}>
-                <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>{item.id}</td>
-                <td>{item.nombre}</td>
+              <tr key={item.grupoId}>
+                <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>{item.grupoId}</td>
+                <td>{item.opciones[0]?.nombre || 'Producto sin nombre'}</td>
                 <td>
                   <input 
                     type="number" 
                     value={item.cantidad} 
                     min="1"
                     style={{ width: '60px' }}
-                    onChange={(e) => actualizarCantidad(item.id, parseInt(e.target.value) || 1)}
+                    onChange={(e) => actualizarCantidadGrupo(item.grupoId, parseInt(e.target.value) || 1)}
                   />
                 </td>
                 <td>
-                  <button onClick={() => eliminarProducto(item.id)} style={{ color: 'red' }}>
+                  <button onClick={() => eliminarGrupo(item.grupoId)} style={{ color: 'red' }}>
                     Quitar
                   </button>
                 </td>

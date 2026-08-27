@@ -3,7 +3,6 @@ import { z } from 'zod';
 // ==========================================
 // 1. ESQUEMAS DE GOOGLE MAPS (Ubicación)
 // ==========================================
-
 export const autocompleteQuerySchema = z.object({
   input: z.string().min(3, { message: 'El input debe tener al menos 3 caracteres' })
 });
@@ -30,7 +29,6 @@ export const sucursalesCercanasQuerySchema = z.object({
 // ==========================================
 // 2. ESQUEMAS DE PRODUCTOS (Supabase DB)
 // ==========================================
-
 export const productosQuerySchema = z.object({
   search: z.string().optional(),
   sucursales_ids: z.string().transform((val) => val.split(',').filter(Boolean)),
@@ -45,19 +43,32 @@ export const catalogoQuerySchema = z.object({
 });
 
 export const preciosPorIdsQuerySchema = z.object({
-  ids: z.string().transform((val) => val.split(',')),
-  sucursales_ids: z.string().transform((val) => val.split(',').filter(Boolean)),
+  ids: z.string().min(1, 'Se requiere al menos un ID de producto'),
+  sucursales_ids: z.string().min(1, 'Se requiere al menos un ID de sucursal'),
+  lat: z.string().optional(),
+  lng: z.string().optional(),
 });
+
 // ==========================================
 // 3. ESQUEMAS DE LISTAS (Supabase DB)
 // ==========================================
+export const opcionProductoSchema = z.object({
+  id_producto: z.string(),
+  descripcion: z.string(),
+  imagen: z.string().nullable().optional(),
+  es_principal: z.boolean().default(false),
+});
+
 export const guardarListaSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio').max(100),
-  items: z.array(z.object({
-    id_producto: z.string(),
-    cantidad: z.number().int().min(1),
-    is_checked: z.boolean(),
-  })).min(1, 'La lista debe tener al menos un producto'),
+  items: z.array(
+    z.object({
+      item_id: z.uuid('El item_id debe ser un UUID válido'),
+      cantidad: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
+      comprado: z.boolean(),
+      opciones: z.array(opcionProductoSchema).min(1, 'Cada grupo debe tener al menos una opción'),
+    })
+  ).min(1, 'La lista debe tener al menos un producto'),
 });
 
 export type GuardarListaBody = z.infer<typeof guardarListaSchema>;
@@ -65,10 +76,6 @@ export type GuardarListaBody = z.infer<typeof guardarListaSchema>;
 // ==========================================
 // 4. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================
-// Exportamos las interfaces generadas automáticamente por Zod.
-// Los hooks de la carpeta `_hooks` podrán importar estos tipos 
-// para asegurar que envían los datos correctos a la API.
-
 export type AutocompleteQuery = z.infer<typeof autocompleteQuerySchema>;
 export type GeocodeQuery = z.infer<typeof geocodeQuerySchema>;
 export type PlaceDetailsQuery = z.infer<typeof placeDetailsQuerySchema>;

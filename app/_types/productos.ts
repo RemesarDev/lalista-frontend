@@ -1,4 +1,3 @@
-// app/_types.ts REUBICADO A app/_types.ts --->PROXIMAMENTE ESTE DEBE BORRARSE
 export interface Sucursal {
   cadena: string;
   direccion: string;
@@ -6,6 +5,8 @@ export interface Sucursal {
   id_comercio: number;
   id_bandera: number;
   distancia?: number | null;
+  latitud?: number | null;
+  longitud?: number | null;
 }
 
 export interface Producto {

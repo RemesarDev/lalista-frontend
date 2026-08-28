@@ -20,3 +20,26 @@ export interface Producto {
 export interface BusquedaResponse {
   productos: Producto[];
 }
+
+/** Una categoria del arbol (hoja o rubro). */
+export interface CategoriaNodo {
+  slug: string;
+  nombre: string;
+  orden: number;
+  es_canasta: boolean;
+}
+
+/** Un rubro con sus categorias hijas. Mascotas, por ejemplo, no tiene. */
+export interface CategoriaArbol extends CategoriaNodo {
+  categorias: CategoriaNodo[];
+}
+
+/**
+ * Etiqueta dietaria con la cantidad de productos que la declaran en su
+ * descripcion. No incluye las inferidas por IA.
+ */
+export interface EtiquetaDisponible {
+  codigo: string;
+  nombre: string;
+  productos: number;
+}

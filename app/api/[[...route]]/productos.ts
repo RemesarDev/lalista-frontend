@@ -3,7 +3,7 @@ import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
 import { productosQuerySchema, catalogoQuerySchema, preciosPorIdsQuerySchema } from '@/app/_lib/apiSchemas';
 import { mapToProductoResponse, DbProductoRow } from '@/app/_lib/mappers/productos'; 
-import { Producto } from '@/app/_types/productos';
+import { Producto, CategoriaArbol, EtiquetaDisponible } from '@/app/_types/productos';
 
 function agruparProductosConSucursales(rows: any[]): Producto[] {
   const mapaProductos = new Map<string, Producto>();
@@ -70,7 +70,7 @@ function agruparProductosConSucursales(rows: any[]): Producto[] {
 export const productosRouter = new Hono()
 
   .get('/productos', zValidator('query', productosQuerySchema), async (c) => {
-    const { search, sucursales_ids, page, limit } = c.req.valid('query');
+    const { search, sucursales_ids, page, limit, categoria, etiquetas } = c.req.valid('query');
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 20;
     const offset = (pageNum - 1) * limitNum;
@@ -81,6 +81,8 @@ export const productosRouter = new Hono()
       search_term: search ?? null,
       p_limit: limitNum,
       p_offset: offset,
+      p_categoria_slug: categoria ?? null,
+      p_etiquetas: etiquetas.length > 0 ? etiquetas : null,
     });
 
     if (error) {
@@ -98,7 +100,7 @@ export const productosRouter = new Hono()
   })
 
   .get('/catalogo', zValidator('query', catalogoQuerySchema), async (c) => {
-    const { search, page, limit } = c.req.valid('query');
+    const { search, page, limit, categoria, etiquetas } = c.req.valid('query');
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 20;
     const offset = (pageNum - 1) * limitNum;
@@ -107,6 +109,8 @@ export const productosRouter = new Hono()
       search_term: search ?? null,
       p_limit: limitNum,
       p_offset: offset,
+      p_categoria_slug: categoria ?? null,
+      p_etiquetas: etiquetas.length > 0 ? etiquetas : null,
     });
 
     if (error) {
@@ -148,4 +152,60 @@ export const productosRouter = new Hono()
     const productos = agruparProductosConSucursales(rows);
 
     return c.json({ productos });
+  })
+
+// CATEGORIAS Y ETIQUETAS
+// Devuelve los rubros con sus categorias anidadas y las etiquetas dietarias con
+// su conteo. Van juntos en un solo endpoint porque el frontend los necesita a
+// la vez: asi se evita una segunda peticion.
+  .get('/categorias', async (c) => {
+    const [resCategorias, resEtiquetas] = await Promise.all([
+      supabase
+        .from('categorias')
+        .select('id, slug, nombre, orden, categoria_padre_id, es_canasta')
+        .order('orden', { ascending: true }),
+      supabase
+        .from('v_etiquetas_disponibles')
+        .select('codigo, nombre, productos'),
+    ]);
+
+    const { data, error } = resCategorias;
+    if (error) {
+      console.error('Error consultando categorias:', error);
+      return c.json({ error: error.message }, 500);
+    }
+
+    const filas = (data ?? []) as Array<{
+      id: number;
+      slug: string;
+      nombre: string;
+      orden: number;
+      categoria_padre_id: number | null;
+      es_canasta: boolean;
+    }>;
+
+    // Los rubros son las filas sin padre. Cada uno se arma con sus hijas.
+    const rubros: CategoriaArbol[] = filas
+      .filter((f) => f.categoria_padre_id === null)
+      .map((rubro) => ({
+        slug: rubro.slug,
+        nombre: rubro.nombre,
+        orden: rubro.orden,
+        es_canasta: rubro.es_canasta,
+        categorias: filas
+          .filter((f) => f.categoria_padre_id === rubro.id)
+          .sort((a, b) => a.orden - b.orden)
+          .map((hija) => ({
+            slug: hija.slug,
+            nombre: hija.nombre,
+            orden: hija.orden,
+            es_canasta: hija.es_canasta,
+          })),
+      }));
+
+    // Si fallan las etiquetas no se corta todo: el menu de categorias sirve
+    // igual y los filtros dietarios simplemente no se muestran.
+    const etiquetas = (resEtiquetas.data ?? []) as EtiquetaDisponible[];
+
+    return c.json({ rubros, etiquetas });
   });

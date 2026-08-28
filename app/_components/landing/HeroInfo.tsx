@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import CategoriaChips from './CategoriaChips';
 import { useRouter } from 'next/navigation';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr';
 
@@ -60,6 +61,9 @@ export default function HeroInfo() {
           Buscar productos
         </button>
       </form>
+
+      {/* Accesos rapidos por categoria */}
+      <CategoriaChips />
 
       {/* Scroll hint */}
       <div className="flex flex-col items-center gap-1 text-slate-300 animate-bounce mt-2">

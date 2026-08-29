@@ -54,6 +54,7 @@ const esCacheValido = (timestamp: number): boolean => {
 
 export interface ListaSlice {
   lista: GrupoLista[];
+  listaId: string | null;   // null = lista local sin guardar, UUID = lista sincronizada con la nube
   cacheBusquedaPrecios: CacheBusquedaPrecios | null;
   terminoBusqueda: string;
   timeTerminoBusqueda: number;
@@ -61,13 +62,14 @@ export interface ListaSlice {
   // Acciones de Grupo / Producto
   agregarProducto: (
     producto: Omit<ProductoOpcion, 'actualizadoEn'>,
-    targetGrupoId?: string // Si viene, se agrega como ALTERNATIVA a este grupo
+    targetGrupoId?: string
   ) => void;
   eliminarOpcion: (grupoId: string, productoId: string) => void;
   eliminarGrupo: (grupoId: string) => void;
   actualizarCantidadGrupo: (grupoId: string, cantidad: number) => void;
   toggleCompradoGrupo: (grupoId: string) => void;
   limpiarLista: () => void;
+  setListaId: (id: string | null) => void;
 
   // Métodos de caché y búsqueda
   guardarCacheBusquedaPrecios: (cache: Omit<CacheBusquedaPrecios, 'actualizadoEn'>) => void;
@@ -78,6 +80,7 @@ export interface ListaSlice {
 
 export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (set, get) => ({
   lista: [],
+  listaId: null,
   cacheBusquedaPrecios: null,
   terminoBusqueda: "",
   timeTerminoBusqueda: 0,
@@ -86,25 +89,17 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
     const ahora = Date.now();
     const prodOpcion: ProductoOpcion = { ...nuevoProd, actualizadoEn: ahora };
 
-    // CASO 1: Se agrega como ALTERNATIVA a un grupo existente
     if (targetGrupoId) {
       return {
         lista: state.lista.map((grupo) => {
           if (grupo.grupoId !== targetGrupoId) return grupo;
-
-          // Si el producto ya existe dentro del grupo, no lo duplicamos
           const existeProd = grupo.opciones.some((p) => p.id === nuevoProd.id);
           if (existeProd) return grupo;
-
-          return {
-            ...grupo,
-            opciones: [...grupo.opciones, prodOpcion],
-          };
+          return { ...grupo, opciones: [...grupo.opciones, prodOpcion] };
         }),
       };
     }
 
-    // CASO 2: Agregar como NUEVO GRUPO (o incrementar si el producto principal ya existía como grupo principal)
     const grupoExistente = state.lista.find((g) => g.opciones[0]?.id === nuevoProd.id);
 
     if (grupoExistente) {
@@ -117,7 +112,6 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
       };
     }
 
-    // Crear un nuevo grupo disyuntivo
     const nuevoGrupo: GrupoLista = {
       grupoId: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `grupo-${Date.now()}-${Math.random()}`,
       cantidad: 1,
@@ -128,17 +122,13 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
     return { lista: [...state.lista, nuevoGrupo] };
   }),
 
-  // Elimina un producto específico (principal o alternativa). Si era la última opción, elimina el grupo.
   eliminarOpcion: (grupoId, productoId) => set((state) => ({
     lista: state.lista
       .map((g) => {
         if (g.grupoId !== grupoId) return g;
-        return {
-          ...g,
-          opciones: g.opciones.filter((p) => p.id !== productoId),
-        };
+        return { ...g, opciones: g.opciones.filter((p) => p.id !== productoId) };
       })
-      .filter((g) => g.opciones.length > 0), // Si no le quedan productos al grupo, se descarta
+      .filter((g) => g.opciones.length > 0),
   })),
 
   eliminarGrupo: (grupoId) => set((state) => ({
@@ -157,13 +147,12 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
     ),
   })),
 
-  limpiarLista: () => set({ lista: [] }),
+  limpiarLista: () => set({ lista: [], listaId: null }),
+
+  setListaId: (id) => set({ listaId: id }),
 
   guardarCacheBusquedaPrecios: (cache) => set({
-    cacheBusquedaPrecios: {
-      ...cache,
-      actualizadoEn: Date.now(),
-    },
+    cacheBusquedaPrecios: { ...cache, actualizadoEn: Date.now() },
   }),
 
   limpiarCacheBusquedaPrecios: () => set({ cacheBusquedaPrecios: null }),

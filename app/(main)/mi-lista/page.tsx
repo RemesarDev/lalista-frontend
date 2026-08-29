@@ -67,6 +67,7 @@ export default function MiListaPage() {
   const limpiarLista = useListaStore((state) => state.limpiarLista);
   const user = useListaStore((state) => state.user);
   const checkAuth = useListaStore((state) => state.checkAuth);
+  const setListaId = useListaStore((state) => state.setListaId);
   const isListaVacia = totalEnLista === 0;
 
   const [modalGuardarOpen, setModalGuardarOpen] = useState(false);
@@ -105,6 +106,11 @@ export default function MiListaPage() {
       });
 
       if (!res.ok) throw new Error('Error al guardar la lista');
+
+      // Vinculamos la lista local con la lista recién creada en la nube
+      const { id } = await res.json();
+      setListaId(id);
+
       setModalGuardarOpen(false);
     } catch (err) {
       console.error(err);

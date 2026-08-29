@@ -46,6 +46,8 @@ export interface CacheBusquedaPrecios {
   actualizadoEn: number;
 }
 
+export type RolLista = 'owner' | 'editor' | 'viewer';
+
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 const esCacheValido = (timestamp: number): boolean => {
@@ -54,7 +56,8 @@ const esCacheValido = (timestamp: number): boolean => {
 
 export interface ListaSlice {
   lista: GrupoLista[];
-  listaId: string | null;   // null = lista local sin guardar, UUID = lista sincronizada con la nube
+  listaId: string | null;       // null = lista local sin guardar, UUID = lista sincronizada con la nube
+  listaRol: RolLista | null;    // null = lista local, rol = permisos dentro de la lista en la nube
   cacheBusquedaPrecios: CacheBusquedaPrecios | null;
   terminoBusqueda: string;
   timeTerminoBusqueda: number;
@@ -69,7 +72,7 @@ export interface ListaSlice {
   actualizarCantidadGrupo: (grupoId: string, cantidad: number) => void;
   toggleCompradoGrupo: (grupoId: string) => void;
   limpiarLista: () => void;
-  setListaId: (id: string | null) => void;
+  setListaActiva: (id: string | null, rol: RolLista | null) => void;
 
   // Métodos de caché y búsqueda
   guardarCacheBusquedaPrecios: (cache: Omit<CacheBusquedaPrecios, 'actualizadoEn'>) => void;
@@ -81,6 +84,7 @@ export interface ListaSlice {
 export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (set, get) => ({
   lista: [],
   listaId: null,
+  listaRol: null,
   cacheBusquedaPrecios: null,
   terminoBusqueda: "",
   timeTerminoBusqueda: 0,
@@ -147,9 +151,9 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
     ),
   })),
 
-  limpiarLista: () => set({ lista: [], listaId: null }),
+  limpiarLista: () => set({ lista: [], listaId: null, listaRol: null }),
 
-  setListaId: (id) => set({ listaId: id }),
+  setListaActiva: (id, rol) => set({ listaId: id, listaRol: rol }),
 
   guardarCacheBusquedaPrecios: (cache) => set({
     cacheBusquedaPrecios: { ...cache, actualizadoEn: Date.now() },

@@ -67,7 +67,9 @@ export default function MiListaPage() {
   const limpiarLista = useListaStore((state) => state.limpiarLista);
   const user = useListaStore((state) => state.user);
   const checkAuth = useListaStore((state) => state.checkAuth);
-  const setListaId = useListaStore((state) => state.setListaId);
+  const setListaActiva = useListaStore((state) => state.setListaActiva);
+  const listaId = useListaStore((state) => state.listaId);
+  const listaRol = useListaStore((state) => state.listaRol);
   const isListaVacia = totalEnLista === 0;
 
   const [modalGuardarOpen, setModalGuardarOpen] = useState(false);
@@ -109,7 +111,7 @@ export default function MiListaPage() {
 
       // Vinculamos la lista local con la lista recién creada en la nube
       const { id } = await res.json();
-      setListaId(id);
+      setListaActiva(id, 'owner');
 
       setModalGuardarOpen(false);
     } catch (err) {
@@ -118,6 +120,9 @@ export default function MiListaPage() {
       setLoadingGuardar(false);
     }
   };
+
+  // El usuario puede editar si no hay lista activa o si es owner/editor
+  const puedeEditar = !listaId || listaRol === 'owner' || listaRol === 'editor';
 
   return (
     <BaseContainer>
@@ -152,10 +157,11 @@ export default function MiListaPage() {
             className="hidden md:inline-flex"
           />
 
-          {user && !isListaVacia && (
+          {/* Guardar (lista nueva) o Sincronizar (lista existente) */}
+          {user && !isListaVacia && puedeEditar && (
             <DesktopActionButton
               onClick={() => setModalGuardarOpen(true)}
-              label="Guardar lista"
+              label={listaId ? 'Sincronizar' : 'Guardar lista'}
               icon={<FloppyDiskIcon weight="bold" />}
               color="lila"
               variant="solid"

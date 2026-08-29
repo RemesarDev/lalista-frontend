@@ -9,6 +9,7 @@ interface UseMisListasReturn {
   cargando: boolean;
   error: string | null;
   recargar: () => void;
+  eliminarLista: (id: string) => void;
 }
 
 export function useMisListas(userId: string | null): UseMisListasReturn {
@@ -18,7 +19,7 @@ export function useMisListas(userId: string | null): UseMisListasReturn {
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    if (!userId) return; // 👈 espera a que haya usuario
+    if (!userId) return;
 
     let mounted = true;
 
@@ -43,9 +44,22 @@ export function useMisListas(userId: string | null): UseMisListasReturn {
 
     fetchListas();
     return () => { mounted = false; };
-  }, [userId, tick]); // 👈 userId como dependencia
+  }, [userId, tick]);
 
   const recargar = () => setTick((t) => t + 1);
 
-  return { listas, cargando, error, recargar };
+  const eliminarLista = (id: string) => {
+    const backup = listas;
+    setListas((prev) => prev.filter((l) => l.id !== id));
+
+    fetch(`/api/listas/${id}`, { method: 'DELETE', credentials: 'include' })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+      })
+      .catch(() => {
+        setListas(backup);
+      });
+  };
+
+  return { listas, cargando, error, recargar, eliminarLista };
 }

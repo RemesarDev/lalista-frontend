@@ -5,9 +5,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import { useMisListas } from './_hooks/useMisListas';
+import { useAbrirLista } from './_hooks/useAbrirLista';
 import BaseContainer from '@/app/_components/global/BaseContainer';
 import ConfirmModal from './_components/ConfirmModal';
 import { ListIcon, LockIcon, TrashIcon } from '@phosphor-icons/react';
+import type { RolLista } from '@/app/_store/slices/listaSlice';
 
 // Tipado para el estado del modal
 interface ModalState {
@@ -23,6 +25,7 @@ export default function MisListasPage() {
     const checkAuth = useListaStore((state) => state.checkAuth);
 
     const { listas, cargando, error, eliminarLista } = useMisListas(user?.id ?? null);
+    const { abrirLista, cargandoAbrir } = useAbrirLista();
 
     // Estado controlador del modal
     const [modal, setModal] = useState<ModalState>({ isOpen: false, listaId: null, rol: null });
@@ -115,17 +118,22 @@ export default function MisListasPage() {
                             key={lista.id}
                             className="flex items-center justify-between rounded-2xl bg-white border border-slate-200 px-4 py-4 shadow-sm"
                         >
-                            <div className="flex items-center gap-3">
+                            {/* Info de la lista — clickeable para abrir */}
+                            <button
+                                onClick={() => abrirLista(lista.id, lista.rol as RolLista)}
+                                disabled={cargandoAbrir}
+                                className="flex items-center gap-3 text-left flex-1 min-w-0 hover:opacity-75 transition-opacity disabled:opacity-50"
+                            >
                                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 shrink-0">
                                     <ListIcon size={20} weight="regular" />
                                 </div>
-                                <div>
-                                    <p className="text-sm font-semibold text-slate-900">{lista.nombre}</p>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-slate-900 truncate">{lista.nombre}</p>
                                     <p className="text-xs text-slate-400 mt-0.5">
                                         {lista.rol === 'owner' ? 'Tuya' : lista.rol === 'editor' ? 'Compartida · Editor' : 'Compartida · Lector'}
                                     </p>
                                 </div>
-                            </div>
+                            </button>
 
                             <div className="flex items-center gap-2 shrink-0">
                                 {lista.rol !== 'owner' && (

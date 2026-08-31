@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect } from 'react';
-import { MagnifyingGlassIcon, ScalesIcon, ShoppingCartIcon, FloppyDiskIcon, XCircleIcon } from '@phosphor-icons/react/dist/ssr';
+import { MagnifyingGlassIcon, ScalesIcon, ShoppingCartIcon, FloppyDiskIcon, XCircleIcon, CheckCircleIcon } from '@phosphor-icons/react/dist/ssr';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
 import { useListaStore } from '@/app/_store/store';
 import BaseContainer from '@/app/_components/global/BaseContainer';
@@ -131,8 +131,17 @@ export default function MiListaPage() {
           {user && !isListaVacia && puedeEditar && (
             <DesktopActionButton
               onClick={listaId ? handleSincronizar : abrirModalGuardar}
-              label={loadingSincronizar ? 'Sincronizando...' : sincronizadoOk ? '✅ Sincronizado' : listaId ? 'Sincronizar' : 'Guardar lista'}
-              icon={<FloppyDiskIcon weight="bold" />}
+              label={
+                loadingSincronizar ? 'Sincronizando...' :
+                  sincronizadoOk ? 'Sincronizado' :
+                    listaId ? 'Sincronizar' : 'Guardar lista'
+              }
+              // Renderizado condicional del ícono
+              icon={
+                sincronizadoOk
+                  ? <CheckCircleIcon weight="bold" />
+                  : <FloppyDiskIcon weight="bold" />
+              }
               color="lila"
               variant="solid"
               className="inline-flex"

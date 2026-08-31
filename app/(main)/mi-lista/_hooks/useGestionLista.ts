@@ -10,6 +10,7 @@ interface UseGestionListaReturn {
   modalCerrarOpen: boolean;
   loadingGuardar: boolean;
   loadingSincronizar: boolean;
+  sincronizadoOk: boolean;
 
   // Acciones de modales
   abrirModalGuardar: () => void;
@@ -34,6 +35,7 @@ export function useGestionLista(): UseGestionListaReturn {
   const [modalCerrarOpen, setModalCerrarOpen] = useState(false);
   const [loadingGuardar, setLoadingGuardar] = useState(false);
   const [loadingSincronizar, setLoadingSincronizar] = useState(false);
+  const [sincronizadoOk, setSincronizadoOk] = useState(false);
 
   // Arma el payload de items desde el estado local
   const buildItems = () =>
@@ -85,7 +87,10 @@ export function useGestionLista(): UseGestionListaReturn {
       });
 
       if (!res.ok) throw new Error('Error al sincronizar la lista');
-      setModalGuardarOpen(false);
+
+      // Feedback temporal de éxito
+      setSincronizadoOk(true);
+      setTimeout(() => setSincronizadoOk(false), 2000);
     } catch (err) {
       console.error(err);
     } finally {
@@ -111,6 +116,7 @@ export function useGestionLista(): UseGestionListaReturn {
     modalCerrarOpen,
     loadingGuardar,
     loadingSincronizar,
+    sincronizadoOk,
     abrirModalGuardar: () => setModalGuardarOpen(true),
     cerrarModalGuardar: () => setModalGuardarOpen(false),
     abrirModalCerrar: () => setModalCerrarOpen(true),

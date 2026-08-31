@@ -76,6 +76,7 @@ export default function MiListaPage() {
     modalCerrarOpen,
     loadingGuardar,
     loadingSincronizar,
+    sincronizadoOk,
     abrirModalGuardar,
     cerrarModalGuardar,
     abrirModalCerrar,
@@ -130,7 +131,7 @@ export default function MiListaPage() {
           {user && !isListaVacia && puedeEditar && (
             <DesktopActionButton
               onClick={listaId ? handleSincronizar : abrirModalGuardar}
-              label={listaId ? 'Sincronizar' : 'Guardar lista'}
+              label={loadingSincronizar ? 'Sincronizando...' : sincronizadoOk ? '✅ Sincronizado' : listaId ? 'Sincronizar' : 'Guardar lista'}
               icon={<FloppyDiskIcon weight="bold" />}
               color="lila"
               variant="solid"

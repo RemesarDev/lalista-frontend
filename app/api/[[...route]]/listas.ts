@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
 import { auth } from '@/app/_lib/auth';
-import { guardarListaSchema } from '@/app/_lib/apiSchemas';
+import { guardarListaSchema,sincronizarListaSchema } from '@/app/_lib/apiSchemas';
 import { 
   DbLista, 
   DbItemLista, 
@@ -28,7 +28,7 @@ export const listasRouter = new Hono()
     return c.json({ listas });
   })
 
-  // GET /listas/:id/items — items de una lista (agrupados por grupo/item_id)
+  // GET /listas/:id/items — items de una lista (agrupados por grupo_id)
   .get('/listas/:id/items', async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) return c.json({ error: 'No autorizado' }, 401);
@@ -44,14 +44,14 @@ export const listasRouter = new Hono()
 
     const rawRows = (data as DbItemLista[]) ?? [];
 
-    // 1. Agrupar filas de DB por su item_id (UUID del grupo)
+    // 1. Agrupar filas de DB por su grupo_id
     const gruposMap = new Map<string, DbItemLista[]>();
-for (const row of rawRows) {
-  if (!gruposMap.has(row.grupo_id)) {
-    gruposMap.set(row.grupo_id, []);
-  }
-  gruposMap.get(row.grupo_id)!.push(row); 
-}
+    for (const row of rawRows) {
+      if (!gruposMap.has(row.grupo_id)) {
+        gruposMap.set(row.grupo_id, []);
+      }
+      gruposMap.get(row.grupo_id)!.push(row);
+    }
 
     // 2. Mapear cada grupo a la estructura ItemLista con opciones disyuntivas
     const items = Array.from(gruposMap.values()).map(mapearGrupoItemsLista);
@@ -69,12 +69,31 @@ for (const row of rawRows) {
     const { data, error } = await supabase.rpc('guardar_lista_usuario', {
       p_user_id: session.user.id,
       p_nombre: nombre,
-      p_items: items, // El JSON validado por Zod ya coincide con el formato que la RPC espera
+      p_items: items,
     });
 
     if (error) return c.json({ error: error.message }, 500);
 
     return c.json({ id: data }, 201);
+  })
+
+  // PATCH /listas/:id — sincronizar lista existente
+  .patch('/listas/:id', zValidator('json', sincronizarListaSchema), async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: 'No autorizado' }, 401);
+
+    const listId = c.req.param('id');
+    const { items } = c.req.valid('json');
+    const { data, error } = await supabase.rpc('actualizar_lista', {
+      p_list_id: listId,
+      p_user_id: session.user.id,
+      p_items: items,
+    });
+
+    if (error) return c.json({ error: error.message }, 500);
+    if (!data) return c.json({ error: 'No autorizado o lista no encontrada' }, 403);
+
+    return c.json({ success: true }, 200);
   })
 
   // DELETE /listas/:id — abandonar o eliminar lista

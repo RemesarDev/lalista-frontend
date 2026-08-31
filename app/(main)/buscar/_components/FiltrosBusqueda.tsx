@@ -41,13 +41,13 @@ export function FiltrosBusqueda({
     <div className="flex flex-col gap-2.5">
       {categoria && (
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          <span className="font-display text-[10px] font-bold uppercase tracking-widest text-slate-400">
             Categoría
           </span>
           <button
             type="button"
             onClick={onQuitarCategoria}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary-500 px-3 py-1 text-xs font-bold text-white transition hover:bg-orange-600"
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary-500 px-3 py-1 font-display text-xs font-bold text-white transition hover:bg-orange-600"
           >
             {nombreCategoria}
             <XIcon size={12} weight="bold" />
@@ -58,7 +58,7 @@ export function FiltrosBusqueda({
       {visibles.length > 0 && (
         <>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            <span className="mr-1 font-display text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Según el envase
             </span>
 

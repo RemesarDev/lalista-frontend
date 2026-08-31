@@ -33,7 +33,7 @@ export default function CategoriaChips() {
 
   return (
     <div className="w-full max-w-sm">
-      <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+      <p className="mb-2 font-display text-[10px] font-bold uppercase tracking-widest text-slate-400">
         O explorá por categoría
       </p>
 
@@ -42,7 +42,7 @@ export default function CategoriaChips() {
           <Link
             key={cat.slug}
             href={`/buscar?categoria=${encodeURIComponent(cat.slug)}`}
-            className="rounded-full border border-accent-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition hover:border-primary-400 hover:text-primary-500 active:scale-95"
+            className="rounded-full border border-accent-300 bg-white px-3 py-1.5 font-display text-xs font-bold text-slate-600 shadow-sm transition hover:border-primary-400 hover:text-primary-500 active:scale-95"
           >
             {cat.nombre}
           </Link>

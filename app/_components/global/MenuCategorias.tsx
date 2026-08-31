@@ -61,7 +61,7 @@ export function MenuCategorias({ activo }: MenuCategoriasProps) {
         aria-expanded={abierto}
         aria-haspopup="true"
         aria-label="Ver categorías"
-        className="inline-flex h-[42px] items-center gap-1.5 rounded-xl border border-accent-300 bg-white px-3 text-sm font-bold text-slate-600 shadow-sm transition hover:border-primary-400 hover:text-primary-500"
+        className="inline-flex h-[42px] items-center gap-1.5 rounded-xl border border-accent-300 bg-white px-3 font-display text-sm font-bold text-slate-600 shadow-sm transition hover:border-primary-400 hover:text-primary-500"
       >
         {abierto ? <XIcon size={18} weight="bold" /> : <ListIcon size={18} weight="bold" />}
         <span className="hidden sm:inline">Categorías</span>
@@ -79,7 +79,7 @@ export function MenuCategorias({ activo }: MenuCategoriasProps) {
                   <button
                     type="button"
                     onClick={() => irA(rubro.slug)}
-                    className={`flex-1 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition hover:bg-slate-50 ${
+                    className={`flex-1 rounded-lg px-3 py-2.5 text-left font-display text-sm font-bold transition hover:bg-slate-50 ${
                       activo === rubro.slug ? 'text-primary-500' : 'text-slate-800'
                     }`}
                   >

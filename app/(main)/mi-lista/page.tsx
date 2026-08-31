@@ -1,12 +1,14 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
-import { MagnifyingGlassIcon, ScalesIcon, ShoppingCartIcon, FloppyDiskIcon } from '@phosphor-icons/react/dist/ssr';
+import { Suspense, useEffect } from 'react';
+import { MagnifyingGlassIcon, ScalesIcon, ShoppingCartIcon, FloppyDiskIcon, XCircleIcon } from '@phosphor-icons/react/dist/ssr';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
 import { useListaStore } from '@/app/_store/store';
 import BaseContainer from '@/app/_components/global/BaseContainer';
 import { ModalGuardarLista } from './_components/ModalGuardarLista';
+import { CerrarListaModal } from './_components/CerrarListaModal';
 import { GrupoListItem } from './_components/GrupoListItem';
+import { useGestionLista } from './_hooks/useGestionLista';
 
 function ListaProductos() {
   const lista = useListaStore((state) => state.lista);
@@ -63,63 +65,30 @@ function ListaProductos() {
 
 export default function MiListaPage() {
   const totalEnLista = useListaStore((state) => state.lista.length);
-  const lista = useListaStore((state) => state.lista);
-  const limpiarLista = useListaStore((state) => state.limpiarLista);
   const user = useListaStore((state) => state.user);
   const checkAuth = useListaStore((state) => state.checkAuth);
-  const setListaActiva = useListaStore((state) => state.setListaActiva);
   const listaId = useListaStore((state) => state.listaId);
   const listaRol = useListaStore((state) => state.listaRol);
   const isListaVacia = totalEnLista === 0;
 
-  const [modalGuardarOpen, setModalGuardarOpen] = useState(false);
-  const [loadingGuardar, setLoadingGuardar] = useState(false);
+  const {
+    modalGuardarOpen,
+    modalCerrarOpen,
+    loadingGuardar,
+    loadingSincronizar,
+    abrirModalGuardar,
+    cerrarModalGuardar,
+    abrirModalCerrar,
+    cerrarModalCerrar,
+    handleGuardarLista,
+    handleSincronizar,
+    handleCerrarLista,
+    handleLimpiarLista,
+  } = useGestionLista();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
-
-  const handleLimpiarLista = () => {
-    if (isListaVacia) return;
-    const confirmar = window.confirm('¿Querés vaciar toda la lista? Esta acción no se puede deshacer.');
-    if (confirmar) limpiarLista();
-  };
-
-  const handleGuardarLista = async (nombre: string) => {
-    setLoadingGuardar(true);
-    try {
-      const items = lista.map((grupo) => ({
-        item_id: grupo.grupoId,
-        cantidad: grupo.cantidad,
-        comprado: grupo.comprado ?? false,
-        opciones: grupo.opciones.map((opcion, index) => ({
-          id_producto: opcion.id,
-          descripcion: opcion.nombre,
-          imagen: opcion.url_imagen ?? null,
-          es_principal: index === 0,
-        })),
-      }));
-
-      const res = await fetch('/api/listas', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, items }),
-      });
-
-      if (!res.ok) throw new Error('Error al guardar la lista');
-
-      // Vinculamos la lista local con la lista recién creada en la nube
-      const { id } = await res.json();
-      setListaActiva(id, 'owner');
-
-      setModalGuardarOpen(false);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingGuardar(false);
-    }
-  };
 
   // El usuario puede editar si no hay lista activa o si es owner/editor
   const puedeEditar = !listaId || listaRol === 'owner' || listaRol === 'editor';
@@ -160,7 +129,7 @@ export default function MiListaPage() {
           {/* Guardar (lista nueva) o Sincronizar (lista existente) */}
           {user && !isListaVacia && puedeEditar && (
             <DesktopActionButton
-              onClick={() => setModalGuardarOpen(true)}
+              onClick={listaId ? handleSincronizar : abrirModalGuardar}
               label={listaId ? 'Sincronizar' : 'Guardar lista'}
               icon={<FloppyDiskIcon weight="bold" />}
               color="lila"
@@ -169,15 +138,30 @@ export default function MiListaPage() {
             />
           )}
 
-          <DesktopActionButton
-            onClick={handleLimpiarLista}
-            label="Vaciar lista"
-            icon={<ShoppingCartIcon weight="bold" />}
-            color="rojo"
-            variant="outline"
-            disabled={isListaVacia}
-            className="inline-flex"
-          />
+          {/* Cerrar lista activa */}
+          {listaId && (
+            <DesktopActionButton
+              onClick={abrirModalCerrar}
+              label="Cerrar lista"
+              icon={<XCircleIcon weight="bold" />}
+              color="rojo"
+              variant="outline"
+              className="inline-flex"
+            />
+          )}
+
+          {/* Vaciar lista local */}
+          {!listaId && (
+            <DesktopActionButton
+              onClick={handleLimpiarLista}
+              label="Vaciar lista"
+              icon={<ShoppingCartIcon weight="bold" />}
+              color="rojo"
+              variant="outline"
+              disabled={isListaVacia}
+              className="inline-flex"
+            />
+          )}
         </div>
       </div>
 
@@ -185,11 +169,21 @@ export default function MiListaPage() {
         <ListaProductos />
       </Suspense>
 
+      {/* Modal guardar lista nueva */}
       <ModalGuardarLista
         isOpen={modalGuardarOpen}
-        onClose={() => setModalGuardarOpen(false)}
+        onClose={cerrarModalGuardar}
         onConfirm={handleGuardarLista}
         loading={loadingGuardar}
+      />
+
+      {/* Modal cerrar lista activa */}
+      <CerrarListaModal
+        isOpen={modalCerrarOpen}
+        onClose={cerrarModalCerrar}
+        onCerrarSinGuardar={() => handleCerrarLista(false)}
+        onSincronizarYCerrar={() => handleCerrarLista(true)}
+        loading={loadingSincronizar}
       />
     </BaseContainer>
   );

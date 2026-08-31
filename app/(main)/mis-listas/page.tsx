@@ -7,7 +7,7 @@ import { useListaStore } from '@/app/_store/store';
 import { useMisListas } from './_hooks/useMisListas';
 import { useAbrirLista } from './_hooks/useAbrirLista';
 import BaseContainer from '@/app/_components/global/BaseContainer';
-import ConfirmModal from './_components/ConfirmModal';
+import ConfirmModal from '../../_components/global/ConfirmModal';
 import { ListIcon, LockIcon, TrashIcon } from '@phosphor-icons/react';
 import type { RolLista } from '@/app/_store/slices/listaSlice';
 

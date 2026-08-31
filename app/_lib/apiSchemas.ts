@@ -94,8 +94,19 @@ export const guardarListaSchema = z.object({
     })
   ).min(1, 'La lista debe tener al menos un producto'),
 });
+export const sincronizarListaSchema = z.object({
+  items: z.array(
+    z.object({
+      item_id: z.string(),
+      cantidad: z.number().int().min(1),
+      comprado: z.boolean(),
+      opciones: z.array(opcionProductoSchema).min(1),
+    })
+  ).min(1),
+});
 
 export type GuardarListaBody = z.infer<typeof guardarListaSchema>;
+export type SincronizarListaBody = z.infer<typeof sincronizarListaSchema>;
 
 // ==========================================
 // 4. INFERENCIA DE TIPOS PARA EL FRONTEND

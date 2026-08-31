@@ -1,5 +1,6 @@
 'use client'; // Necesitamos esto porque usamos hooks
 import { useListaStore } from '@/app/_store/store';
+import { MenuCategorias } from './MenuCategorias';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useRef } from 'react';
 import { DesktopActionButton } from './DesktopActionButton';
@@ -34,6 +35,7 @@ export default function StickySearch() {
   return (
     <div className="sticky top-[57px] z-40 w-full backdrop-blur-md px-2 py-2">
       <div className="mx-auto flex max-w-5xl flex-col gap-2 md:flex-row md:items-center md:justify-center md:gap-3">
+        <div className="flex w-full items-center gap-2 md:w-auto">
         <form
           onSubmit={handleSearch}
           className="relative w-full md:w-[560px] md:shrink-0 md:flex-none"
@@ -64,6 +66,9 @@ export default function StickySearch() {
             className="w-full rounded-xl border border-accent-300 bg-white py-2.5 pl-10 pr-4 text-sm font-sans text-slate-800 shadow-sm transition placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </form>
+
+        <MenuCategorias />
+        </div>
 
         <div className="w-full md:w-auto md:shrink-0">
           <DesktopActionButton

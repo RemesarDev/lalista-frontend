@@ -29,17 +29,41 @@ export const sucursalesCercanasQuerySchema = z.object({
 // ==========================================
 // 2. ESQUEMAS DE PRODUCTOS (Supabase DB)
 // ==========================================
+// Slug de categoria o rubro. Minusculas, numeros y guiones: nada mas.
+const categoriaParam = z
+  .string()
+  .regex(/^[a-z0-9-]+$/, { message: 'Slug de categoria invalido' })
+  .optional();
+
+// Etiquetas dietarias: llegan como "SIN_TACC,DIET" y se convierten a array.
+// Se validan contra mayusculas y guion bajo para que no entre texto arbitrario.
+const etiquetasParam = z
+  .string()
+  .optional()
+  .transform((val) =>
+    val ? val.split(',').map((e) => e.trim().toUpperCase()).filter(Boolean) : []
+  )
+  .refine((arr) => arr.length <= 5, { message: 'Maximo 5 etiquetas' })
+  .refine((arr) => arr.every((e) => /^[A-Z_]+$/.test(e)), {
+    message: 'Etiqueta invalida',
+  });
+
 export const productosQuerySchema = z.object({
   search: z.string().optional(),
   sucursales_ids: z.string().transform((val) => val.split(',').filter(Boolean)),
   page: z.string().optional().default('1'),
   limit: z.string().optional().default('20'),
+  categoria: categoriaParam,
+  etiquetas: etiquetasParam,
 });
 
 export const catalogoQuerySchema = z.object({
-  search: z.string(),
+  // Opcional: se puede navegar por categoria sin escribir nada en el buscador.
+  search: z.string().optional(),
   page: z.string().optional().default('1'),
   limit: z.string().optional().default('20'),
+  categoria: categoriaParam,
+  etiquetas: etiquetasParam,
 });
 
 export const preciosPorIdsQuerySchema = z.object({

@@ -9,7 +9,7 @@ import { useCategorias } from '@/app/_hooks/useCategorias';
 const DESTACADAS = [
   'almacen',
   'lacteos',
-  'bebidas-sin-alcohol',
+  'bebidas',
   'panaderia',
   'carniceria',
   'verduleria',

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { APIProvider } from '@vis.gl/react-google-maps';
 import { CrosshairIcon, ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Componentes y Hooks modulares
@@ -14,11 +14,23 @@ import SliderVertical from './_components/SliderVertical';
 import { useUbicacion } from './_hooks/useUbicacion';
 import { useListaStore } from '@/app/_store/store';
 
+export const dynamic = 'force-dynamic';
+
 export default function UbicacionVista() {
   const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
   return (
     <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
-      <ContenidoMapa />
+      <Suspense fallback={
+        <div className="flex h-screen w-full items-center justify-center bg-slate-100">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-900 border-t-transparent" />
+            <p className="text-xs font-semibold text-slate-500">Cargando mapa...</p>
+          </div>
+        </div>
+      }>
+        <ContenidoMapa />
+      </Suspense>
     </APIProvider>
   );
 }
@@ -28,7 +40,7 @@ function ContenidoMapa() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Captura de parámetros para el pin de la sucursal (si viene desde CardComercioAlternativo)
+  // Captura de parámetros para el pin de la sucursal (si viene desde CardComercioAlternativo / Ganador)
   const sucursalLat = searchParams.get('sucursalLat');
   const sucursalLng = searchParams.get('sucursalLng');
   const sucursalNombre = searchParams.get('sucursalNombre');

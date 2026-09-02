@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PlusIcon, TrashIcon, PlusCircleIcon, MinusCircleIcon } from '@phosphor-icons/react/dist/ssr';
 import type { GrupoLista } from '@/app/_store/slices/listaSlice';
-import { formatearNombreProducto } from '@/app/_lib/utils/formatters';
+import { formatearNombre } from '@/app/_lib/utils/formatters';
 
 interface GrupoListItemProps {
   grupo: GrupoLista;
@@ -128,7 +128,7 @@ export function GrupoListItem({
             )}
           </div>
           <span className="text-xs font-medium text-slate-600 truncate">
-            {formatearNombreProducto(alt.nombre)}
+            {formatearNombre(alt.nombre)}
           </span>
         </div>
         <button

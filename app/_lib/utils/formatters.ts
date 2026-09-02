@@ -4,7 +4,7 @@ export const formatearPrecio = (precio: number): string => {
   }).format(precio);
 };
 
-export const formatearNombreProducto = (texto: string): string => {
+export const formatearNombre = (texto: string): string => {
   if (!texto) return '';
   return texto
     .toLowerCase()

@@ -1,7 +1,7 @@
 import { PlusIcon, MinusIcon, ShoppingBagIcon } from '@phosphor-icons/react/dist/ssr';
 import { useState } from 'react';
 import { Producto } from '@/app/_types/productos';
-import {formatearNombreProducto, formatearPrecio} from '@/app/_lib/utils/formatters';
+import {formatearNombre, formatearPrecio} from '@/app/_lib/utils/formatters';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -58,7 +58,7 @@ export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) 
         </div>
         
         <h3 className="font-bold text-slate-900 text-xs md:text-sm line-clamp-3 min-h-[2.5rem] leading-tight">
-          {formatearNombreProducto(producto.nombre)}
+          {formatearNombre(producto.nombre)}
         </h3>
         
         <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1.5">

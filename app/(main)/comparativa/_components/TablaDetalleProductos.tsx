@@ -74,8 +74,8 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                 const grupoEnStore = lista.find((g) => g.grupoId === grupoId);
                 const cantidadGrupo = grupoEnStore?.cantidad ?? 1;
 
-                const nombreMostrar =
-                  grupoEnStore?.opciones[0]?.nombre ?? 'Producto';
+                const nombreBruto = grupoEnStore?.opciones[0]?.nombre;
+                const nombreMostrar = nombreBruto ? formatearNombre(nombreBruto) : 'Producto';
 
                 return (
                   <tr key={grupoId} className="transition-colors hover:bg-slate-50">

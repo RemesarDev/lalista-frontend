@@ -3,7 +3,7 @@ import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
 import { productosQuerySchema, catalogoQuerySchema, preciosPorIdsQuerySchema } from '@/app/_lib/apiSchemas';
 import { mapToProductoResponse, DbProductoRow } from '@/app/_lib/mappers/productos'; 
-import { Producto, CategoriaArbol, EtiquetaDisponible } from '@/app/_types/productos';
+import { Producto, CategoriaArbol, EtiquetaDisponible, DetalleProducto } from '@/app/_types/productos';
 
 function agruparProductosConSucursales(rows: any[]): Producto[] {
   const mapaProductos = new Map<string, Producto>();
@@ -208,4 +208,74 @@ export const productosRouter = new Hono()
     const etiquetas = (resEtiquetas.data ?? []) as EtiquetaDisponible[];
 
     return c.json({ rubros, etiquetas });
+  })
+
+// DETALLE DE UN PRODUCTO
+// Ficha para el modal: datos del SEPA mas la clasificacion propia.
+// El id es el EAN, asi que se valida que sean solo digitos.
+  .get('/producto/:id', async (c) => {
+    const id = c.req.param('id');
+
+    if (!/^[0-9]+$/.test(id)) {
+      return c.json({ error: 'Id de producto invalido' }, 400);
+    }
+
+    // La vista v_productos_categorizados solo trae la clasificacion, no todas
+    // las columnas de productos. Por eso se consultan las dos por separado.
+    const [resProducto, resCategoria, resEtiquetas] = await Promise.all([
+      supabase
+        .from('productos')
+        .select('id_producto, productos_descripcion, productos_marca, url_imagen, ' +
+                'productos_cantidad_presentacion, productos_unidad_medida_presentacion')
+        .eq('id_producto', id)
+        .maybeSingle(),
+      supabase
+        .from('v_productos_categorizados')
+        .select('categoria, categoria_slug, rubro, rubro_slug')
+        .eq('id_producto', id)
+        .maybeSingle(),
+      // Solo las etiquetas declaradas en la descripcion. Las inferidas por IA
+      // quedan afuera por la misma razon que en el buscador: no son una
+      // declaracion del fabricante.
+      supabase
+        .from('producto_etiqueta')
+        .select('origen, etiquetas(codigo, nombre)')
+        .eq('id_producto', id)
+        .in('origen', ['keyword', 'manual']),
+    ]);
+
+    if (resProducto.error) {
+      console.error('Error consultando el producto:', resProducto.error);
+      return c.json({ error: resProducto.error.message }, 500);
+    }
+
+    if (!resProducto.data) {
+      return c.json({ error: 'Producto no encontrado' }, 404);
+    }
+
+    const fila = resProducto.data as any;
+    // Si el producto no esta clasificado, la ficha se muestra igual sin categoria.
+    const clasif = (resCategoria.data ?? {}) as any;
+
+    // Si fallan las etiquetas no se corta todo: la ficha sirve igual sin ellas.
+    const etiquetas = ((resEtiquetas.data ?? []) as any[])
+      .map((e) => e.etiquetas)
+      .filter(Boolean)
+      .map((e: any) => ({ codigo: e.codigo, nombre: e.nombre }));
+
+    const detalle: DetalleProducto = {
+      id_producto: fila.id_producto,
+      nombre: fila.productos_descripcion,
+      marca: fila.productos_marca?.trim() || null,
+      cantidad: fila.productos_cantidad_presentacion ?? null,
+      unidad: fila.productos_unidad_medida_presentacion?.trim() || null,
+      url_imagen: fila.url_imagen,
+      categoria: clasif.categoria ?? null,
+      categoria_slug: clasif.categoria_slug ?? null,
+      rubro: clasif.rubro ?? null,
+      rubro_slug: clasif.rubro_slug ?? null,
+      etiquetas,
+    };
+
+    return c.json({ producto: detalle });
   });

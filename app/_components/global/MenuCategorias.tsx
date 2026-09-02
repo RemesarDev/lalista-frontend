@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CaretDownIcon, ListIcon, XIcon } from '@phosphor-icons/react/dist/ssr';
 import { useCategorias } from '@/app/_hooks/useCategorias';
 
@@ -20,6 +20,7 @@ interface MenuCategoriasProps {
 export function MenuCategorias({ activo }: MenuCategoriasProps) {
   const { rubros, cargando } = useCategorias();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [abierto, setAbierto] = useState(false);
   const [expandido, setExpandido] = useState<string | null>(null);
@@ -48,7 +49,13 @@ export function MenuCategorias({ activo }: MenuCategoriasProps) {
 
   const irA = (slug: string) => {
     setAbierto(false);
-    router.push(`/buscar?categoria=${encodeURIComponent(slug)}`);
+
+    // Se conservan los parametros que ya estaban: si el usuario escribio
+    // "aceite" y despues elige una categoria, espera que se crucen las dos
+    // condiciones, no que se pierda lo que escribio.
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('categoria', slug);
+    router.push(`/buscar?${params.toString()}`);
   };
 
   if (cargando || rubros.length === 0) return null;

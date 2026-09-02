@@ -43,3 +43,22 @@ export interface EtiquetaDisponible {
   nombre: string;
   productos: number;
 }
+
+/**
+ * Ficha completa de un producto para el modal de detalle.
+ * Todo sale de la base: los datos del SEPA mas la clasificacion propia.
+ */
+export interface DetalleProducto {
+  id_producto: string;
+  nombre: string;
+  marca: string | null;
+  cantidad: number | null;
+  unidad: string | null;
+  url_imagen: string | null;
+  categoria: string | null;
+  categoria_slug: string | null;
+  rubro: string | null;
+  rubro_slug: string | null;
+  /** Solo las declaradas en la descripcion, no las inferidas por IA. */
+  etiquetas: { codigo: string; nombre: string }[];
+}

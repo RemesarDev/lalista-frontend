@@ -2,6 +2,8 @@ import { AuthProvider } from "../_components/global/AuthProvider";
 import Navigation from "../_components/global/Navigation";
 import FooterLanding from "../_components/global/Footer-landing";
 import Header from "../_components/global/header/Header";
+import { Suspense } from "react";
+import { ModalProducto } from "../_components/global/ModalProducto";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +14,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <Navigation />
+
+        {/* Ficha de producto. Se monta una sola vez y se controla por la URL
+            (?producto=EAN), asi cualquier vista puede abrirla. */}
+        <Suspense fallback={null}>
+          <ModalProducto />
+        </Suspense>
         <div className="hidden md:block">
           <FooterLanding />
         </div>

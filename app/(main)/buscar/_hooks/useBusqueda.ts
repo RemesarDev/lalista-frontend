@@ -5,8 +5,21 @@ import { Producto, BusquedaResponse } from '@/app/_types/productos';
 import { client } from '@/app/_lib/hono-client';
 import { useListaStore } from '@/app/_store/store';
 
-export const useBusqueda = (query: string = "") => {
+export const useBusqueda = (
+  query: string = "",
+  categoria: string = "",
+  etiquetas: string[] = []
+) => {
   const termino = query.trim();
+
+  // Se serializan para poder usarlas como dependencia del efecto sin que un
+  // array nuevo en cada render dispare una busqueda de mas.
+  const etiquetasParam = etiquetas.join(',');
+
+  // Antes hacia falta un termino de 3 letras. Ahora tambien alcanza con haber
+  // elegido una categoria o una etiqueta: es lo que permite navegar el catalogo
+  // sin escribir nada.
+  const hayFiltro = termino.length >= 3 || categoria !== '' || etiquetasParam !== '';
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState<boolean>(false);
   const [cargandoMas, setCargandoMas] = useState<boolean>(false);
@@ -31,8 +44,8 @@ export const useBusqueda = (query: string = "") => {
 
   // Búsqueda inicial (Página 1)
   useEffect(() => {
-    if (!hidratado || termino.length < 3) {
-      if (termino.length < 3) {
+    if (!hidratado || !hayFiltro) {
+      if (!hayFiltro) {
         setProductos([]);
         setHayMas(false);
         limpiarCacheBusquedaPrecios();
@@ -50,17 +63,23 @@ export const useBusqueda = (query: string = "") => {
       try {
         const initOpts = { init: { signal: controller.signal } };
 
+        const filtros = {
+          ...(termino.length >= 3 ? { search: termino } : {}),
+          ...(categoria ? { categoria } : {}),
+          ...(etiquetasParam ? { etiquetas: etiquetasParam } : {}),
+        };
+
         const res = tieneSucursales
           ? await client.api.productos.$get({
               query: {
-                search: termino,
+                ...filtros,
                 page: '1',
                 limit: '20',
                 sucursales_ids: sucursalesIds.join(','),
-              }
+              } as any
             }, initOpts)
           : await client.api.catalogo.$get({
-              query: { search: termino, page: '1', limit: '20' }
+              query: { ...filtros, page: '1', limit: '20' } as any
             }, initOpts);
 
         if (cancelado) return;
@@ -81,7 +100,7 @@ export const useBusqueda = (query: string = "") => {
           
           const ubi = useListaStore.getState().ubicacion;
           guardarCacheBusquedaPrecios({
-            query: termino,
+            query: termino || categoria || etiquetasParam,
             latitud: ubi.latitud,
             longitud: ubi.longitud,
             radioBusqueda: ubi.radioBusqueda,
@@ -112,6 +131,9 @@ export const useBusqueda = (query: string = "") => {
     };
   }, [
     termino, 
+    categoria,
+    etiquetasParam,
+    hayFiltro,
     hidratado, 
     sucursalesIds,
     tieneSucursales,
@@ -121,23 +143,29 @@ export const useBusqueda = (query: string = "") => {
 
   // Carga para Scroll Infinito
   const cargarMas = useCallback(async () => {
-    if (cargando || cargandoMas || !hayMas || termino.length < 3) return;
+    if (cargando || cargandoMas || !hayMas || !hayFiltro) return;
 
     setCargandoMas(true);
     const siguientePagina = pagina + 1;
 
     try {
+      const filtros = {
+        ...(termino.length >= 3 ? { search: termino } : {}),
+        ...(categoria ? { categoria } : {}),
+        ...(etiquetasParam ? { etiquetas: etiquetasParam } : {}),
+      };
+
       const res = tieneSucursales
         ? await client.api.productos.$get({
             query: {
-              search: termino,
+              ...filtros,
               page: siguientePagina.toString(),
               limit: '20',
               sucursales_ids: sucursalesIds.join(','),
-            }
+            } as any
           })
         : await client.api.catalogo.$get({
-            query: { search: termino, page: siguientePagina.toString(), limit: '20' }
+            query: { ...filtros, page: siguientePagina.toString(), limit: '20' } as any
           });
 
       if (!res.ok) throw new Error(`Status: ${res.status}`);
@@ -154,11 +182,12 @@ export const useBusqueda = (query: string = "") => {
     } finally {
       setCargandoMas(false);
     }
-  }, [cargando, cargandoMas, hayMas, pagina, termino, sucursalesIds, tieneSucursales]);
+  }, [cargando, cargandoMas, hayMas, hayFiltro, pagina, termino, categoria,
+      etiquetasParam, sucursalesIds, tieneSucursales]);
 
   return { 
-    productos: termino.length < 3 ? [] : productos, 
-    cargando: termino.length < 3 ? false : cargando,
+    productos: !hayFiltro ? [] : productos, 
+    cargando: !hayFiltro ? false : cargando,
     cargandoMas,
     hayMas,
     cargarMas

@@ -1,9 +1,10 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useRef } from 'react';
 import { useBusqueda } from './_hooks/useBusqueda';
 import { ProductCard } from './_components/ProductCard';
+import { FiltrosBusqueda } from './_components/FiltrosBusqueda';
 import { useListaStore } from '@/app/_store/store';
 import StickySearch from '@/app/_components/global/StickySearch';
 import BaseContainer from '@/app/_components/global/BaseContainer';
@@ -20,7 +21,44 @@ function ResultadosBusqueda() {
   const grupoId = searchParams.get('grupoId');
   const esModoAlternativa = modo === 'alternativa' && Boolean(grupoId);
 
-  const { productos, cargando, cargandoMas, hayMas, cargarMas } = useBusqueda(query);
+  // Los filtros viven en la URL: se pueden compartir los links y el boton
+  // "atras" del navegador deshace cada filtro sin logica extra.
+  const categoria = searchParams.get('categoria') || "";
+  const etiquetasParam = searchParams.get('etiquetas') || "";
+  const etiquetas = etiquetasParam ? etiquetasParam.split(',').filter(Boolean) : [];
+  const hayFiltros = Boolean(categoria) || etiquetas.length > 0;
+
+  const actualizarUrl = useCallback(
+    (cambios: { categoria?: string; etiquetas?: string[] }) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (cambios.categoria !== undefined) {
+        if (cambios.categoria) params.set('categoria', cambios.categoria);
+        else params.delete('categoria');
+      }
+
+      if (cambios.etiquetas !== undefined) {
+        if (cambios.etiquetas.length > 0) params.set('etiquetas', cambios.etiquetas.join(','));
+        else params.delete('etiquetas');
+      }
+
+      router.replace(`/buscar?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams]
+  );
+
+  const handleToggleEtiqueta = (codigo: string) => {
+    const siguientes = etiquetas.includes(codigo)
+      ? etiquetas.filter((e) => e !== codigo)
+      : [...etiquetas, codigo];
+    actualizarUrl({ etiquetas: siguientes });
+  };
+
+  const { productos, cargando, cargandoMas, hayMas, cargarMas } = useBusqueda(
+    query,
+    categoria,
+    etiquetas
+  );
   
   const lista = useListaStore((state) => state.lista);
   const agregarProducto = useListaStore((state) => state.agregarProducto);
@@ -103,23 +141,48 @@ function ResultadosBusqueda() {
     }
   };
 
-  if (cargando) return (
-    <div className="col-span-2 flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
-      <span className="text-5xl animate-bounce">🛒</span>
-      <p className="text-sm">Buscando precios en tu zona...</p>
+  // Los filtros se muestran siempre que haya alguno activo, incluso mientras
+  // carga o si no hubo resultados: si no, el usuario no tendria como sacarlos.
+  const barraFiltros = hayFiltros ? (
+    <div className="pb-4">
+      <FiltrosBusqueda
+        categoria={categoria}
+        etiquetas={etiquetas}
+        onQuitarCategoria={() => actualizarUrl({ categoria: '' })}
+        onToggleEtiqueta={handleToggleEtiqueta}
+      />
     </div>
+  ) : null;
+
+  if (cargando) return (
+    <>
+      {barraFiltros}
+      <div className="col-span-2 flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
+        <span className="text-5xl animate-bounce">🛒</span>
+        <p className="text-sm">Buscando precios en tu zona...</p>
+      </div>
+    </>
   );
 
   if (!cargando && productos.length === 0) return (
-    <div className="col-span-2 flex flex-col items-center justify-center py-16 gap-2 text-center text-slate-400 px-4">
-      <span className="text-4xl">🔍</span>
-      <p className="text-sm font-medium">No se encontraron resultados en tu zona.</p>
-      <p className="bold text-xs">Cambia la <strong className="text-orange-500"> ubicación</strong> del GPS,<br/><strong className="text-orange-500"> el radio</strong> de busqueda,<br/> o el <strong className="text-orange-500"> término</strong> ingresado.</p>
-    </div>
+    <>
+      {barraFiltros}
+      <div className="col-span-2 flex flex-col items-center justify-center py-16 gap-2 text-center text-slate-400 px-4">
+        <span className="text-4xl">🔍</span>
+        <p className="text-sm font-medium">No se encontraron resultados en tu zona.</p>
+        {etiquetas.length > 1 ? (
+          <p className="text-xs">Probá quitando alguno de los filtros: pocos productos cumplen varios a la vez.</p>
+        ) : (
+          <p className="bold text-xs">Cambia la <strong className="text-orange-500"> ubicación</strong> del GPS,<br/><strong className="text-orange-500"> el radio</strong> de busqueda,<br/> o el <strong className="text-orange-500"> término</strong> ingresado.</p>
+        )}
+      </div>
+    </>
   );
 
   return (
     <div className="flex flex-col gap-6">
+      {barraFiltros}
+
       {/* Banner de Modo Alternativa */}
       {esModoAlternativa && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center justify-between text-xs text-amber-600 dark:text-amber-400">

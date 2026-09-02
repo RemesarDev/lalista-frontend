@@ -15,8 +15,7 @@ import { useListaStore } from '@/app/_store/store';
 import { useChanguitos } from './_hooks/useChanguitos';
 import { useInflacion } from './_hooks/useInflacion';
 import { useHistoricoProductosIndec } from './_hooks/useHistoricoProductosIndec';
-import { useSerieProducto } from './_hooks/useSerieProducto';
-import { useSerieTodosLosProductos } from './_hooks/useSerieTodosLosProductos';
+import { useHistoricoProvincia } from './_hooks/useHistoricoProvincia';
 import { GraficoInflacion } from './_components/GraficoInflacion';
 import { ResumenCanasta } from './_components/ResumenCanasta';
 
@@ -42,12 +41,11 @@ export default function CalculadoraPage() {
     }
   };
 
-  // `useInflacion` sigue trayendo el histórico real (SEPA) y registrando el
-  // seguimiento propio mes a mes en segundo plano (eso sigue siendo útil
-  // aunque ya no mostremos el total combinado del carrito en pantalla — ver
-  // comentario más abajo, en el selector). Solo usamos acá lo que hace
-  // falta para las vistas por producto.
-  const { cargandoHistoricoReal, historicoPorProductoPorClave } = useInflacion(changuitoSeleccionado, registrarPunto);
+  // `useInflacion` sigue registrando el seguimiento propio mes a mes en
+  // segundo plano (precio de hoy en cada supermercado congelado) — eso
+  // alimenta el resumen de "Este changuito" más abajo, es independiente
+  // del gráfico de histórico SEPA.
+  useInflacion(changuitoSeleccionado, registrarPunto);
 
   const {
     series: seriesProductosIndec,
@@ -55,33 +53,39 @@ export default function CalculadoraPage() {
     aclaraciones: aclaracionesProductosIndec,
   } = useHistoricoProductosIndec(changuitoSeleccionado);
 
-  // null = "Todos los productos" (una línea por producto, sin sumar ni
-  // promediar). Si no es null, es el id del producto puntual elegido.
-  const [productoSeleccionado, setProductoSeleccionado] = useState<string | null>(null);
+  // Histórico SEPA promediado entre TODOS los supermercados de tu
+  // provincia (no restringido a los 3 más baratos de este changuito) —
+  // mucha más cobertura de meses con datos.
+  const {
+    porProducto: seriesPorProductoProvincia,
+    total: serieTotalProvincia,
+    cargando: cargandoHistoricoReal,
+  } = useHistoricoProvincia(changuitoSeleccionado);
+
+  // 'total' = changuito completo (un solo número combinado). 'todos' = una
+  // línea por producto. Cualquier otro valor es el id de un producto puntual.
+  const [vista, setVista] = useState<'total' | 'todos' | string>('todos');
 
   // Al cambiar de changuito, volvemos siempre a "Todos los productos" (el
   // producto elegido antes podría no existir en el changuito nuevo).
   useEffect(() => {
-    setProductoSeleccionado(null);
+    setVista('todos');
   }, [changuitoSeleccionado?.id]);
 
-  const seriesSupermercadosProducto = useSerieProducto(
-    changuitoSeleccionado,
-    productoSeleccionado,
-    historicoPorProductoPorClave,
-  );
-  const seriesTodosLosProductos = useSerieTodosLosProductos(changuitoSeleccionado, historicoPorProductoPorClave);
+  const serieIndecProducto = seriesProductosIndec.find((s) => s.id === vista);
+  const aclaracionIndecProducto = aclaracionesProductosIndec.find((a) => a.productoId === vista);
 
-  const serieIndecProducto = seriesProductosIndec.find((s) => s.id === productoSeleccionado);
-  const aclaracionIndecProducto = aclaracionesProductosIndec.find((a) => a.productoId === productoSeleccionado);
+  const nombreProductoSeleccionado = changuitoSeleccionado?.productos.find((p) => p.id === vista)?.nombre;
 
-  const nombreProductoSeleccionado = changuitoSeleccionado?.productos.find(
-    (p) => p.id === productoSeleccionado,
-  )?.nombre;
-
-  // Series y título/bajada del gráfico 1 (supermercados), según si estamos
-  // viendo "todos los productos" o uno puntual.
-  const seriesGraficoSupermercados = productoSeleccionado === null ? seriesTodosLosProductos : seriesSupermercadosProducto;
+  // Series del gráfico 1, según la vista elegida.
+  const seriesGraficoSupermercados =
+    vista === 'total'
+      ? serieTotalProvincia
+        ? [serieTotalProvincia]
+        : []
+      : vista === 'todos'
+        ? seriesPorProductoProvincia
+        : seriesPorProductoProvincia.filter((s) => s.id === vista);
 
   return (
     <BaseContainer>
@@ -90,8 +94,8 @@ export default function CalculadoraPage() {
           Calculadora de inflación
         </h1>
         <p className="mt-0.5 text-[11px] font-medium text-slate-400 sm:text-xs">
-          Elegí un producto de tu changuito y mirá cómo le fue al precio en tus supermercados según el SEPA
-          y el INDEC
+          Elegí tu changuito completo o un producto puntual y mirá cómo le fue el precio en tu provincia según el
+          SEPA, y cómo le fue según el INDEC
         </p>
       </div>
 
@@ -119,7 +123,8 @@ export default function CalculadoraPage() {
             </div>
             <h3 className="mt-4 text-sm font-bold text-slate-900">Empezá a seguir este changuito</h3>
             <p className="mt-1 mb-5 text-xs text-slate-400">
-              Para poder ver cómo evolucionan los precios de tus productos en los supermercados.
+              Le damos seguimiento a los productos que elegis y todos los meses vamos a ver cómo les fue con el
+              precio a cada uno, comparado con el INDEC.
             </p>
             <DesktopActionButton
               onClick={() => iniciarSeguimiento(lista)}
@@ -178,18 +183,29 @@ export default function CalculadoraPage() {
                 producto{changuitoSeleccionado.productos.length === 1 ? '' : 's'}
               </p>
 
-              {/* Selector: ver todos los productos juntos (una línea por
-                  producto, SIN sumar ni promediar entre ellos — evita el
-                  problema del total combinado, que solo se podía calcular
-                  en un mes donde TODOS los productos tuvieran precio a la
-                  vez, algo que casi nunca coincidía con los datos
-                  históricos reales), o un producto puntual. */}
+              {/* Selector: changuito completo (un solo número, promediando
+                  el precio de cada producto entre todos los supermercados
+                  de tu provincia y sumando — solo en los meses donde TODOS
+                  los productos tienen dato), todos los productos por
+                  separado (una línea por producto, sin sumar), o un
+                  producto puntual. */}
               <div className="mb-5 flex flex-wrap items-center gap-2 px-1">
                 <button
                   type="button"
-                  onClick={() => setProductoSeleccionado(null)}
+                  onClick={() => setVista('total')}
                   className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
-                    productoSeleccionado === null
+                    vista === 'total'
+                      ? 'border-transparent bg-primary-500 text-white'
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  Changuito completo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVista('todos')}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
+                    vista === 'todos'
                       ? 'border-transparent bg-primary-500 text-white'
                       : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
                   }`}
@@ -200,9 +216,9 @@ export default function CalculadoraPage() {
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => setProductoSeleccionado(p.id)}
+                    onClick={() => setVista(p.id)}
                     className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
-                      productoSeleccionado === p.id
+                      vista === p.id
                         ? 'border-transparent bg-primary-500 text-white'
                         : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
                     }`}
@@ -219,36 +235,41 @@ export default function CalculadoraPage() {
                 </span>
               )}
 
-              {/* Gráfico 1: precio en tus supermercados (SEPA) — sin
-                  mezclar con el INDEC, para que quede claro de un vistazo
-                  que esto es "tus supermercados". */}
+              {/* Gráfico 1: precio en tu provincia (SEPA) — promediado
+                  entre todos los supermercados de tu provincia, no
+                  restringido a los 3 más baratos de este changuito. Sin
+                  mezclar con el INDEC. */}
               <div className="mb-8">
                 <h2 className="mb-1 px-1 text-sm font-black text-slate-900 sm:text-base">
-                  Precio en tus supermercados
+                  Precio en tu provincia
                 </h2>
                 <p className="mb-3 px-1 text-[11px] text-slate-400">
-                  {productoSeleccionado === null
-                    ? 'Precio histórico real de cada producto de tu changuito (datos oficiales SEPA) — una línea por producto, en el supermercado con más historial disponible para cada uno.'
-                    : (
-                      <>
-                        Precio histórico real de{' '}
-                        <span className="font-bold text-slate-500">{nombreProductoSeleccionado}</span> en cada
-                        supermercado de este changuito (datos oficiales SEPA).
-                      </>
-                    )}
+                  {vista === 'total'
+                    ? 'Precio histórico de tu changuito completo: la suma de tus productos, promediando cada uno entre todos los supermercados de tu provincia (datos oficiales SEPA) — solo en los meses donde todos los productos tienen dato.'
+                    : vista === 'todos'
+                      ? 'Precio histórico de cada producto de tu changuito, promediado entre todos los supermercados de tu provincia (datos oficiales SEPA) — una línea por producto.'
+                      : (
+                        <>
+                          Precio histórico de{' '}
+                          <span className="font-bold text-slate-500">{nombreProductoSeleccionado}</span>, promediado
+                          entre todos los supermercados de tu provincia (datos oficiales SEPA).
+                        </>
+                      )}
                 </p>
 
                 {seriesGraficoSupermercados.length === 0 && !cargandoHistoricoReal ? (
                   <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-xs text-slate-400">
-                    {productoSeleccionado === null
-                      ? 'Todavía no hay precios históricos reales cargados para los productos de este changuito.'
-                      : (
-                        <>
-                          Todavía no hay precios históricos reales cargados para{' '}
-                          <span className="font-bold text-slate-500">{nombreProductoSeleccionado}</span> en los
-                          supermercados de este changuito.
-                        </>
-                      )}
+                    {vista === 'total'
+                      ? 'Todavía no hay un mes en el que TODOS los productos de este changuito tengan precio SEPA en tu provincia.'
+                      : vista === 'todos'
+                        ? 'El SEPA todavía no publicó historial para los productos de este changuito en tu provincia.'
+                        : (
+                          <>
+                            El SEPA todavía no publicó historial para{' '}
+                            <span className="font-bold text-slate-500">{nombreProductoSeleccionado}</span> en tu
+                            provincia.
+                          </>
+                        )}
                   </p>
                 ) : (
                   <GraficoInflacion series={seriesGraficoSupermercados} />
@@ -263,14 +284,14 @@ export default function CalculadoraPage() {
               <div className="mb-8">
                 <h2 className="mb-1 px-1 text-sm font-black text-slate-900 sm:text-base">Según el INDEC</h2>
                 <p className="mb-3 px-1 text-[11px] text-slate-400">
-                  {productoSeleccionado === null
+                  {vista === 'total' || vista === 'todos'
                     ? 'Evolución oficial de las categorías del INDEC más parecidas a los productos de tu changuito — no es tu marca exacta, es la categoría genérica más cercana.'
                     : serieIndecProducto
                       ? 'Evolución oficial de la categoría más parecida que publica el INDEC — no es tu marca exacta, es la categoría genérica más cercana.'
                       : 'Referencia de precios: cómo evolucionó, según el INDEC, la categoría genérica más parecida a este producto.'}
                 </p>
 
-                {productoSeleccionado === null ? (
+                {vista === 'total' || vista === 'todos' ? (
                   seriesProductosIndec.length > 0 ? (
                     <>
                       <GraficoInflacion series={seriesProductosIndec} height={200} />

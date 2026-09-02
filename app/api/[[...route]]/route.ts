@@ -6,6 +6,7 @@ import { productosRouter } from './productos';
 import { mapsRouter } from './maps';
 import { auth } from '@/app/_lib/auth';
 import { listasRouter } from './listas';
+import { historicoRouter } from './historico';
 
 export const runtime = 'nodejs'; 
 
@@ -71,9 +72,10 @@ app.all('/auth/*', (c) => {
 // 4. ENRUTAMIENTO MODULAR (Chaining)
 // ==========================================
 const routes = app
-  .route('/', productosRouter)  
+  .route('/', productosRouter)
   .route('/', listasRouter)
-  .route('/maps', mapsRouter);  
+  .route('/maps', mapsRouter)
+  .route('/', historicoRouter);
 
 // ==========================================
 // 5. EXPORTACIONES PARA NEXT.JS

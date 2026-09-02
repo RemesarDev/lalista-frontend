@@ -55,7 +55,7 @@ export const CardComercioAlternativo = ({ sucursal, posicion }: Props) => {
       </div>
 
       <p className="text-[10px] md:text-[11px] font-medium leading-snug text-slate-600">
-        Esta sucursal tiene disponibles{' '}
+        Esta sucursal contiene {' '}
         <span className="font-black text-slate-900">{sucursal.productosDisponibles}</span>{' '}
         de{' '}
         <span className="font-black text-slate-900">{sucursal.productos.length}</span>{' '}

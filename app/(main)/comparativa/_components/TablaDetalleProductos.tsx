@@ -124,7 +124,7 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                           ) : (
                             <div className="flex flex-col items-center justify-center gap-1">
                               <span className="inline-block max-w-[120px] text-[10px] font-medium leading-tight text-red-500 md:text-xs">
-                                Sin stock / No disponible
+                                No disponible
                               </span>
                             <Link
                               href={`/buscar?q=${encodeURIComponent(primeraPalabra)}`}
@@ -161,6 +161,9 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
               </tr>
             </tbody>
           </table>
+          <p className="text-[10px] md:text-[11px] font-medium leading-snug text-slate-600 p-4 md:px-6">
+            * Lalista no proporciona información sobre la disponibilidad de productos en tiempo real. Los precios y la disponibilidad pueden variar según la sucursal y el momento de la compra.
+          </p>
         </div>
       )}
     </div>

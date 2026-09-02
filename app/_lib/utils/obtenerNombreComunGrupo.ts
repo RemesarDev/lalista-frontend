@@ -13,31 +13,43 @@ export function obtenerNombreComunGrupo(opciones: OpciónProducto[]): string {
     return formatearNombre(opciones[0].nombre);
   }
 
-  // Words to ignore when calculating common word averages
+  // Conectores a ignorar
   const palabrasIgnoradas = new Set([
     'de', 'del', 'con', 'en', 'para', 'por', 'sin', 'y', 'e', 'o',
     'la', 'el', 'las', 'los', 'un', 'una', 'unos', 'unas'
   ]);
 
-  // Metadatos o basura común que arruina la extracción de palabras
+  // Metadatos y unidades a ignorar
   const metadatosIgnorados = new Set([
-    'disc:disc', 'disc', 'pet', 'regular', 'pack', 'un', 'uni', 'unidad'
+    'disc:disc', 'disc', 'pet', 'regular', 'pack', 'un', 'uni', 'unidad',
+    'lt', 'l', 'ml', 'cc', 'gr', 'grs', 'g', 'kg', 'x', 'uat', 'grm'
   ]);
 
+  const limpiarPalabras = (texto: string): string[] => {
+    return texto
+      .replace(/[,.-]/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter((p) => {
+        const pLower = p.toLowerCase();
+        return !metadatosIgnorados.has(pLower) && !/^\d+$/.test(pLower);
+      });
+  };
+
   // -------------------------------------------------------------
-  // 1. PROMEDIO DE PALABRAS COMUNES
+  // 1. PALABRAS COMUNES (Si comparten al menos 1 término relevante)
   // -------------------------------------------------------------
   const conteoPalabras = new Map<string, { textoOriginal: string; cuenta: number }>();
 
   opciones.forEach((opcion) => {
-    const palabras = opcion.nombre.trim().split(/\s+/);
+    const palabras = limpiarPalabras(opcion.nombre);
     const palabrasUnicasEnOpcion = new Set(
-      palabras.map((p) => p.toLowerCase()).filter((p) => !metadatosIgnorados.has(p))
+      palabras
+        .map((p) => p.toLowerCase())
+        .filter((p) => !palabrasIgnoradas.has(p) && p.length > 1)
     );
 
     palabrasUnicasEnOpcion.forEach((palabraLimpia) => {
-      if (palabrasIgnoradas.has(palabraLimpia) || palabraLimpia.length <= 1) return;
-
       const varianteEncontrada =
         palabras.find((p) => p.toLowerCase() === palabraLimpia) || palabraLimpia;
 
@@ -55,48 +67,40 @@ export function obtenerNombreComunGrupo(opciones: OpciónProducto[]): string {
 
   const totalOpciones = opciones.length;
 
-  // Filtrar palabras que aparecen en al menos la mitad de las opciones
+  // Palabras presentes en la mayoría de las opciones (>= 50%)
   const palabrasRepresentativas = Array.from(conteoPalabras.values())
     .filter((item) => item.cuenta >= Math.ceil(totalOpciones / 2))
     .map((item) => item.textoOriginal);
 
-  // Si encontramos promedio / coincidencias representativas, las usamos
+  // CASO A: Si hay al menos 1 palabra común (ej: "Fideos"), la devuelve directamente
   if (palabrasRepresentativas.length > 0) {
     return formatearNombre(palabrasRepresentativas.join(' '));
   }
 
   // -------------------------------------------------------------
-  // 2. SIN COINCIDENCIAS: COMBINACIÓN DE PRIMERAS 2 PALABRAS (MÁX 3 + ...)
+  // 2. SIN COINCIDENCIAS: COMBINACIÓN DE PRIMERAS 2 PALABRAS (MÁX 3 CON " / ")
   // -------------------------------------------------------------
   const LIMITE_ELEMENTOS = 3;
   const hayMasOpciones = opciones.length > LIMITE_ELEMENTOS;
 
-  // Tomamos solo las primeras 3 opciones
   const opcionesLimitadas = opciones.slice(0, LIMITE_ELEMENTOS);
 
   const opcionesProcesadas = opcionesLimitadas.map((opcion) => {
-    const palabrasUtiles = opcion.nombre
-      .trim()
-      .split(/\s+/)
-      .filter((p) => !metadatosIgnorados.has(p.toLowerCase()));
-
-    // Extrae las primeras 2 palabras
+    const palabrasUtiles = limpiarPalabras(opcion.nombre);
     return palabrasUtiles.slice(0, 2).join(' ');
   });
 
-  // Eliminar duplicados manteniendo el orden
   const opcionesUnicas: string[] = [];
   opcionesProcesadas.forEach((item) => {
     const itemLower = item.toLowerCase();
-    if (!opcionesUnicas.some((e) => e.toLowerCase() === itemLower)) {
+    if (item && !opcionesUnicas.some((e) => e.toLowerCase() === itemLower)) {
       opcionesUnicas.push(item);
     }
   });
 
-  // Unir con " / " y agregar "..." si superaba las 3 opciones
   const resultadoCombinado = opcionesUnicas
     .map((fragmento) => formatearNombre(fragmento))
-    .join(' / ');
+    .join(' - ');
 
   return hayMasOpciones ? `${resultadoCombinado} ...` : resultadoCombinado;
 }

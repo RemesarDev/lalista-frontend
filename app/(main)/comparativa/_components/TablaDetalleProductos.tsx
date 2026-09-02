@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { type SucursalCarritoComparada } from '../_lib/Funciones-comparacion';
 import { useListaStore } from '@/app/_store/store';
 import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr';
-import { formatearPrecio } from '@/app/_lib/utils/formatters';
+import { formatearNombre, formatearPrecio } from '@/app/_lib/utils/formatters';
 import Link from 'next/link';
 
 interface Props {
@@ -118,7 +118,7 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                               {/* Muestra la primera palabra con puntos suspensivos */}
                               <span 
                                 className="max-w-[80px] truncate text-[10px] text-slate-500 underline decoration-dotted underline-offset-2"
-                                title={prodEnSucursal.nombre}
+                                title={formatearNombre(prodEnSucursal.nombre)}
                               >
                                 {primeraPalabraSucursal}...
                               </span>
@@ -126,7 +126,7 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                               {/* Tooltip flotante al hacer Hover (Mouse) o Tap (Mobile) */}
                               <div className="pointer-events-none absolute bottom-full mb-1 hidden group-hover:flex group-focus:flex flex-col items-center z-20">
                                 <span className="relative z-10 whitespace-normal rounded-md bg-slate-900 px-2 py-1 text-[10px] text-white shadow-md max-w-[150px] text-center leading-tight">
-                                  {prodEnSucursal.nombre}
+                                  {formatearNombre(prodEnSucursal.nombre)}
                                 </span>
                                 <div className="-mt-1 h-2 w-2 rotate-45 bg-slate-900"></div>
                               </div>

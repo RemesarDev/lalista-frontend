@@ -1,10 +1,10 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { formatearDistancia, formatearNombre, formatearPrecio } from '@/app/_lib/utils/formatters';
+import { verUbicacionSucursal } from '@/app/_lib/utils/navegacionMapa';
 import { type SucursalCarritoComparada } from '../_lib/Funciones-comparacion';
 import { MapPinIcon } from '@phosphor-icons/react/dist/ssr';
-import { useRouter } from 'next/navigation';
-import { verUbicacionSucursal } from '@/app/_lib/utils/navegacionMapa';
 
 interface Props {
   sucursal: SucursalCarritoComparada;
@@ -33,7 +33,7 @@ export const CardComercioAlternativo = ({ sucursal, posicion }: Props) => {
       router,
       latitud: sucursal.latitud,
       longitud: sucursal.longitud,
-      nombre: sucursal.cadena, 
+      nombre: sucursal.cadena,
     });
   };
 
@@ -48,6 +48,7 @@ export const CardComercioAlternativo = ({ sucursal, posicion }: Props) => {
         </div>
       </div>
 
+      {/* Al hacer clic sobre la dirección navega a la vista de ubicación */}
       <div 
         onClick={handleIrAlMapa}
         className="mb-2 flex items-start gap-2 cursor-pointer group rounded-lg p-1 -ml-1 transition-colors hover:bg-slate-100"

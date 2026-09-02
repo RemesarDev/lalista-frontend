@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingBagIcon, XIcon } from '@phosphor-icons/react/dist/ssr';
 import { useDetalleProducto } from '@/app/_hooks/useDetalleProducto';
-import { formatearNombreProducto } from '@/app/_lib/utils/formatters';
+import { formatearNombre } from '@/app/_lib/utils/formatters';
 
 /**
  * Ficha del producto, en modal sobre la vista actual.
@@ -131,7 +131,7 @@ export function ModalProducto() {
             </div>
 
             <h3 className="font-display text-lg font-black leading-tight text-slate-900">
-              {formatearNombreProducto(producto.nombre)}
+              {formatearNombre(producto.nombre)}
             </h3>
 
             {producto.etiquetas.length > 0 && (

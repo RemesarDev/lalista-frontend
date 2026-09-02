@@ -120,7 +120,7 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                                 className="max-w-[80px] truncate text-[10px] text-slate-500 underline decoration-dotted underline-offset-2"
                                 title={formatearNombre(prodEnSucursal.nombre)}
                               >
-                                {primeraPalabraSucursal}...
+                                {formatearNombre(primeraPalabraSucursal)}...
                               </span>
 
                               {/* Tooltip flotante al hacer Hover (Mouse) o Tap (Mobile) */}

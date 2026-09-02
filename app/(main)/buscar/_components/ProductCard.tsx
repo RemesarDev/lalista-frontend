@@ -52,6 +52,12 @@ export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) 
           aria-label={`Ver detalle de ${producto.nombre}`}
           className="w-full h-24 rounded-lg flex items-center justify-center text-slate-400 text-[10px] font-semibold mb-2 relative overflow-hidden cursor-pointer transition hover:opacity-80"
         >
+        <button
+          type="button"
+          onClick={abrirFicha}
+          aria-label={`Ver detalle de ${producto.nombre}`}
+          className="w-full h-24 rounded-lg flex items-center justify-center text-slate-400 text-[10px] font-semibold mb-2 relative overflow-hidden cursor-pointer transition hover:opacity-80"
+        >
           {mostrarImagenReal ? (
             <Image
               src={producto.url_imagen!} // URL real de VTEX provista por tu base de datos
@@ -72,6 +78,7 @@ export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) 
               </span>
             </div>
           )}
+        </button>
         </button>
         
         <h3

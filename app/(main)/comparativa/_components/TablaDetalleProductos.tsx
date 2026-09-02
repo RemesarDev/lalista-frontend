@@ -17,8 +17,6 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
 
   if (!cadenas || cadenas.length === 0) return null;
 
-  // 1. Extraer todos los grupos únicos representados en las sucursales
-  // Cada elemento en `cadena.productos` mapea 1 a 1 con un GrupoLista (contiene grupoId)
   const gruposUnicos = Array.from(
     new Map(
       cadenas
@@ -76,7 +74,6 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                 const grupoEnStore = lista.find((g) => g.grupoId === grupoId);
                 const cantidadGrupo = grupoEnStore?.cantidad ?? 1;
 
-                // Nombre principal del grupo para mostrar en la fila
                 const nombreMostrar =
                   grupoEnStore?.opciones[0]?.nombre ?? 'Producto';
 
@@ -102,36 +99,49 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
 
                       const primeraPalabra = nombreMostrar.trim().split(' ')[0] || '';
 
+                      // Extraer la primera palabra del producto específico de esta sucursal
+                      const primeraPalabraSucursal = prodEnSucursal?.nombre
+                        ? prodEnSucursal.nombre.trim().split(' ')[0]
+                        : '';
+
                       return (
                         <td
                           key={`${cadena.id_comercio}-${cadena.id_bandera}`}
                           className="px-3 py-4 text-center font-semibold text-slate-900 md:px-4"
                         >
                           {prodEnSucursal?.disponible && prodEnSucursal.precio !== null ? (
-                            <div className="flex flex-col items-center">
+                            <div className="group relative flex flex-col items-center cursor-pointer">
                               <span className="text-sm md:text-base">
                                 ${formatearPrecio(prodEnSucursal.precio)}
                               </span>
-                              {/* Si la opción elegida en esta sucursal no es la principal del grupo, indicamos su nombre */}
-                              {grupoEnStore &&
-                                grupoEnStore.opciones.length > 1 &&
-                                prodEnSucursal.nombre !== grupoEnStore.opciones[0].nombre && (
-                                  <span className="max-w-[120px] truncate text-[10px] text-slate-500" title={prodEnSucursal.nombre}>
-                                    {prodEnSucursal.nombre}
-                                  </span>
-                                )}
+
+                              {/* Muestra la primera palabra con puntos suspensivos */}
+                              <span 
+                                className="max-w-[80px] truncate text-[10px] text-slate-500 underline decoration-dotted underline-offset-2"
+                                title={prodEnSucursal.nombre}
+                              >
+                                {primeraPalabraSucursal}...
+                              </span>
+
+                              {/* Tooltip flotante al hacer Hover (Mouse) o Tap (Mobile) */}
+                              <div className="pointer-events-none absolute bottom-full mb-1 hidden group-hover:flex group-focus:flex flex-col items-center z-20">
+                                <span className="relative z-10 whitespace-normal rounded-md bg-slate-900 px-2 py-1 text-[10px] text-white shadow-md max-w-[150px] text-center leading-tight">
+                                  {prodEnSucursal.nombre}
+                                </span>
+                                <div className="-mt-1 h-2 w-2 rotate-45 bg-slate-900"></div>
+                              </div>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center justify-center gap-1">
                               <span className="inline-block max-w-[120px] text-[10px] font-medium leading-tight text-red-500 md:text-xs">
                                 No disponible
                               </span>
-                            <Link
-                              href={`/buscar?q=${encodeURIComponent(primeraPalabra)}`}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400"
-                            >
-                              Buscar otro
-                            </Link>
+                              <Link
+                                href={`/buscar?q=${encodeURIComponent(primeraPalabra)}`}
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                              >
+                                Buscar otro
+                              </Link>
                             </div>
                           )}
                         </td>

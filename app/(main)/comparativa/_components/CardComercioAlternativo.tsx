@@ -1,4 +1,8 @@
-import { formatearDistancia, formatearPrecio } from '@/app/_lib/utils/formatters';
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { formatearDistancia, formatearNombre, formatearPrecio } from '@/app/_lib/utils/formatters';
+import { verUbicacionSucursal } from '@/app/_lib/utils/navegacionMapa';
 import { type SucursalCarritoComparada } from '../_lib/Funciones-comparacion';
 import { MapPinIcon } from '@phosphor-icons/react/dist/ssr';
 
@@ -21,7 +25,18 @@ const BadgePosicion = ({ posicion }: { posicion: 2 | 3 }) => {
 };
 
 export const CardComercioAlternativo = ({ sucursal, posicion }: Props) => {
+  const router = useRouter();
   const distanciaTexto = formatearDistancia(sucursal.distancia);
+
+  const handleIrAlMapa = () => {
+    verUbicacionSucursal({
+      router,
+      latitud: sucursal.latitud,
+      longitud: sucursal.longitud,
+      nombre: sucursal.cadena,
+    });
+  };
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md">
       <div className="mb-2 flex items-start gap-2">
@@ -33,15 +48,20 @@ export const CardComercioAlternativo = ({ sucursal, posicion }: Props) => {
         </div>
       </div>
 
-      <div className="mb-2 flex items-start gap-2">
-        <MapPinIcon weight="fill" size={15} className="mt-0.5 shrink-0 text-slate-500" />
-        <p className="text-[11px] md:text-xs leading-snug text-slate-600 line-clamp-2">
-          {sucursal.direccion}
+      {/* Al hacer clic sobre la dirección navega a la vista de ubicación */}
+      <div 
+        onClick={handleIrAlMapa}
+        className="mb-2 flex items-start gap-2 cursor-pointer group rounded-lg p-1 -ml-1 transition-colors hover:bg-slate-100"
+        title="Ver sucursal en el mapa"
+      >
+        <MapPinIcon weight="fill" size={15} className="mt-0.5 shrink-0 text-slate-500 group-hover:text-primary-600 transition-colors" />
+        <p className="text-[11px] md:text-xs leading-snug text-slate-600 line-clamp-2 group-hover:text-slate-900 group-hover:underline">
+          {formatearNombre(sucursal.direccion)}
           {distanciaTexto && (
-              <span className="ml-1 text-slate-500 font-medium">
-                (a {distanciaTexto})
-              </span>
-            )}
+            <span className="ml-1 text-slate-500 font-medium">
+              (a {distanciaTexto})
+            </span>
+          )}
         </p>
       </div>
 

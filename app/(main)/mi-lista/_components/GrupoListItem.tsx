@@ -1,10 +1,11 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PlusIcon, TrashIcon, PlusCircleIcon, MinusCircleIcon } from '@phosphor-icons/react/dist/ssr';
 import type { GrupoLista } from '@/app/_store/slices/listaSlice';
-import { formatearNombreProducto } from '@/app/_lib/utils/formatters';
+import { formatearNombre } from '@/app/_lib/utils/formatters';
 
 interface GrupoListItemProps {
   grupo: GrupoLista;
@@ -30,6 +31,16 @@ export function GrupoListItem({
 
   // Extraer término clave para sugerir en la búsqueda (ej: "Leche Entera")
   const terminoSugerido = encodeURIComponent(principal.nombre.split(' ').slice(0, 2).join(' '));
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Abre la ficha del producto agregando ?producto=EAN a la URL.
+  const abrirFicha = (idProducto: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('producto', idProducto);
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
 
   return (
     <div className={`flex flex-col rounded-xl border p-4 transition-all bg-white ${
@@ -91,7 +102,10 @@ export function GrupoListItem({
             <span className="inline-block px-1.5 py-0.5 text-[10px] font-bold bg-orange-500/10 text-orange-600 rounded w-max mb-1">
               Opción principal
             </span>
-            <p className={`text-sm font-semibold truncate ${grupo.comprado ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+            <p
+              onClick={() => abrirFicha(principal.id)}
+              className={`text-sm font-semibold truncate cursor-pointer hover:text-primary-500 transition-colors ${grupo.comprado ? 'line-through text-slate-400' : 'text-slate-800'}`}
+            >
               {principal.nombre}
             </p>
           </div>
@@ -128,7 +142,7 @@ export function GrupoListItem({
             )}
           </div>
           <span className="text-xs font-medium text-slate-600 truncate">
-            {formatearNombreProducto(alt.nombre)}
+            {formatearNombre(alt.nombre)}
           </span>
         </div>
         <button

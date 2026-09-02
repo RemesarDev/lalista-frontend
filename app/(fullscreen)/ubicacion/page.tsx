@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { APIProvider } from '@vis.gl/react-google-maps';
 import { CrosshairIcon, ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Componentes y Hooks modulares
 import BuscadorUbicacion from './_components/BuscadorUbicacion';
@@ -26,6 +26,20 @@ export default function UbicacionVista() {
 function ContenidoMapa() {
   const [isFocused, setIsFocused] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Captura de parámetros para el pin de la sucursal (si viene desde CardComercioAlternativo)
+  const sucursalLat = searchParams.get('sucursalLat');
+  const sucursalLng = searchParams.get('sucursalLng');
+  const sucursalNombre = searchParams.get('sucursalNombre');
+
+  const marcadorSucursal = (sucursalLat && sucursalLng) ? {
+    coordenadas: {
+      lat: parseFloat(sucursalLat),
+      lng: parseFloat(sucursalLng),
+    },
+    nombre: sucursalNombre || undefined,
+  } : null;
 
   const {
     radio, setRadio,
@@ -47,13 +61,14 @@ function ContenidoMapa() {
   return (
     <div className="relative w-full overflow-hidden font-sans bg-slate-100" style={{ height: '100dvh' }}>
       
-      {/* MAPA INTERACTIVO */}
+      {/* MAPA INTERACTIVO (CON MARCADOR OPCIONAL DE SUCURSAL) */}
       <MapaInteractivo 
         coordenadas={coordenadasPendientes || coordenadas} 
         zoom={zoom} 
         setZoom={setZoom} 
         radio={radio} 
         onMapClick={manejarClickMapa}
+        marcadorSucursal={marcadorSucursal}
       />
 
       {/* CONTROLES ZOOM MANUAL */}

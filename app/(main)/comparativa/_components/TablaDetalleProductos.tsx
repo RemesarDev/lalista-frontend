@@ -4,8 +4,12 @@ import { useState } from 'react';
 import { type SucursalCarritoComparada } from '../_lib/Funciones-comparacion';
 import { useListaStore } from '@/app/_store/store';
 import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr';
-import { formatearNombre, formatearPrecio } from '@/app/_lib/utils/formatters';
+import { 
+  formatearNombre, 
+  formatearPrecio, 
+} from '@/app/_lib/utils/formatters';
 import Link from 'next/link';
+import { obtenerNombreComunGrupo } from '@/app/_lib/utils/obtenerNombreComunGrupo';
 
 interface Props {
   cadenas: SucursalCarritoComparada[];
@@ -74,8 +78,10 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                 const grupoEnStore = lista.find((g) => g.grupoId === grupoId);
                 const cantidadGrupo = grupoEnStore?.cantidad ?? 1;
 
-                const nombreBruto = grupoEnStore?.opciones[0]?.nombre;
-                const nombreMostrar = nombreBruto ? formatearNombre(nombreBruto) : 'Producto';
+                // Definimos el nombre a mostrar procesando todo el arreglo de opciones del grupo
+                const nombreMostrar = grupoEnStore?.opciones
+                  ? obtenerNombreComunGrupo(grupoEnStore.opciones)
+                  : 'Producto';
 
                 return (
                   <tr key={grupoId} className="transition-colors hover:bg-slate-50">
@@ -99,10 +105,13 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
 
                       const primeraPalabra = nombreMostrar.trim().split(' ')[0] || '';
 
-                      // Extraer la primera palabra del producto específico de esta sucursal
-                      const primeraPalabraSucursal = prodEnSucursal?.nombre
-                        ? prodEnSucursal.nombre.trim().split(' ')[0]
+                      const nombreSucursalFormateado = prodEnSucursal?.nombre
+                        ? formatearNombre(prodEnSucursal.nombre)
                         : '';
+
+                      const primeraPalabraSucursal = nombreSucursalFormateado
+                        .trim()
+                        .split(' ')[0];
 
                       return (
                         <td
@@ -115,18 +124,16 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                                 ${formatearPrecio(prodEnSucursal.precio)}
                               </span>
 
-                              {/* Muestra la primera palabra con puntos suspensivos */}
                               <span 
                                 className="max-w-[80px] truncate text-[10px] text-slate-500 underline decoration-dotted underline-offset-2"
-                                title={formatearNombre(prodEnSucursal.nombre)}
+                                title={nombreSucursalFormateado}
                               >
-                                {formatearNombre(primeraPalabraSucursal)}...
+                                {primeraPalabraSucursal}...
                               </span>
 
-                              {/* Tooltip flotante al hacer Hover (Mouse) o Tap (Mobile) */}
                               <div className="pointer-events-none absolute bottom-full mb-1 hidden group-hover:flex group-focus:flex flex-col items-center z-20">
                                 <span className="relative z-10 whitespace-normal rounded-md bg-slate-900 px-2 py-1 text-[10px] text-white shadow-md max-w-[150px] text-center leading-tight">
-                                  {formatearNombre(prodEnSucursal.nombre)}
+                                  {nombreSucursalFormateado}
                                 </span>
                                 <div className="-mt-1 h-2 w-2 rotate-45 bg-slate-900"></div>
                               </div>

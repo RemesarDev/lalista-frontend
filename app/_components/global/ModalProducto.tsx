@@ -61,12 +61,12 @@ export function ModalProducto() {
 
   const mostrarImagen = producto?.url_imagen && !errorImagen;
 
-  // El SEPA escribe la unidad de muchas formas ("gr", "GR", "cm3"). Se muestra
-  // tal cual viene: normalizarla es otro trabajo.
-  const presentacion =
-    producto?.cantidad && producto?.unidad
-      ? `${producto.cantidad} ${producto.unidad}`
-      : null;
+  // El contenido sale de v_producto_contenido, que combina las columnas del
+  // SEPA con lo extraido de la descripcion: el 72% del catalogo llega como
+  // "1 UNI" aunque el paquete diga 500 g en el nombre.
+  //
+  // Si no se pudo determinar, la fila no se muestra: "1 UNI" no informa nada.
+  const presentacion = producto?.presentacion ?? null;
 
   return (
     <div

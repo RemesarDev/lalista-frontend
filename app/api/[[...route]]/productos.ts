@@ -222,7 +222,7 @@ export const productosRouter = new Hono()
 
     // La vista v_productos_categorizados solo trae la clasificacion, no todas
     // las columnas de productos. Por eso se consultan las dos por separado.
-    const [resProducto, resCategoria, resEtiquetas] = await Promise.all([
+    const [resProducto, resCategoria, resContenido, resEtiquetas] = await Promise.all([
       supabase
         .from('productos')
         .select('id_producto, productos_descripcion, productos_marca, url_imagen, ' +
@@ -237,6 +237,14 @@ export const productosRouter = new Hono()
       // Solo las etiquetas declaradas en la descripcion. Las inferidas por IA
       // quedan afuera por la misma razon que en el buscador: no son una
       // declaracion del fabricante.
+      // Contenido del producto. El 72% del catalogo dice "1 UNI" en las
+      // columnas del SEPA, asi que el gramaje real se extrae de la descripcion
+      // y se guarda aparte. La vista combina las dos fuentes.
+      supabase
+        .from('v_producto_contenido')
+        .select('presentacion')
+        .eq('id_producto', id)
+        .maybeSingle(),
       supabase
         .from('producto_etiqueta')
         .select('origen, etiquetas(codigo, nombre)')
@@ -269,6 +277,7 @@ export const productosRouter = new Hono()
       marca: fila.productos_marca?.trim() || null,
       cantidad: fila.productos_cantidad_presentacion ?? null,
       unidad: fila.productos_unidad_medida_presentacion?.trim() || null,
+      presentacion: (resContenido.data as any)?.presentacion ?? null,
       url_imagen: fila.url_imagen,
       categoria: clasif.categoria ?? null,
       categoria_slug: clasif.categoria_slug ?? null,

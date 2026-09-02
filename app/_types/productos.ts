@@ -54,6 +54,8 @@ export interface DetalleProducto {
   marca: string | null;
   cantidad: number | null;
   unidad: string | null;
+  /** Contenido listo para mostrar: "500 g", "1,5 L". Null si no se conoce. */
+  presentacion: string | null;
   url_imagen: string | null;
   categoria: string | null;
   categoria_slug: string | null;

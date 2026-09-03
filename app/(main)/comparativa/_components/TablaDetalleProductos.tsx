@@ -29,8 +29,6 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
     ).keys()
   );
 
-  const totalGruposEnLista = lista.filter((g) => !g.comprado).length;
-
   return (
     <div className="divide-y divide-slate-200">
       <button
@@ -55,9 +53,6 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
               <tr className="border-b border-slate-200 bg-slate-50">
                 <th className="px-4 py-3 text-left font-bold text-slate-700 md:px-6">
                   Producto / Opción
-                </th>
-                <th className="px-3 py-3 text-center text-xs font-bold text-slate-700 md:px-4 md:text-sm">
-                  Cantidad
                 </th>
                 {cadenas.map((cadena, idx) => (
                   <th
@@ -86,16 +81,19 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                 return (
                   <tr key={grupoId} className="transition-colors hover:bg-slate-50">
                     <td className="max-w-xs px-4 py-4 text-xs font-medium text-slate-900 md:px-6 md:text-sm">
-                      <div>{nombreMostrar}</div>
+                      <div>
+                        {cantidadGrupo > 1 && (
+                          <span className="mr-1.5 font-bold text-slate-700">
+                            ({cantidadGrupo}x)
+                          </span>
+                        )}
+                        {nombreMostrar}
+                      </div>
                       {grupoEnStore && grupoEnStore.opciones.length > 1 && (
                         <div className="text-[10px] text-slate-500">
                           ({grupoEnStore.opciones.length} alternativas evaluadas)
                         </div>
                       )}
-                    </td>
-
-                    <td className="px-3 py-4 text-center font-semibold text-slate-900 md:px-4">
-                      {cantidadGrupo}
                     </td>
 
                     {cadenas.map((cadena) => {
@@ -161,9 +159,6 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
               <tr className="bg-slate-100">
                 <td className="px-4 py-4 font-bold text-slate-900 md:px-6">
                   TOTAL
-                </td>
-                <td className="px-3 py-4 text-center font-bold text-slate-900 md:px-4">
-                  {totalGruposEnLista}
                 </td>
                 {cadenas.map((cadena) => (
                   <td

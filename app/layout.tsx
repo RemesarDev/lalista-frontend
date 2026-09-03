@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { SerwistProvider } from "@serwist/turbopack/react";
+import OfflineBanner from "./_components/OfflineBanner";
 import "./globals.css"; 
 
 
@@ -24,7 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body className="antialiased bg-slate-100 text-slate-900 font-sans">
-        <SerwistProvider swUrl="/serwist/sw.js">{children}</SerwistProvider>
+        <SerwistProvider swUrl="/serwist/sw.js">
+          <OfflineBanner />
+          {children}
+        </SerwistProvider>
       </body>
     </html>
   );

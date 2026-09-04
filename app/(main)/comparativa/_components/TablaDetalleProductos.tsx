@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { type SucursalCarritoComparada } from '../_lib/Funciones-comparacion';
 import { useListaStore } from '@/app/_store/store';
 import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr';
@@ -18,6 +19,16 @@ interface Props {
 export const TablaDetalleProductos = ({ cadenas }: Props) => {
   const [expandida, setExpandida] = useState(true);
   const lista = useListaStore((state) => state.lista);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const abrirFicha = (idProducto: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('producto', idProducto);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   if (!cadenas || cadenas.length === 0) return null;
 
@@ -117,13 +128,16 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                           className="px-3 py-4 text-center font-semibold text-slate-900 md:px-4"
                         >
                           {prodEnSucursal?.disponible && prodEnSucursal.precio !== null ? (
-                            <div className="group relative flex flex-col items-center cursor-pointer">
+                            <div 
+                              onClick={() => prodEnSucursal?.id && abrirFicha(prodEnSucursal.id)}
+                              className="group relative flex flex-col items-center cursor-pointer hover:text-orange-500 transition-colors"
+                            >
                               <span className="text-sm md:text-base">
                                 ${formatearPrecio(prodEnSucursal.precio)}
                               </span>
 
                               <span 
-                                className="max-w-[80px] truncate text-[10px] text-slate-500 underline decoration-dotted underline-offset-2"
+                                className="max-w-[80px] truncate text-[10px] text-slate-500 group-hover:text-orange-500 underline decoration-dotted underline-offset-2"
                                 title={nombreSucursalFormateado}
                               >
                                 {primeraPalabraSucursal}...

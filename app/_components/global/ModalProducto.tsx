@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingBagIcon, XIcon } from '@phosphor-icons/react/dist/ssr';
+import { ArrowsLeftRightIcon, ShoppingBagIcon, XIcon } from '@phosphor-icons/react/dist/ssr';
+import { useComparar } from '@/app/_hooks/useComparar';
 import { useDetalleProducto } from '@/app/_hooks/useDetalleProducto';
 import { formatearNombre } from '@/app/_lib/utils/formatters';
 
@@ -23,6 +24,7 @@ export function ModalProducto() {
 
   const idProducto = searchParams.get('producto');
   const { producto, cargando, error } = useDetalleProducto(idProducto);
+  const { ids: idsComparar, agregar: agregarAComparar, esperandoSegundo } = useComparar();
 
   const [errorImagen, setErrorImagen] = useState(false);
 
@@ -168,6 +170,19 @@ export function ModalProducto() {
               <p className="mt-4 text-[11px] leading-relaxed text-slate-400">
                 Los datos vienen de la descripción del fabricante: verificá siempre el envase.
               </p>
+            )}
+
+            {/* Comparar: el primer toque elige el producto, el segundo abre la
+                comparacion. No se ofrece comparar un producto consigo mismo. */}
+            {!idsComparar.includes(producto.id_producto) && (
+              <button
+                type="button"
+                onClick={() => agregarAComparar(producto.id_producto)}
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent-300 bg-white px-4 py-2.5 font-display text-sm font-bold text-slate-700 transition hover:border-primary-400 hover:text-primary-500 active:scale-[0.98]"
+              >
+                <ArrowsLeftRightIcon size={16} weight="bold" />
+                {esperandoSegundo ? 'Comparar con el elegido' : 'Comparar con otro producto'}
+              </button>
             )}
           </>
         )}

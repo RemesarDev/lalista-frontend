@@ -46,17 +46,12 @@ export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) 
     <div className="bg-white border border-slate-200/70 rounded-xl p-3 flex flex-col justify-between shadow-xs h-full">
       <div>
         {/* Contenedor de Imagen Consistente y Adaptativo */}
+        {/* Un solo boton: anidar dos rompe el HTML y tira error de hidratacion. */}
         <button
           type="button"
           onClick={abrirFicha}
           aria-label={`Ver detalle de ${producto.nombre}`}
-          className="w-full h-24 rounded-lg flex items-center justify-center text-slate-400 text-[10px] font-semibold mb-2 relative overflow-hidden cursor-pointer transition hover:opacity-80"
-        >
-        <button
-          type="button"
-          onClick={abrirFicha}
-          aria-label={`Ver detalle de ${producto.nombre}`}
-          className="w-full h-24 rounded-lg flex items-center justify-center text-slate-400 text-[10px] font-semibold mb-2 relative overflow-hidden cursor-pointer transition hover:opacity-80"
+          className="w-full h-24 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 text-[10px] font-semibold mb-2 relative overflow-hidden cursor-pointer transition hover:opacity-80"
         >
           {mostrarImagenReal ? (
             <Image
@@ -78,7 +73,6 @@ export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) 
               </span>
             </div>
           )}
-        </button>
         </button>
         
         <h3

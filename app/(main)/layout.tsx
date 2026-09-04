@@ -4,6 +4,7 @@ import FooterLanding from "../_components/global/Footer-landing";
 import Header from "../_components/global/header/Header";
 import { Suspense } from "react";
 import { ModalProducto } from "../_components/global/ModalProducto";
+import { ModalComparar } from "../_components/global/ModalComparar";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -19,6 +20,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             (?producto=EAN), asi cualquier vista puede abrirla. */}
         <Suspense fallback={null}>
           <ModalProducto />
+        </Suspense>
+
+        {/* Comparacion de dos productos, tambien por URL (?comparar=A,B). */}
+        <Suspense fallback={null}>
+          <ModalComparar />
         </Suspense>
         <div className="hidden md:block">
           <FooterLanding />

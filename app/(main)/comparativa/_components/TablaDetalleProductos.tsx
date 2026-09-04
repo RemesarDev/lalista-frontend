@@ -58,20 +58,20 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
       </button>
 
       {expandida && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="w-full overflow-hidden">
+          <table className="w-full table-fixed text-xs md:text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="px-4 py-3 text-left font-bold text-slate-700 md:px-6">
+                <th className="w-[25%] px-1 py-3 text-left font-bold text-slate-700 md:w-[40%] md:px-6">
                   Producto / Opción
                 </th>
                 {cadenas.map((cadena, idx) => (
                   <th
                     key={`${cadena.id_comercio}-${cadena.id_bandera}`}
-                    className="px-3 py-3 text-center text-xs font-bold text-slate-700 md:px-4 md:text-sm"
+                    className="w-[25%] px-1 py-3 text-center text-[11px] font-bold text-slate-700 md:w-[20%] md:px-4 md:text-sm"
                   >
-                    <div>{cadena.cadena}</div>
-                    <div className="text-xs font-normal text-slate-500">
+                    <div className="truncate">{cadena.cadena}</div>
+                    <div className="text-[10px] font-normal text-slate-500 md:text-xs">
                       {idx === 0 ? '1º' : idx === 1 ? '2º' : '3º'}
                     </div>
                   </th>
@@ -84,25 +84,24 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                 const grupoEnStore = lista.find((g) => g.grupoId === grupoId);
                 const cantidadGrupo = grupoEnStore?.cantidad ?? 1;
 
-                // Definimos el nombre a mostrar procesando todo el arreglo de opciones del grupo
                 const nombreMostrar = grupoEnStore?.opciones
                   ? obtenerNombreComunGrupo(grupoEnStore.opciones)
                   : 'Producto';
 
                 return (
                   <tr key={grupoId} className="transition-colors hover:bg-slate-50">
-                    <td className="max-w-xs px-4 py-4 text-xs font-medium text-slate-900 md:px-6 md:text-sm">
-                      <div>
+                    <td className="px-1 py-3 text-[11px] font-medium leading-tight text-slate-900 md:px-6 md:text-sm">
+                      <div className="line-clamp-2 break-words">
                         {cantidadGrupo > 1 && (
-                          <span className="mr-1.5 font-bold text-slate-700">
+                          <span className="mr-1 font-bold text-slate-700">
                             ({cantidadGrupo}x)
                           </span>
                         )}
                         {nombreMostrar}
                       </div>
                       {grupoEnStore && grupoEnStore.opciones.length > 1 && (
-                        <div className="text-[10px] text-slate-500">
-                          ({grupoEnStore.opciones.length} alternativas evaluadas)
+                        <div className="mt-0.5 text-[9px] text-slate-500 md:text-[10px]">
+                          ({grupoEnStore.opciones.length} alt.)
                         </div>
                       )}
                     </td>
@@ -125,19 +124,19 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                       return (
                         <td
                           key={`${cadena.id_comercio}-${cadena.id_bandera}`}
-                          className="px-3 py-4 text-center font-semibold text-slate-900 md:px-4"
+                          className="px-1 py-3 text-center font-semibold text-slate-900 md:px-4"
                         >
                           {prodEnSucursal?.disponible && prodEnSucursal.precio !== null ? (
                             <div 
                               onClick={() => prodEnSucursal?.id && abrirFicha(prodEnSucursal.id)}
                               className="group relative flex flex-col items-center cursor-pointer hover:text-orange-500 transition-colors"
                             >
-                              <span className="text-sm md:text-base">
+                              <span className="text-xs md:text-base font-bold">
                                 ${formatearPrecio(prodEnSucursal.precio)}
                               </span>
 
                               <span 
-                                className="max-w-[80px] truncate text-[10px] text-slate-500 group-hover:text-orange-500 underline decoration-dotted underline-offset-2"
+                                className="max-w-[65px] md:max-w-[80px] truncate text-[9px] md:text-[10px] text-slate-500 group-hover:text-orange-500 underline decoration-dotted underline-offset-2"
                                 title={nombreSucursalFormateado}
                               >
                                 {primeraPalabraSucursal}...
@@ -151,13 +150,13 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                               </div>
                             </div>
                           ) : (
-                            <div className="flex flex-col items-center justify-center gap-1">
-                              <span className="inline-block max-w-[120px] text-[10px] font-medium leading-tight text-red-500 md:text-xs">
+                            <div className="flex flex-col items-center justify-center gap-0.5">
+                              <span className="inline-block text-[9px] font-medium leading-tight text-red-500 md:text-xs">
                                 No disponible
                               </span>
                               <Link
                                 href={`/buscar?q=${encodeURIComponent(primeraPalabra)}`}
-                                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 md:text-xs"
                               >
                                 Buscar otro
                               </Link>
@@ -171,15 +170,15 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
               })}
 
               <tr className="bg-slate-100">
-                <td className="px-4 py-4 font-bold text-slate-900 md:px-6">
+                <td className="px-1 py-3 font-bold text-slate-900 md:px-6">
                   TOTAL
                 </td>
                 {cadenas.map((cadena) => (
                   <td
                     key={`total-${cadena.id_comercio}-${cadena.id_bandera}`}
-                    className="px-3 py-4 text-center font-black text-slate-900 md:px-4"
+                    className="px-1 py-3 text-center font-black text-slate-900 md:px-4"
                   >
-                    <span className="text-base md:text-lg">
+                    <span className="text-xs md:text-lg">
                       ${formatearPrecio(cadena.total)}
                     </span>
                   </td>

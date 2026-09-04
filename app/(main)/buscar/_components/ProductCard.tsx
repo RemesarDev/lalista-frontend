@@ -1,7 +1,7 @@
 import { PlusIcon, MinusIcon, ShoppingBagIcon } from '@phosphor-icons/react/dist/ssr';
 import { useState } from 'react';
 import { Producto } from '@/app/_types/productos';
-import {formatearNombreProducto, formatearPrecio} from '@/app/_lib/utils/formatters';
+import {formatearNombre, formatearPrecio} from '@/app/_lib/utils/formatters';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -52,6 +52,12 @@ export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) 
           aria-label={`Ver detalle de ${producto.nombre}`}
           className="w-full h-24 rounded-lg flex items-center justify-center text-slate-400 text-[10px] font-semibold mb-2 relative overflow-hidden cursor-pointer transition hover:opacity-80"
         >
+        <button
+          type="button"
+          onClick={abrirFicha}
+          aria-label={`Ver detalle de ${producto.nombre}`}
+          className="w-full h-24 rounded-lg flex items-center justify-center text-slate-400 text-[10px] font-semibold mb-2 relative overflow-hidden cursor-pointer transition hover:opacity-80"
+        >
           {mostrarImagenReal ? (
             <Image
               src={producto.url_imagen!} // URL real de VTEX provista por tu base de datos
@@ -73,12 +79,13 @@ export const ProductCard = ({ producto, onAgregar, isPriority = false }: Props) 
             </div>
           )}
         </button>
+        </button>
         
         <h3
           onClick={abrirFicha}
           className="font-bold text-slate-900 text-xs md:text-sm line-clamp-3 min-h-[2.5rem] leading-tight cursor-pointer hover:text-primary-500 transition-colors"
         >
-          {formatearNombreProducto(producto.nombre)}
+          {formatearNombre(producto.nombre)}
         </h3>
         
         <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1.5">

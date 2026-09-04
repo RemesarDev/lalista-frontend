@@ -7,12 +7,18 @@ interface Coordenadas {
   lng: number;
 }
 
+interface MarcadorSucursal {
+  coordenadas: Coordenadas;
+  nombre?: string;
+}
+
 interface MapaInteractivoProps {
   coordenadas: Coordenadas;
   zoom: number;
   setZoom: (value: number) => void;
   radio: number;
   onMapClick: (lat: number, lng: number) => void;
+  marcadorSucursal?: MarcadorSucursal | null;
 }
 
 export default function MapaInteractivo({
@@ -21,21 +27,25 @@ export default function MapaInteractivo({
   setZoom,
   radio,
   onMapClick,
+  marcadorSucursal,
 }: MapaInteractivoProps) {
 
-    const circleOptions = useMemo(() => ({
-      center: coordenadas,
-      radius: radio * 1000,
-      fillColor: '#64748b', 
-      fillOpacity: 0.2,
-      strokeColor: '#1e293b', 
-      strokeWeight: 2,
-    }), [coordenadas, radio]);
+  const circleOptions = useMemo(() => ({
+    center: coordenadas,
+    radius: radio * 1000,
+    fillColor: '#64748b', 
+    fillOpacity: 0.2,
+    strokeColor: '#1e293b', 
+    strokeWeight: 2,
+  }), [coordenadas, radio]);
+
+  // Si hay una sucursal seleccionada, centramos el mapa en la sucursal, si no, en las coordenadas del usuario
+  const centroMapa = marcadorSucursal?.coordenadas || coordenadas;
 
   return (
     <div className="absolute inset-0 w-full h-full z-0 select-none">
       <Map
-        defaultCenter={coordenadas}
+        defaultCenter={centroMapa}
         defaultZoom={zoom}
         disableDefaultUI={true}
         mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
@@ -48,9 +58,8 @@ export default function MapaInteractivo({
         gestureHandling={'greedy'}
         className="w-full h-full"
       >
-
+        {/* MARCADOR UBICACIÓN DE BÚSQUEDA DEL USUARIO */}
         <AdvancedMarker position={coordenadas}>
-          {/* Usamos el Pin nativo de Google */}
           <Pin 
             background={'#ef4444'} // Red-500
             glyphColor={'#ffffff'} 
@@ -61,8 +70,24 @@ export default function MapaInteractivo({
             {radio.toFixed(1)} Km a la redonda
           </div>
         </AdvancedMarker>
+
+        {/* MARCADOR SUCURSAL SELECCIONADA (SI EXISTE EN URL) */}
+        {marcadorSucursal && (
+          <AdvancedMarker position={marcadorSucursal.coordenadas}>
+            <Pin 
+              background={'#2563eb'} // Blue-600
+              glyphColor={'#ffffff'} 
+              borderColor={'#1e40af'} 
+            /> 
+            {marcadorSucursal.nombre && (
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md whitespace-nowrap pointer-events-none z-10">
+                🏬 {marcadorSucursal.nombre}
+              </div>
+            )}
+          </AdvancedMarker>
+        )}
         
-        {/* Círculo de área de búsqueda */}
+        {/* CÍRCULO ÁREA DE BÚSQUEDA */}
         <Circle {...circleOptions} />     
       
       </Map>

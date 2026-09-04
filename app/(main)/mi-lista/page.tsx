@@ -1,7 +1,16 @@
 'use client';
 
 import { Suspense, useEffect } from 'react';
-import { MagnifyingGlassIcon, ScalesIcon, ShoppingCartIcon, FloppyDiskIcon, XCircleIcon, CheckCircleIcon } from '@phosphor-icons/react/dist/ssr';
+import { 
+  MagnifyingGlassIcon, 
+  ScalesIcon, 
+  ShoppingCartIcon, 
+  FloppyDiskIcon, 
+  XCircleIcon, 
+  CheckCircleIcon,
+  PlusIcon 
+} from '@phosphor-icons/react/dist/ssr';
+import Link from 'next/link';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
 import { useListaStore } from '@/app/_store/store';
 import BaseContainer from '@/app/_components/global/BaseContainer';
@@ -59,7 +68,16 @@ function ListaProductos() {
           onToggleComprado={toggleCompradoGrupo}
         />
       ))}
-    </div>
+
+      {/* Botón "Agregar producto" al final del listado con el mismo formato que los ítems */}
+        <Link
+              href="/buscar"
+              className="flex items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50/40 p-3 sm:p-4 text-orange-600 transition-all hover:bg-orange-100/50 hover:border-orange-300 shadow-sm"
+            >
+              <PlusIcon size={18} weight="bold" />
+              <span className="text-xs sm:text-sm font-bold">Agregar productos</span>
+            </Link>
+          </div>
   );
 }
 
@@ -91,7 +109,6 @@ export default function MiListaPage() {
     checkAuth();
   }, [checkAuth]);
 
-  // El usuario puede editar si no hay lista activa o si es owner/editor
   const puedeEditar = !listaId || listaRol === 'owner' || listaRol === 'editor';
 
   return (
@@ -127,7 +144,6 @@ export default function MiListaPage() {
             className="hidden md:inline-flex"
           />
 
-          {/* Guardar (lista nueva) o Sincronizar (lista existente) */}
           {user && !isListaVacia && puedeEditar && (
             <DesktopActionButton
               onClick={listaId ? handleSincronizar : abrirModalGuardar}
@@ -136,7 +152,6 @@ export default function MiListaPage() {
                   sincronizadoOk ? 'Sincronizado' :
                     listaId ? 'Sincronizar' : 'Guardar lista'
               }
-              // Renderizado condicional del ícono
               icon={
                 sincronizadoOk
                   ? <CheckCircleIcon weight="bold" />
@@ -148,7 +163,6 @@ export default function MiListaPage() {
             />
           )}
 
-          {/* Cerrar lista activa */}
           {listaId && (
             <DesktopActionButton
               onClick={abrirModalCerrar}
@@ -160,7 +174,6 @@ export default function MiListaPage() {
             />
           )}
 
-          {/* Vaciar lista local */}
           {!listaId && (
             <DesktopActionButton
               onClick={handleLimpiarLista}
@@ -179,7 +192,6 @@ export default function MiListaPage() {
         <ListaProductos />
       </Suspense>
 
-      {/* Modal guardar lista nueva */}
       <ModalGuardarLista
         isOpen={modalGuardarOpen}
         onClose={cerrarModalGuardar}
@@ -187,7 +199,6 @@ export default function MiListaPage() {
         loading={loadingGuardar}
       />
 
-      {/* Modal cerrar lista activa */}
       <CerrarListaModal
         isOpen={modalCerrarOpen}
         onClose={cerrarModalCerrar}

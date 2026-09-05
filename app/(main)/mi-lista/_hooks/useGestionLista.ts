@@ -3,6 +3,20 @@
 
 import { useState } from 'react';
 import { useListaStore } from '@/app/_store/store';
+import type { GrupoLista } from '@/app/_store/slices/listaSlice';
+
+const construirItems = (lista: GrupoLista[]) =>
+  lista.map((grupo) => ({
+    item_id: grupo.grupoId,
+    cantidad: grupo.cantidad,
+    comprado: grupo.comprado ?? false,
+    opciones: grupo.opciones.map((opcion, index) => ({
+      id_producto: opcion.id,
+      descripcion: opcion.nombre,
+      imagen: opcion.url_imagen ?? null,
+      es_principal: index === 0,
+    })),
+  }));
 
 interface UseGestionListaReturn {
   // Estado de modales
@@ -11,6 +25,7 @@ interface UseGestionListaReturn {
   loadingGuardar: boolean;
   loadingSincronizar: boolean;
   sincronizadoOk: boolean;
+  hayCambios: boolean;
 
   // Acciones de modales
   abrirModalGuardar: () => void;
@@ -30,6 +45,7 @@ export function useGestionLista(): UseGestionListaReturn {
   const listaId = useListaStore((state) => state.listaId);
   const limpiarLista = useListaStore((state) => state.limpiarLista);
   const setListaActiva = useListaStore((state) => state.setListaActiva);
+  const [listaSincronizada, setListaSincronizada] = useState(() => JSON.stringify(construirItems(lista)));
 
   const [modalGuardarOpen, setModalGuardarOpen] = useState(false);
   const [modalCerrarOpen, setModalCerrarOpen] = useState(false);
@@ -37,19 +53,8 @@ export function useGestionLista(): UseGestionListaReturn {
   const [loadingSincronizar, setLoadingSincronizar] = useState(false);
   const [sincronizadoOk, setSincronizadoOk] = useState(false);
 
-  // Arma el payload de items desde el estado local
-  const buildItems = () =>
-    lista.map((grupo) => ({
-      item_id: grupo.grupoId,
-      cantidad: grupo.cantidad,
-      comprado: grupo.comprado ?? false,
-      opciones: grupo.opciones.map((opcion, index) => ({
-        id_producto: opcion.id,
-        descripcion: opcion.nombre,
-        imagen: opcion.url_imagen ?? null,
-        es_principal: index === 0,
-      })),
-    }));
+  const buildItems = () => construirItems(lista);
+  const hayCambios = JSON.stringify(buildItems()) !== listaSincronizada;
 
   // POST — crea una lista nueva
   const handleGuardarLista = async (nombre: string) => {
@@ -65,6 +70,7 @@ export function useGestionLista(): UseGestionListaReturn {
       if (!res.ok) throw new Error('Error al guardar la lista');
 
       const { id } = await res.json();
+      setListaSincronizada(JSON.stringify(buildItems()));
       setListaActiva(id, 'owner');
       setModalGuardarOpen(false);
     } catch (err) {
@@ -87,6 +93,8 @@ export function useGestionLista(): UseGestionListaReturn {
       });
 
       if (!res.ok) throw new Error('Error al sincronizar la lista');
+
+      setListaSincronizada(JSON.stringify(buildItems()));
 
       // Feedback temporal de éxito
       setSincronizadoOk(true);
@@ -117,6 +125,7 @@ export function useGestionLista(): UseGestionListaReturn {
     loadingGuardar,
     loadingSincronizar,
     sincronizadoOk,
+    hayCambios,
     abrirModalGuardar: () => setModalGuardarOpen(true),
     cerrarModalGuardar: () => setModalGuardarOpen(false),
     abrirModalCerrar: () => setModalCerrarOpen(true),

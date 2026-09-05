@@ -95,6 +95,7 @@ export default function MiListaPage() {
     loadingGuardar,
     loadingSincronizar,
     sincronizadoOk,
+    hayCambios,
     abrirModalGuardar,
     cerrarModalGuardar,
     abrirModalCerrar,
@@ -165,7 +166,13 @@ export default function MiListaPage() {
 
           {listaId && (
             <DesktopActionButton
-              onClick={puedeEditar ? abrirModalCerrar : () => handleCerrarLista(false)}
+              onClick={() => {
+                if (!puedeEditar || !hayCambios) {
+                  void handleCerrarLista(false);
+                  return;
+                }
+                abrirModalCerrar();
+              }}
               label="Cerrar lista"
               icon={<XCircleIcon weight="bold" />}
               color="rojo"

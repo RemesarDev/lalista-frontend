@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
 import { auth } from '@/app/_lib/auth';
-import { guardarListaSchema,sincronizarListaSchema } from '@/app/_lib/apiSchemas';
+import { guardarListaSchema,sincronizarListaSchema,compartirListaSchema } from '@/app/_lib/apiSchemas';
 import { 
   DbLista, 
   DbItemLista, 
@@ -112,4 +112,26 @@ export const listasRouter = new Hono()
     if (data === 'not_found') return c.json({ error: 'Lista no encontrada' }, 404);
 
     return c.json({ result: data }, 200);
+  })
+
+  // POST /listas/:id/miembros — compartir lista con otro usuario
+  .post('/listas/:id/miembros', zValidator('json', compartirListaSchema), async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: 'No autorizado' }, 401);
+
+    const listId = c.req.param('id');
+    const { userId, rol } = c.req.valid('json');
+
+    const { data, error } = await supabase.rpc('compartir_lista', {
+      p_list_id: listId,
+      p_owner_id: session.user.id,
+      p_user_id: userId,
+      p_rol: rol,
+    });
+
+    if (error) return c.json({ error: error.message }, 500);
+    if (data === 'not_owner') return c.json({ error: 'Solo el dueño puede compartir la lista' }, 403);
+    if (data === 'same_user') return c.json({ error: 'No podés compartir la lista con vos mismo' }, 400);
+
+    return c.json({ success: true }, 200);
   });

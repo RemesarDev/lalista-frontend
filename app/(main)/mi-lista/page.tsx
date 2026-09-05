@@ -1,14 +1,14 @@
 'use client';
 
 import { Suspense, useEffect } from 'react';
-import { 
-  MagnifyingGlassIcon, 
-  ScalesIcon, 
-  ShoppingCartIcon, 
-  FloppyDiskIcon, 
-  XCircleIcon, 
+import {
+  MagnifyingGlassIcon,
+  ScalesIcon,
+  ShoppingCartIcon,
+  FloppyDiskIcon,
+  XCircleIcon,
   CheckCircleIcon,
-  PlusIcon 
+  PlusIcon
 } from '@phosphor-icons/react/dist/ssr';
 import Link from 'next/link';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
@@ -70,14 +70,14 @@ function ListaProductos() {
       ))}
 
       {/* Botón "Agregar producto" al final del listado con el mismo formato que los ítems */}
-        <Link
-              href="/buscar"
-              className="flex items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50/40 p-3 sm:p-4 text-orange-600 transition-all hover:bg-orange-100/50 hover:border-orange-300 shadow-sm"
-            >
-              <PlusIcon size={18} weight="bold" />
-              <span className="text-xs sm:text-sm font-bold">Agregar productos</span>
-            </Link>
-          </div>
+      <Link
+        href="/buscar"
+        className="flex items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50/40 p-3 sm:p-4 text-orange-600 transition-all hover:bg-orange-100/50 hover:border-orange-300 shadow-sm"
+      >
+        <PlusIcon size={18} weight="bold" />
+        <span className="text-xs sm:text-sm font-bold">Agregar productos</span>
+      </Link>
+    </div>
   );
 }
 
@@ -165,7 +165,7 @@ export default function MiListaPage() {
 
           {listaId && (
             <DesktopActionButton
-              onClick={abrirModalCerrar}
+              onClick={puedeEditar ? abrirModalCerrar : () => handleCerrarLista(false)}
               label="Cerrar lista"
               icon={<XCircleIcon weight="bold" />}
               color="rojo"

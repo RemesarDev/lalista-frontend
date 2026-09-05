@@ -11,14 +11,20 @@ export const usuariosRouter = new Hono()
   // GET /usuarios?email= — buscar usuarios por email para compartir lista
   .get('/usuarios', zValidator('query', buscarUsuariosSchema), async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    if (!session) {
+      c.status(401);
+      return c.json({ error: 'No autorizado' });
+    }
 
     const { email } = c.req.valid('query');
+    console.log('Buscando email:', email); // temporal
 
     const { data, error } = await supabase.rpc('buscar_usuarios_por_email', {
       p_email: email,
       p_solicitante_id: session.user.id,
     });
+
+    console.log('Resultado:', data, 'Error:', error); // temporal
 
     if (error) return c.json({ error: error.message }, 500);
 

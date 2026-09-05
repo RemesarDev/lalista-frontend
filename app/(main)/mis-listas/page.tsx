@@ -8,14 +8,21 @@ import { useMisListas } from './_hooks/useMisListas';
 import { useAbrirLista } from './_hooks/useAbrirLista';
 import BaseContainer from '@/app/_components/global/BaseContainer';
 import ConfirmModal from '../../_components/global/ConfirmModal';
-import { ListIcon, LockIcon, TrashIcon } from '@phosphor-icons/react';
+import { CompartirListaModal } from './_components/CompartirListaModal';
+import { ListIcon, LockIcon, TrashIcon, ShareNetworkIcon } from '@phosphor-icons/react';
 import type { RolLista } from '@/app/_store/slices/listaSlice';
 
-// Tipado para el estado del modal
-interface ModalState {
+// Tipado para el estado del modal de eliminación
+interface ModalEliminarState {
     isOpen: boolean;
     listaId: string | null;
     rol: string | null;
+}
+
+// Tipado para el estado del modal de compartir
+interface ModalCompartirState {
+    isOpen: boolean;
+    listaId: string | null;
 }
 
 export default function MisListasPage() {
@@ -27,8 +34,8 @@ export default function MisListasPage() {
     const { listas, cargando, error, eliminarLista } = useMisListas(user?.id ?? null);
     const { abrirLista, cargandoAbrir } = useAbrirLista();
 
-    // Estado controlador del modal
-    const [modal, setModal] = useState<ModalState>({ isOpen: false, listaId: null, rol: null });
+    const [modalEliminar, setModalEliminar] = useState<ModalEliminarState>({ isOpen: false, listaId: null, rol: null });
+    const [modalCompartir, setModalCompartir] = useState<ModalCompartirState>({ isOpen: false, listaId: null });
 
     useEffect(() => {
         let mounted = true;
@@ -47,20 +54,17 @@ export default function MisListasPage() {
 
     if (!user) return null;
 
-    // Abre el modal guardando el contexto
     const handleSolicitarEliminacion = (id: string, rol: string) => {
-        setModal({ isOpen: true, listaId: id, rol });
+        setModalEliminar({ isOpen: true, listaId: id, rol });
     };
 
-    // Ejecuta la mutación y resetea el estado
     const handleConfirmarEliminacion = () => {
-        if (modal.listaId) {
-            eliminarLista(modal.listaId);
+        if (modalEliminar.listaId) {
+            eliminarLista(modalEliminar.listaId);
         }
     };
 
-    // Computamos los textos del modal dinámicamente según el rol
-    const esPropietario = modal.rol === 'owner';
+    const esPropietario = modalEliminar.rol === 'owner';
     const tituloModal = esPropietario ? '¿Borrar lista?' : '¿Abandonar lista?';
     const mensajeModal = esPropietario
         ? 'Esta acción eliminará la lista permanentemente para vos y todos los invitados. No se puede deshacer.'
@@ -68,15 +72,22 @@ export default function MisListasPage() {
 
     return (
         <BaseContainer>
-            {/* INYECCIÓN DEL MODAL */}
+            {/* Modal eliminar/abandonar */}
             <ConfirmModal
-                isOpen={modal.isOpen}
-                onClose={() => setModal({ isOpen: false, listaId: null, rol: null })}
+                isOpen={modalEliminar.isOpen}
+                onClose={() => setModalEliminar({ isOpen: false, listaId: null, rol: null })}
                 onConfirm={handleConfirmarEliminacion}
                 titulo={tituloModal}
                 mensaje={mensajeModal}
                 textoConfirmar={esPropietario ? 'Sí, borrar' : 'Sí, abandonar'}
                 isDestructive={true}
+            />
+
+            {/* Modal compartir */}
+            <CompartirListaModal
+                isOpen={modalCompartir.isOpen}
+                onClose={() => setModalCompartir({ isOpen: false, listaId: null })}
+                listaId={modalCompartir.listaId}
             />
 
             <div className="mb-6 flex flex-row items-center justify-between gap-4 px-1 w-full border-b border-slate-50 pb-3">
@@ -139,6 +150,18 @@ export default function MisListasPage() {
                                 {lista.rol !== 'owner' && (
                                     <LockIcon size={16} className="text-slate-300" />
                                 )}
+
+                                {/* Botón compartir — solo para el owner */}
+                                {lista.rol === 'owner' && (
+                                    <button
+                                        onClick={() => setModalCompartir({ isOpen: true, listaId: lista.id })}
+                                        className="text-slate-400 hover:text-purple-500 transition-colors p-1"
+                                        title="Compartir lista"
+                                    >
+                                        <ShareNetworkIcon size={16} weight="regular" />
+                                    </button>
+                                )}
+
                                 <button
                                     onClick={() => handleSolicitarEliminacion(lista.id, lista.rol)}
                                     className="text-slate-400 hover:text-red-500 transition-colors p-1"

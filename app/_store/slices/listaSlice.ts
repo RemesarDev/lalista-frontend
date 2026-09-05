@@ -58,6 +58,7 @@ export interface ListaSlice {
   lista: GrupoLista[];
   listaId: string | null;       // null = lista local sin guardar, UUID = lista sincronizada con la nube
   listaRol: RolLista | null;    // null = lista local, rol = permisos dentro de la lista en la nube
+  listaModificada: boolean;
   cacheBusquedaPrecios: CacheBusquedaPrecios | null;
   terminoBusqueda: string;
   timeTerminoBusqueda: number;
@@ -73,6 +74,7 @@ export interface ListaSlice {
   toggleCompradoGrupo: (grupoId: string) => void;
   limpiarLista: () => void;
   setListaActiva: (id: string | null, rol: RolLista | null) => void;
+  marcarListaSincronizada: () => void;
 
   // Métodos de caché y búsqueda
   guardarCacheBusquedaPrecios: (cache: Omit<CacheBusquedaPrecios, 'actualizadoEn'>) => void;
@@ -85,6 +87,7 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
   lista: [],
   listaId: null,
   listaRol: null,
+  listaModificada: false,
   cacheBusquedaPrecios: null,
   terminoBusqueda: "",
   timeTerminoBusqueda: 0,
@@ -95,6 +98,7 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
 
     if (targetGrupoId) {
       return {
+        listaModificada: true,
         lista: state.lista.map((grupo) => {
           if (grupo.grupoId !== targetGrupoId) return grupo;
           const existeProd = grupo.opciones.some((p) => p.id === nuevoProd.id);
@@ -108,6 +112,7 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
 
     if (grupoExistente) {
       return {
+        listaModificada: true,
         lista: state.lista.map((g) =>
           g.grupoId === grupoExistente.grupoId
             ? { ...g, cantidad: g.cantidad + 1 }
@@ -123,10 +128,11 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
       opciones: [prodOpcion],
     };
 
-    return { lista: [...state.lista, nuevoGrupo] };
+    return { lista: [...state.lista, nuevoGrupo], listaModificada: true };
   }),
 
   eliminarOpcion: (grupoId, productoId) => set((state) => ({
+    listaModificada: true,
     lista: state.lista
       .map((g) => {
         if (g.grupoId !== grupoId) return g;
@@ -136,24 +142,29 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
   })),
 
   eliminarGrupo: (grupoId) => set((state) => ({
+    listaModificada: true,
     lista: state.lista.filter((g) => g.grupoId !== grupoId),
   })),
 
   actualizarCantidadGrupo: (grupoId, cantidad) => set((state) => ({
+    listaModificada: true,
     lista: state.lista.map((g) =>
       g.grupoId === grupoId ? { ...g, cantidad: Math.max(1, cantidad) } : g
     ),
   })),
 
   toggleCompradoGrupo: (grupoId) => set((state) => ({
+    listaModificada: true,
     lista: state.lista.map((g) =>
       g.grupoId === grupoId ? { ...g, comprado: !g.comprado } : g
     ),
   })),
 
-  limpiarLista: () => set({ lista: [], listaId: null, listaRol: null }),
+  limpiarLista: () => set({ lista: [], listaId: null, listaRol: null, listaModificada: false }),
 
   setListaActiva: (id, rol) => set({ listaId: id, listaRol: rol }),
+
+  marcarListaSincronizada: () => set({ listaModificada: false }),
 
   guardarCacheBusquedaPrecios: (cache) => set({
     cacheBusquedaPrecios: { ...cache, actualizadoEn: Date.now() },

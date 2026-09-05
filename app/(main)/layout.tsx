@@ -5,6 +5,7 @@ import Header from "../_components/global/header/Header";
 import { Suspense } from "react";
 import { ModalProducto } from "../_components/global/ModalProducto";
 import { ModalComparar } from "../_components/global/ModalComparar";
+import { AvisoComparar } from "../_components/global/AvisoComparar";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,6 +26,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {/* Comparacion de dos productos, tambien por URL (?comparar=A,B). */}
         <Suspense fallback={null}>
           <ModalComparar />
+        </Suspense>
+
+        {/* Aviso de que hay un producto esperando con quien compararse. */}
+        <Suspense fallback={null}>
+          <AvisoComparar />
         </Suspense>
         <div className="hidden md:block">
           <FooterLanding />

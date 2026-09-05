@@ -17,14 +17,11 @@ export const usuariosRouter = new Hono()
     }
 
     const { email } = c.req.valid('query');
-    console.log('Buscando email:', email); // temporal
 
     const { data, error } = await supabase.rpc('buscar_usuarios_por_email', {
       p_email: email,
       p_solicitante_id: session.user.id,
     });
-
-    console.log('Resultado:', data, 'Error:', error); // temporal
 
     if (error) return c.json({ error: error.message }, 500);
 

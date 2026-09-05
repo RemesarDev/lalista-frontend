@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { XIcon, ShareNetworkIcon, UserIcon } from '@phosphor-icons/react';
+import { CheckCircleIcon, XIcon, ShareNetworkIcon, UserIcon } from '@phosphor-icons/react';
 import type { UsuarioPublico } from '@/app/_types/usuarios';
 
 interface CompartirListaModalProps {
@@ -191,7 +191,10 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                 )}
 
                 {exito && (
-                    <p className="mt-3 text-xs text-green-600 font-medium">✅ Lista compartida correctamente</p>
+                    <p className="mt-3 flex items-center gap-1 text-xs text-green-600 font-medium">
+                        <CheckCircleIcon size={16} weight="fill" />
+                        Lista compartida correctamente
+                    </p>
                 )}
 
                 {/* Botones */}

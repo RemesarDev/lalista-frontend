@@ -21,8 +21,9 @@ export function obtenerNombreComunGrupo(opciones: OpciónProducto[]): string {
 
   // Metadatos y unidades a ignorar
   const metadatosIgnorados = new Set([
-    'disc:disc', 'disc', 'pet', 'regular', 'pack', 'un', 'uni', 'unidad',
-    'lt', 'l', 'ml', 'cc', 'gr', 'grs', 'g', 'kg', 'x', 'uat', 'grm'
+    'disc:disc', 'disc', 'pet', 'regular', 'pack', 'paq', 'caja', 'cja',
+    'bot', 'botella', 'un', 'uni', 'unidad', 'lt', 'l', 'ml', 'cc', 'gr',
+    'grs', 'g', 'kg', 'x', 'uat', 'grm'
   ]);
 
   const limpiarPalabras = (texto: string): string[] => {

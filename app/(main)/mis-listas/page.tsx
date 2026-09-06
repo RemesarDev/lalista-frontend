@@ -9,7 +9,8 @@ import { useAbrirLista } from './_hooks/useAbrirLista';
 import BaseContainer from '@/app/_components/global/BaseContainer';
 import ConfirmModal from '../../_components/global/ConfirmModal';
 import { CompartirListaModal } from './_components/CompartirListaModal';
-import { ListIcon, LockIcon, TrashIcon, ShareNetworkIcon } from '@phosphor-icons/react';
+import { CompartirContenidoListaModal } from './_components/CompartirContenidoListaModal';
+import { ListIcon, LockIcon, TrashIcon, ShareNetworkIcon, UsersThreeIcon } from '@phosphor-icons/react';
 import type { RolLista } from '@/app/_store/slices/listaSlice';
 
 // Tipado para el estado del modal de eliminación
@@ -25,9 +26,16 @@ interface ModalCompartirState {
     listaId: string | null;
 }
 
+interface ModalCompartirContenidoState {
+    isOpen: boolean;
+    listaId: string | null;
+    listaNombre: string;
+}
+
 export default function MisListasPage() {
     const router = useRouter();
     const user = useListaStore((state) => state.user);
+    const listaIdActiva = useListaStore((state) => state.listaId);
     const loadingAuth = useListaStore((state) => state.loadingAuth);
     const checkAuth = useListaStore((state) => state.checkAuth);
 
@@ -36,6 +44,11 @@ export default function MisListasPage() {
 
     const [modalEliminar, setModalEliminar] = useState<ModalEliminarState>({ isOpen: false, listaId: null, rol: null });
     const [modalCompartir, setModalCompartir] = useState<ModalCompartirState>({ isOpen: false, listaId: null });
+    const [modalCompartirContenido, setModalCompartirContenido] = useState<ModalCompartirContenidoState>({
+        isOpen: false,
+        listaId: null,
+        listaNombre: '',
+    });
 
     useEffect(() => {
         let mounted = true;
@@ -90,6 +103,13 @@ export default function MisListasPage() {
                 listaId={modalCompartir.listaId}
             />
 
+            <CompartirContenidoListaModal
+                isOpen={modalCompartirContenido.isOpen}
+                onClose={() => setModalCompartirContenido({ isOpen: false, listaId: null, listaNombre: '' })}
+                listaId={modalCompartirContenido.listaId}
+                listaNombre={modalCompartirContenido.listaNombre}
+            />
+
             <div className="mb-6 flex flex-row items-center justify-between gap-4 px-1 w-full border-b border-slate-50 pb-3">
                 <div className="flex flex-col">
                     <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
@@ -127,48 +147,64 @@ export default function MisListasPage() {
                     {listas.map((lista) => (
                         <div
                             key={lista.id}
-                            className="flex items-center justify-between rounded-2xl bg-white border border-slate-200 px-4 py-4 shadow-sm"
+                            className={`flex flex-col gap-3 rounded-2xl border px-4 py-4 shadow-sm transition-colors ${lista.id === listaIdActiva
+                                    ? 'border-orange-300 bg-orange-50/40 ring-1 ring-orange-200'
+                                    : 'border-slate-200 bg-white'
+                                }`}
                         >
-                            {/* Info de la lista — clickeable para abrir */}
-                            <button
-                                onClick={() => abrirLista(lista.id, lista.rol as RolLista)}
-                                disabled={cargandoAbrir}
-                                className="flex items-center gap-3 text-left flex-1 min-w-0 hover:opacity-75 transition-opacity disabled:opacity-50"
-                            >
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 shrink-0">
-                                    <ListIcon size={20} weight="regular" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-sm font-semibold text-slate-900 truncate">{lista.nombre}</p>
-                                    <p className="text-xs text-slate-400 mt-0.5">
-                                        {lista.rol === 'owner' ? 'Tuya' : lista.rol === 'editor' ? 'Compartida · Editor' : 'Compartida · Lector'}
-                                    </p>
-                                </div>
-                            </button>
-
-                            <div className="flex items-center gap-2 shrink-0">
-                                {lista.rol !== 'owner' && (
-                                    <LockIcon size={16} className="text-slate-300" />
-                                )}
-
-                                {/* Botón compartir — solo para el owner */}
-                                {lista.rol === 'owner' && (
-                                    <button
-                                        onClick={() => setModalCompartir({ isOpen: true, listaId: lista.id })}
-                                        className="text-slate-400 hover:text-purple-500 transition-colors p-1"
-                                        title="Compartir lista"
-                                    >
-                                        <ShareNetworkIcon size={16} weight="regular" />
-                                    </button>
-                                )}
-
+                            <div className="flex items-center justify-between gap-3">
                                 <button
-                                    onClick={() => handleSolicitarEliminacion(lista.id, lista.rol)}
-                                    className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                                    title={lista.rol === 'owner' ? 'Borrar lista' : 'Salir de la lista'}
+                                    onClick={() => abrirLista(lista.id, lista.rol as RolLista)}
+                                    disabled={cargandoAbrir}
+                                    className="flex min-w-0 flex-1 items-center gap-3 text-left transition-opacity hover:opacity-75 disabled:opacity-50"
                                 >
-                                    <TrashIcon size={16} weight="regular" />
+                                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${lista.id === listaIdActiva
+                                            ? 'bg-orange-100 text-orange-600'
+                                            : 'bg-slate-100 text-slate-500'
+                                        }`}>
+                                        <ListIcon size={20} weight="regular" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-semibold text-slate-900">{lista.nombre}</p>
+                                        <p className="mt-0.5 text-xs text-slate-400">
+                                            {lista.rol === 'owner' ? 'Tuya' : lista.rol === 'editor' ? 'Compartida · Editor' : 'Compartida · Lector'}
+                                        </p>
+                                    </div>
                                 </button>
+
+                                <div className="flex shrink-0 items-center gap-2">
+                                    {lista.rol !== 'owner' && (
+                                        <span title="No podés administrar los miembros de esta lista">
+                                            <LockIcon size={16} className="text-slate-300" />
+                                        </span>
+                                    )}
+                                    {lista.rol === 'owner' && (
+                                        <button
+                                            onClick={() => setModalCompartir({ isOpen: true, listaId: lista.id })}
+                                            className="p-1 text-slate-400 transition-colors hover:text-slate-700"
+                                            title="Administrar miembros"
+                                            aria-label="Administrar miembros"
+                                        >
+                                            <UsersThreeIcon size={17} weight="bold" />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => setModalCompartirContenido({ isOpen: true, listaId: lista.id, listaNombre: lista.nombre })}
+                                        className="p-1 text-slate-400 transition-colors hover:text-slate-700"
+                                        title="Compartir lista"
+                                        aria-label="Compartir lista"
+                                    >
+                                        <ShareNetworkIcon size={17} weight="bold" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleSolicitarEliminacion(lista.id, lista.rol)}
+                                        className="p-1 text-slate-400 transition-colors hover:text-red-500"
+                                        title={lista.rol === 'owner' ? 'Borrar lista' : 'Salir de la lista'}
+                                        aria-label={lista.rol === 'owner' ? 'Borrar lista' : 'Salir de la lista'}
+                                    >
+                                        <TrashIcon size={16} weight="regular" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}

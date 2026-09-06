@@ -22,12 +22,16 @@ export default function StickySearch() {
 
       const modo = searchParams.get('modo');
       const grupoId = searchParams.get('grupoId');
+      const comparar = searchParams.get('comparar');
 
       const params = new URLSearchParams({q: terminoLimpio});
       if (modo === 'alternativa' && grupoId) {
         params.set('modo', modo);
         params.set('grupoId', grupoId);
       }
+      // La seleccion para comparar sobrevive a una busqueda nueva: el usuario
+      // elige una Sprite, busca "coca" y espera que la Sprite siga elegida.
+      if (comparar) params.set('comparar', comparar);
       router.push(`/buscar?${params.toString()}`);
     }
   };

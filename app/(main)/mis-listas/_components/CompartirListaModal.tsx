@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CheckCircleIcon, XIcon, ShareNetworkIcon, TrashIcon, UsersThreeIcon } from '@phosphor-icons/react';
+import { XIcon, ShareNetworkIcon, TrashIcon, UsersThreeIcon } from '@phosphor-icons/react';
 import type { UsuarioPublico } from '@/app/_types/usuarios';
 import ConfirmModal from '@/app/_components/global/ConfirmModal';
 
@@ -24,7 +24,6 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
     const [cargandoSugerencias, setCargandoSugerencias] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [exito, setExito] = useState(false);
     const [miembros, setMiembros] = useState<MiembroLista[]>([]);
     const [cargandoMiembros, setCargandoMiembros] = useState(false);
     const [miembroActualizando, setMiembroActualizando] = useState<string | null>(null);
@@ -39,7 +38,6 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             setSugerencias([]);
             setUsuarioSeleccionado(null);
             setError(null);
-            setExito(false);
             setMiembros([]);
             setTimeout(() => inputRef.current?.focus(), 100);
         }
@@ -115,7 +113,6 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             const json = await res.json();
             if (!res.ok) throw new Error(json.error ?? 'Error al compartir');
 
-            setExito(true);
             const miembroRes = await fetch(`/api/listas/${listaId}/miembros`, { credentials: 'include' });
             if (miembroRes.ok) {
                 const miembrosJson = await miembroRes.json();
@@ -200,7 +197,6 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                                 setEmail(e.target.value);
                                 setUsuarioSeleccionado(null);
                                 setError(null);
-                                setExito(false);
                             }}
                             disabled={loading}
                             placeholder="email@ejemplo.com"
@@ -272,13 +268,6 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
 
                     {error && (
                         <p className="mt-3 text-xs text-red-600">{error}</p>
-                    )}
-
-                    {exito && (
-                        <p className="mt-3 flex items-center gap-1 text-xs text-green-600 font-medium">
-                            <CheckCircleIcon size={16} weight="fill" />
-                            Lista compartida correctamente
-                        </p>
                     )}
 
                     <div className="mt-6 border-t border-slate-100 pt-5">

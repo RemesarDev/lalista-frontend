@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { CheckCircleIcon, XIcon, ShareNetworkIcon, TrashIcon, UsersThreeIcon } from '@phosphor-icons/react';
 import type { UsuarioPublico } from '@/app/_types/usuarios';
+import ConfirmModal from '@/app/_components/global/ConfirmModal';
 
 interface MiembroLista extends UsuarioPublico {
     rol: 'owner' | 'viewer' | 'editor';
@@ -27,6 +28,7 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
     const [miembros, setMiembros] = useState<MiembroLista[]>([]);
     const [cargandoMiembros, setCargandoMiembros] = useState(false);
     const [miembroActualizando, setMiembroActualizando] = useState<string | null>(null);
+    const [miembroPendienteEliminar, setMiembroPendienteEliminar] = useState<MiembroLista | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -151,7 +153,7 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
     };
 
     const handleEliminarMiembro = async (miembro: MiembroLista) => {
-        if (!listaId || miembro.rol === 'owner' || !window.confirm(`¿Quitar a ${miembro.nombre} de la lista?`)) return;
+        if (!listaId || miembro.rol === 'owner') return;
         setMiembroActualizando(miembro.id);
         setError(null);
         try {
@@ -166,193 +168,209 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             setError(err.message);
         } finally {
             setMiembroActualizando(null);
+            setMiembroPendienteEliminar(null);
         }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true">
+        <>
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true">
 
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-lila-100 text-lila-600 bg-purple-100 text-purple-600">
-                        <ShareNetworkIcon size={20} weight="regular" />
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-lila-100 text-lila-600 bg-purple-100 text-purple-600">
+                            <ShareNetworkIcon size={20} weight="regular" />
+                        </div>
+                        <button onClick={onClose} disabled={loading} className="text-slate-400 hover:text-slate-600 disabled:opacity-50">
+                            <XIcon size={20} weight="bold" />
+                        </button>
                     </div>
-                    <button onClick={onClose} disabled={loading} className="text-slate-400 hover:text-slate-600 disabled:opacity-50">
-                        <XIcon size={20} weight="bold" />
-                    </button>
-                </div>
 
-                <h2 className="text-lg font-bold text-slate-900">Compartir lista</h2>
-                <p className="mt-1 mb-4 text-sm text-slate-500">Ingresá el email del usuario con quien querés compartir.</p>
+                    <h2 className="text-lg font-bold text-slate-900">Compartir lista</h2>
+                    <p className="mt-1 mb-4 text-sm text-slate-500">Ingresá el email del usuario con quien querés compartir.</p>
 
-                {/* Input de email */}
-                <div className="relative">
-                    <input
-                        ref={inputRef}
-                        type="email"
-                        value={email}
-                        onChange={(e) => {
-                            setEmail(e.target.value);
-                            setUsuarioSeleccionado(null);
-                            setError(null);
-                            setExito(false);
-                        }}
-                        disabled={loading}
-                        placeholder="email@ejemplo.com"
-                        className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:bg-white focus:border-slate-900 disabled:opacity-50"
-                    />
+                    {/* Input de email */}
+                    <div className="relative">
+                        <input
+                            ref={inputRef}
+                            type="email"
+                            value={email}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                setUsuarioSeleccionado(null);
+                                setError(null);
+                                setExito(false);
+                            }}
+                            disabled={loading}
+                            placeholder="email@ejemplo.com"
+                            className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:bg-white focus:border-slate-900 disabled:opacity-50"
+                        />
 
-                    {/* Sugerencias */}
-                    {sugerencias.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 rounded-2xl border border-slate-200 bg-white shadow-lg z-10 overflow-hidden">
-                            {sugerencias.map((u) => (
+                        {/* Sugerencias */}
+                        {sugerencias.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-1 rounded-2xl border border-slate-200 bg-white shadow-lg z-10 overflow-hidden">
+                                {sugerencias.map((u) => (
+                                    <button
+                                        key={u.id}
+                                        onClick={() => handleSeleccionar(u)}
+                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+                                    >
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 shrink-0">
+                                            {u.imagen ? (
+                                                <img src={u.imagen} alt={u.nombre} className="h-8 w-8 rounded-full object-cover" />
+                                            ) : (
+                                                <img
+                                                    src="/img/avatar-default.png"
+                                                    alt={`${u.nombre} sin imagen de perfil`}
+                                                    className="h-8 w-8 rounded-full object-cover"
+                                                />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-slate-900 truncate">{u.nombre}</p>
+                                            <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {cargandoSugerencias && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                <span className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin block" />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Selector de rol */}
+                    {usuarioSeleccionado && (
+                        <div className="mt-4">
+                            <label className="mb-1 block text-sm font-medium text-slate-700">Rol</label>
+                            <div className="flex gap-2">
                                 <button
-                                    key={u.id}
-                                    onClick={() => handleSeleccionar(u)}
-                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+                                    onClick={() => setRol('viewer')}
+                                    className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors border ${rol === 'viewer'
+                                        ? 'bg-slate-900 text-white border-slate-900'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                        }`}
                                 >
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 shrink-0">
-                                        {u.imagen ? (
-                                            <img src={u.imagen} alt={u.nombre} className="h-8 w-8 rounded-full object-cover" />
-                                        ) : (
+                                    Lector
+                                </button>
+                                <button
+                                    onClick={() => setRol('editor')}
+                                    className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors border ${rol === 'editor'
+                                        ? 'bg-slate-900 text-white border-slate-900'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                        }`}
+                                >
+                                    Editor
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {error && (
+                        <p className="mt-3 text-xs text-red-600">{error}</p>
+                    )}
+
+                    {exito && (
+                        <p className="mt-3 flex items-center gap-1 text-xs text-green-600 font-medium">
+                            <CheckCircleIcon size={16} weight="fill" />
+                            Lista compartida correctamente
+                        </p>
+                    )}
+
+                    <div className="mt-6 border-t border-slate-100 pt-5">
+                        <div className="mb-3 flex items-center gap-2">
+                            <UsersThreeIcon size={18} className="text-slate-500" />
+                            <h3 className="text-sm font-bold text-slate-900">Miembros de la lista</h3>
+                        </div>
+
+                        {cargandoMiembros ? (
+                            <p className="py-3 text-xs text-slate-400">Cargando miembros...</p>
+                        ) : miembros.length === 0 ? (
+                            <p className="py-3 text-xs text-slate-400">No hay miembros para mostrar.</p>
+                        ) : (
+                            <div className="flex flex-col gap-2">
+                                {miembros.map((miembro) => (
+                                    <div key={miembro.id} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                                        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200">
                                             <img
-                                                src="/img/avatar-default.png"
-                                                alt={`${u.nombre} sin imagen de perfil`}
-                                                className="h-8 w-8 rounded-full object-cover"
+                                                src={miembro.imagen || '/img/avatar-default.png'}
+                                                alt={miembro.imagen ? miembro.nombre : `${miembro.nombre} sin imagen de perfil`}
+                                                className="h-full w-full object-cover"
                                             />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-semibold text-slate-900">{miembro.nombre}</p>
+                                            <p className="truncate text-xs text-slate-400">{miembro.email}</p>
+                                        </div>
+                                        {miembro.rol === 'owner' ? (
+                                            <span className="text-xs font-semibold text-slate-500">Owner</span>
+                                        ) : (
+                                            <>
+                                                <select
+                                                    value={miembro.rol}
+                                                    onChange={(event) => void handleCambiarRol(miembro, event.target.value as 'viewer' | 'editor')}
+                                                    disabled={miembroActualizando === miembro.id}
+                                                    className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 outline-none disabled:opacity-50"
+                                                    aria-label={`Rol de ${miembro.nombre}`}
+                                                >
+                                                    <option value="viewer">Lector</option>
+                                                    <option value="editor">Editor</option>
+                                                </select>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setMiembroPendienteEliminar(miembro)}
+                                                    disabled={miembroActualizando === miembro.id}
+                                                    className="p-1 text-slate-400 transition-colors hover:text-red-500 disabled:opacity-50"
+                                                    title={`Quitar a ${miembro.nombre}`}
+                                                    aria-label={`Quitar a ${miembro.nombre}`}
+                                                >
+                                                    <TrashIcon size={17} />
+                                                </button>
+                                            </>
                                         )}
                                     </div>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-slate-900 truncate">{u.nombre}</p>
-                                        <p className="text-xs text-slate-400 truncate">{u.email}</p>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {cargandoSugerencias && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                            <span className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin block" />
-                        </div>
-                    )}
-                </div>
-
-                {/* Selector de rol */}
-                {usuarioSeleccionado && (
-                    <div className="mt-4">
-                        <label className="mb-1 block text-sm font-medium text-slate-700">Rol</label>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setRol('viewer')}
-                                className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors border ${rol === 'viewer'
-                                    ? 'bg-slate-900 text-white border-slate-900'
-                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                                    }`}
-                            >
-                                Lector
-                            </button>
-                            <button
-                                onClick={() => setRol('editor')}
-                                className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors border ${rol === 'editor'
-                                    ? 'bg-slate-900 text-white border-slate-900'
-                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                                    }`}
-                            >
-                                Editor
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {error && (
-                    <p className="mt-3 text-xs text-red-600">{error}</p>
-                )}
-
-                {exito && (
-                    <p className="mt-3 flex items-center gap-1 text-xs text-green-600 font-medium">
-                        <CheckCircleIcon size={16} weight="fill" />
-                        Lista compartida correctamente
-                    </p>
-                )}
-
-                <div className="mt-6 border-t border-slate-100 pt-5">
-                    <div className="mb-3 flex items-center gap-2">
-                        <UsersThreeIcon size={18} className="text-slate-500" />
-                        <h3 className="text-sm font-bold text-slate-900">Miembros de la lista</h3>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
-                    {cargandoMiembros ? (
-                        <p className="py-3 text-xs text-slate-400">Cargando miembros...</p>
-                    ) : miembros.length === 0 ? (
-                        <p className="py-3 text-xs text-slate-400">No hay miembros para mostrar.</p>
-                    ) : (
-                        <div className="flex flex-col gap-2">
-                            {miembros.map((miembro) => (
-                                <div key={miembro.id} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                                    <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200">
-                                        <img
-                                            src={miembro.imagen || '/img/avatar-default.png'}
-                                            alt={miembro.imagen ? miembro.nombre : `${miembro.nombre} sin imagen de perfil`}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-semibold text-slate-900">{miembro.nombre}</p>
-                                        <p className="truncate text-xs text-slate-400">{miembro.email}</p>
-                                    </div>
-                                    {miembro.rol === 'owner' ? (
-                                        <span className="text-xs font-semibold text-slate-500">Owner</span>
-                                    ) : (
-                                        <>
-                                            <select
-                                                value={miembro.rol}
-                                                onChange={(event) => void handleCambiarRol(miembro, event.target.value as 'viewer' | 'editor')}
-                                                disabled={miembroActualizando === miembro.id}
-                                                className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 outline-none disabled:opacity-50"
-                                                aria-label={`Rol de ${miembro.nombre}`}
-                                            >
-                                                <option value="viewer">Lector</option>
-                                                <option value="editor">Editor</option>
-                                            </select>
-                                            <button
-                                                type="button"
-                                                onClick={() => void handleEliminarMiembro(miembro)}
-                                                disabled={miembroActualizando === miembro.id}
-                                                className="p-1 text-slate-400 transition-colors hover:text-red-500 disabled:opacity-50"
-                                                title={`Quitar a ${miembro.nombre}`}
-                                                aria-label={`Quitar a ${miembro.nombre}`}
-                                            >
-                                                <TrashIcon size={17} />
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Botones */}
-                <div className="mt-6 flex flex-col gap-2">
-                    <button
-                        onClick={handleCompartir}
-                        disabled={!usuarioSeleccionado || loading}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
-                    >
-                        <ShareNetworkIcon size={16} weight="bold" />
-                        {loading ? 'Compartiendo...' : 'Compartir'}
-                    </button>
-                    <button
-                        onClick={onClose}
-                        disabled={loading}
-                        className="w-full rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
-                    >
-                        Cancelar
-                    </button>
+                    {/* Botones */}
+                    <div className="mt-6 flex flex-col gap-2">
+                        <button
+                            onClick={handleCompartir}
+                            disabled={!usuarioSeleccionado || loading}
+                            className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
+                        >
+                            <ShareNetworkIcon size={16} weight="bold" />
+                            {loading ? 'Compartiendo...' : 'Compartir'}
+                        </button>
+                        <button
+                            onClick={onClose}
+                            disabled={loading}
+                            className="w-full rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+            <ConfirmModal
+                isOpen={miembroPendienteEliminar !== null}
+                onClose={() => setMiembroPendienteEliminar(null)}
+                onConfirm={() => {
+                    if (miembroPendienteEliminar) void handleEliminarMiembro(miembroPendienteEliminar);
+                }}
+                titulo="¿Quitar miembro?"
+                mensaje={miembroPendienteEliminar
+                    ? `Se quitará a ${miembroPendienteEliminar.nombre} de esta lista.`
+                    : ''}
+                textoConfirmar="Sí, quitar"
+                isDestructive
+            />
+        </>
     );
 }

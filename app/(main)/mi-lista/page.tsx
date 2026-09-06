@@ -152,7 +152,7 @@ export default function MiListaPage() {
               disabled={loadingSincronizar || (!!listaId && !hayCambios)}
               label={
                 loadingSincronizar ? 'Guardando...' :
-                  sincronizadoOk ? 'Guardado' :
+                  sincronizadoOk || (listaId && !hayCambios) ? 'Guardado' :
                     listaId ? 'Guardar cambios' : 'Guardar lista'
               }
               icon={

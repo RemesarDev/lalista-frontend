@@ -1,16 +1,30 @@
 'use client';
 
-import { Suspense } from 'react';
-import { MagnifyingGlassIcon, ScalesIcon, ShoppingCartIcon } from '@phosphor-icons/react/dist/ssr';
+import { Suspense, useEffect } from 'react';
+import { 
+  MagnifyingGlassIcon, 
+  ScalesIcon, 
+  ShoppingCartIcon, 
+  FloppyDiskIcon, 
+  XCircleIcon, 
+  CheckCircleIcon,
+  PlusIcon 
+} from '@phosphor-icons/react/dist/ssr';
+import Link from 'next/link';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
 import { useListaStore } from '@/app/_store/store';
-import { ListItem } from './_components/ListItem';
 import BaseContainer from '@/app/_components/global/BaseContainer';
+import { ModalGuardarLista } from './_components/ModalGuardarLista';
+import { CerrarListaModal } from './_components/CerrarListaModal';
+import { GrupoListItem } from './_components/GrupoListItem';
+import { useGestionLista } from './_hooks/useGestionLista';
 
 function ListaProductos() {
   const lista = useListaStore((state) => state.lista);
-  const actualizarCantidad = useListaStore((state) => state.actualizarCantidad);
-  const eliminarProducto = useListaStore((state) => state.eliminarProducto);
+  const actualizarCantidadGrupo = useListaStore((state) => state.actualizarCantidadGrupo);
+  const eliminarOpcion = useListaStore((state) => state.eliminarOpcion);
+  const eliminarGrupo = useListaStore((state) => state.eliminarGrupo);
+  const toggleCompradoGrupo = useListaStore((state) => state.toggleCompradoGrupo);
 
   if (!lista.length) {
     return (
@@ -31,64 +45,88 @@ function ListaProductos() {
   }
 
   return (
-    <div className="flex flex-col">
-      {lista.map((producto) => (
-        <ListItem
-          key={producto.id}
-          producto={producto}
-          onIncrementar={(id) => {
-            const actual = lista.find((item) => item.id === id);
-            if (actual) actualizarCantidad(id, actual.cantidad + 1);
+    <div className="flex flex-col gap-3">
+      {lista.map((grupo) => (
+        <GrupoListItem
+          key={grupo.grupoId}
+          grupo={grupo}
+          onIncrementar={(grupoId) => {
+            const actual = lista.find((g) => g.grupoId === grupoId);
+            if (actual) actualizarCantidadGrupo(grupoId, actual.cantidad + 1);
           }}
-          onDecrementar={(id) => {
-            const actual = lista.find((item) => item.id === id);
+          onDecrementar={(grupoId) => {
+            const actual = lista.find((g) => g.grupoId === grupoId);
             if (!actual) return;
             if (actual.cantidad <= 1) {
-              eliminarProducto(id);
+              eliminarGrupo(grupoId);
               return;
             }
-            actualizarCantidad(id, actual.cantidad - 1);
+            actualizarCantidadGrupo(grupoId, actual.cantidad - 1);
           }}
-          onEliminar={eliminarProducto}
+          onEliminarOpcion={eliminarOpcion}
+          onEliminarGrupo={eliminarGrupo}
+          onToggleComprado={toggleCompradoGrupo}
         />
       ))}
-    </div>
+
+      {/* Botón "Agregar producto" al final del listado con el mismo formato que los ítems */}
+        <Link
+              href="/buscar"
+              className="flex items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50/40 p-3 sm:p-4 text-orange-600 transition-all hover:bg-orange-100/50 hover:border-orange-300 shadow-sm"
+            >
+              <PlusIcon size={18} weight="bold" />
+              <span className="text-xs sm:text-sm font-bold">Agregar productos</span>
+            </Link>
+          </div>
   );
 }
 
 export default function MiListaPage() {
   const totalEnLista = useListaStore((state) => state.lista.length);
-  const limpiarLista = useListaStore((state) => state.limpiarLista);
+  const user = useListaStore((state) => state.user);
+  const checkAuth = useListaStore((state) => state.checkAuth);
+  const listaId = useListaStore((state) => state.listaId);
+  const listaRol = useListaStore((state) => state.listaRol);
   const isListaVacia = totalEnLista === 0;
 
-  const handleLimpiarLista = () => {
-    if (isListaVacia) return;
-    const confirmar = window.confirm('¿Querés vaciar toda la lista? Esta acción no se puede deshacer.');
-    if (confirmar) limpiarLista();
-  };
+  const {
+    modalGuardarOpen,
+    modalCerrarOpen,
+    loadingGuardar,
+    loadingSincronizar,
+    sincronizadoOk,
+    abrirModalGuardar,
+    cerrarModalGuardar,
+    abrirModalCerrar,
+    cerrarModalCerrar,
+    handleGuardarLista,
+    handleSincronizar,
+    handleCerrarLista,
+    handleLimpiarLista,
+  } = useGestionLista();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  const puedeEditar = !listaId || listaRol === 'owner' || listaRol === 'editor';
 
   return (
     <BaseContainer>
-      {/* Encabezado con estética profesional e integrada */}
       <div className="mb-6 flex flex-row items-center justify-between gap-4 px-1 w-full border-b border-slate-50 pb-3">
-        
-        {/* Título renovado estilo Aplicación de Compra */}
         <div className="flex flex-col">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Mi lista
           </h1>
           <p className="text-[11px] sm:text-xs font-medium text-slate-400 mt-0.5">
-            {totalEnLista === 0 
-              ? 'Sin productos guardados' 
-              : `${totalEnLista} producto${totalEnLista === 1 ? '' : 's'} listo${totalEnLista === 1 ? '' : 's'} para comparar`
+            {totalEnLista === 0
+              ? 'Sin productos guardados'
+              : `${totalEnLista} ítem${totalEnLista === 1 ? '' : 's'} listo${totalEnLista === 1 ? '' : 's'} para comparar`
             }
           </p>
         </div>
 
-        {/* Grupo de Botones de Acción */}
         <div className="flex items-center gap-2 shrink-0">
-          
-          {/* Con la corrección del componente, 'hidden md:inline-flex' ahora sí va a funcionar al 100% */}
           <DesktopActionButton
             href="/comparativa"
             label="Conocé el mejor precio"
@@ -106,23 +144,68 @@ export default function MiListaPage() {
             className="hidden md:inline-flex"
           />
 
-          {/* Este es el único botón que se mantendrá visible en mobile */}
-          <DesktopActionButton
-            onClick={handleLimpiarLista}
-            label="Vaciar lista"
-            icon={<ShoppingCartIcon weight="bold" />}
-            color="rojo"
-            variant="outline"
-            disabled={isListaVacia}
-            className="inline-flex"
-          />
-          
+          {user && !isListaVacia && puedeEditar && (
+            <DesktopActionButton
+              onClick={listaId ? handleSincronizar : abrirModalGuardar}
+              label={
+                loadingSincronizar ? 'Sincronizando...' :
+                  sincronizadoOk ? 'Sincronizado' :
+                    listaId ? 'Sincronizar' : 'Guardar lista'
+              }
+              icon={
+                sincronizadoOk
+                  ? <CheckCircleIcon weight="bold" />
+                  : <FloppyDiskIcon weight="bold" />
+              }
+              color="lila"
+              variant="solid"
+              className="inline-flex"
+            />
+          )}
+
+          {listaId && (
+            <DesktopActionButton
+              onClick={abrirModalCerrar}
+              label="Cerrar lista"
+              icon={<XCircleIcon weight="bold" />}
+              color="rojo"
+              variant="outline"
+              className="inline-flex"
+            />
+          )}
+
+          {!listaId && (
+            <DesktopActionButton
+              onClick={handleLimpiarLista}
+              label="Vaciar lista"
+              icon={<ShoppingCartIcon weight="bold" />}
+              color="rojo"
+              variant="outline"
+              disabled={isListaVacia}
+              className="inline-flex"
+            />
+          )}
         </div>
       </div>
 
       <Suspense fallback={<p className="text-center text-sm text-slate-400 py-4">Cargando tus productos...</p>}>
         <ListaProductos />
       </Suspense>
+
+      <ModalGuardarLista
+        isOpen={modalGuardarOpen}
+        onClose={cerrarModalGuardar}
+        onConfirm={handleGuardarLista}
+        loading={loadingGuardar}
+      />
+
+      <CerrarListaModal
+        isOpen={modalCerrarOpen}
+        onClose={cerrarModalCerrar}
+        onCerrarSinGuardar={() => handleCerrarLista(false)}
+        onSincronizarYCerrar={() => handleCerrarLista(true)}
+        loading={loadingSincronizar}
+      />
     </BaseContainer>
   );
 }

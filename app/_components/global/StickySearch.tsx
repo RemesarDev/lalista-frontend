@@ -1,6 +1,7 @@
 'use client'; // Necesitamos esto porque usamos hooks
 import { useListaStore } from '@/app/_store/store';
-import { useRouter } from 'next/navigation';
+import { MenuCategorias } from './MenuCategorias';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useRef } from 'react';
 import { DesktopActionButton } from './DesktopActionButton';
 import { ShoppingCartIcon } from '@phosphor-icons/react';
@@ -8,6 +9,7 @@ import { ShoppingCartIcon } from '@phosphor-icons/react';
 export default function StickySearch() {
   const [query, setQuery] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const setTerminoBusqueda = useListaStore((state) => state.setTerminoBusqueda);
 
@@ -17,13 +19,27 @@ export default function StickySearch() {
     if (query.trim().length >= 3) {
       inputRef.current?.blur();
       setTerminoBusqueda(terminoLimpio);
-      router.push(`/buscar?q=${encodeURIComponent(query)}`);
+
+      const modo = searchParams.get('modo');
+      const grupoId = searchParams.get('grupoId');
+      const comparar = searchParams.get('comparar');
+
+      const params = new URLSearchParams({q: terminoLimpio});
+      if (modo === 'alternativa' && grupoId) {
+        params.set('modo', modo);
+        params.set('grupoId', grupoId);
+      }
+      // La seleccion para comparar sobrevive a una busqueda nueva: el usuario
+      // elige una Sprite, busca "coca" y espera que la Sprite siga elegida.
+      if (comparar) params.set('comparar', comparar);
+      router.push(`/buscar?${params.toString()}`);
     }
   };
 
   return (
     <div className="sticky top-[57px] z-40 w-full backdrop-blur-md px-2 py-2">
       <div className="mx-auto flex max-w-5xl flex-col gap-2 md:flex-row md:items-center md:justify-center md:gap-3">
+        <div className="flex w-full items-center gap-2 md:w-auto">
         <form
           onSubmit={handleSearch}
           className="relative w-full md:w-[560px] md:shrink-0 md:flex-none"
@@ -54,6 +70,9 @@ export default function StickySearch() {
             className="w-full rounded-xl border border-accent-300 bg-white py-2.5 pl-10 pr-4 text-sm font-sans text-slate-800 shadow-sm transition placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </form>
+
+        <MenuCategorias />
+        </div>
 
         <div className="w-full md:w-auto md:shrink-0">
           <DesktopActionButton

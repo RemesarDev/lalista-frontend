@@ -3,7 +3,6 @@ import { z } from 'zod';
 // ==========================================
 // 1. ESQUEMAS DE GOOGLE MAPS (Ubicación)
 // ==========================================
-
 export const autocompleteQuerySchema = z.object({
   input: z.string().min(3, { message: 'El input debe tener al menos 3 caracteres' })
 });
@@ -21,34 +20,97 @@ export const reverseGeocodeQuerySchema = z.object({
   lng: z.coerce.number({ message: 'Longitud inválida' })
 });
 
+export const sucursalesCercanasQuerySchema = z.object({
+  lat: z.coerce.number({ message: 'La latitud es requerida y debe ser numérica' }),
+  lng: z.coerce.number({ message: 'La longitud es requerida y debe ser numérica' }),
+  radio: z.coerce.number().optional().default(5),
+});
+
 // ==========================================
 // 2. ESQUEMAS DE PRODUCTOS (Supabase DB)
 // ==========================================
+// Slug de categoria o rubro. Minusculas, numeros y guiones: nada mas.
+const categoriaParam = z
+  .string()
+  .regex(/^[a-z0-9-]+$/, { message: 'Slug de categoria invalido' })
+  .optional();
+
+// Etiquetas dietarias: llegan como "SIN_TACC,DIET" y se convierten a array.
+// Se validan contra mayusculas y guion bajo para que no entre texto arbitrario.
+const etiquetasParam = z
+  .string()
+  .optional()
+  .transform((val) =>
+    val ? val.split(',').map((e) => e.trim().toUpperCase()).filter(Boolean) : []
+  )
+  .refine((arr) => arr.length <= 5, { message: 'Maximo 5 etiquetas' })
+  .refine((arr) => arr.every((e) => /^[A-Z_]+$/.test(e)), {
+    message: 'Etiqueta invalida',
+  });
 
 export const productosQuerySchema = z.object({
   search: z.string().optional(),
-  lat: z.coerce.number({ message: 'Latitud inválida' }),
-  lng: z.coerce.number({ message: 'Longitud inválida' }),
-  radio: z.coerce.number({ message: 'Radio inválido' })
+  sucursales_ids: z.string().transform((val) => val.split(',').filter(Boolean)),
+  page: z.string().optional().default('1'),
+  limit: z.string().optional().default('20'),
+  categoria: categoriaParam,
+  etiquetas: etiquetasParam,
 });
 
 export const catalogoQuerySchema = z.object({
-  search: z.string().min(3, { message: 'El término debe tener al menos 3 caracteres' })
+  // Opcional: se puede navegar por categoria sin escribir nada en el buscador.
+  search: z.string().optional(),
+  page: z.string().optional().default('1'),
+  limit: z.string().optional().default('20'),
+  categoria: categoriaParam,
+  etiquetas: etiquetasParam,
 });
 
 export const preciosPorIdsQuerySchema = z.object({
-  ids: z.string().transform((val) => val.split(',')),
-  lat: z.coerce.number({ message: 'Latitud inválida' }),
-  lng: z.coerce.number({ message: 'Longitud inválida' }),
-  radio: z.coerce.number({ message: 'Radio inválido' }),
+  ids: z.string().min(1, 'Se requiere al menos un ID de producto'),
+  sucursales_ids: z.string().min(1, 'Se requiere al menos un ID de sucursal'),
+  lat: z.string().optional(),
+  lng: z.string().optional(),
 });
-// ==========================================
-// 3. INFERENCIA DE TIPOS PARA EL FRONTEND
-// ==========================================
-// Exportamos las interfaces generadas automáticamente por Zod.
-// Los hooks de la carpeta `_hooks` podrán importar estos tipos 
-// para asegurar que envían los datos correctos a la API.
 
+// ==========================================
+// 3. ESQUEMAS DE LISTAS (Supabase DB)
+// ==========================================
+export const opcionProductoSchema = z.object({
+  id_producto: z.string(),
+  descripcion: z.string(),
+  imagen: z.string().nullable().optional(),
+  es_principal: z.boolean().default(false),
+});
+
+export const guardarListaSchema = z.object({
+  nombre: z.string().min(1, 'El nombre es obligatorio').max(100),
+  items: z.array(
+    z.object({
+      item_id: z.uuid('El item_id debe ser un UUID válido'),
+      cantidad: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
+      comprado: z.boolean(),
+      opciones: z.array(opcionProductoSchema).min(1, 'Cada grupo debe tener al menos una opción'),
+    })
+  ).min(1, 'La lista debe tener al menos un producto'),
+});
+export const sincronizarListaSchema = z.object({
+  items: z.array(
+    z.object({
+      item_id: z.string(),
+      cantidad: z.number().int().min(1),
+      comprado: z.boolean(),
+      opciones: z.array(opcionProductoSchema).min(1),
+    })
+  ).min(1),
+});
+
+export type GuardarListaBody = z.infer<typeof guardarListaSchema>;
+export type SincronizarListaBody = z.infer<typeof sincronizarListaSchema>;
+
+// ==========================================
+// 4. INFERENCIA DE TIPOS PARA EL FRONTEND
+// ==========================================
 export type AutocompleteQuery = z.infer<typeof autocompleteQuerySchema>;
 export type GeocodeQuery = z.infer<typeof geocodeQuerySchema>;
 export type PlaceDetailsQuery = z.infer<typeof placeDetailsQuerySchema>;

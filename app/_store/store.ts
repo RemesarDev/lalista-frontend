@@ -9,16 +9,25 @@ import { createAuthSlice } from './slices/authSlice';
 // 2. Importaciones estrictas de Tipos/Interfaces
 import type { 
   CacheBusquedaPrecios, 
+  GrupoLista,
   ListaSlice, 
   ProductoBusqueda, 
-  ProductoLista, 
+  ProductoOpcion, 
   SucursalBusqueda 
 } from './slices/listaSlice';
-import type { UbicacionSlice, UbicacionUsuario } from './slices/ubicacionSlice';
+import type { UbicacionSlice, UbicacionUsuario, SucursalCercana } from './slices/ubicacionSlice';
 import type { AuthSlice } from './slices/authSlice';
 
 export type StoreState = ListaSlice & UbicacionSlice & AuthSlice;
-export type { CacheBusquedaPrecios, ProductoBusqueda, ProductoLista, SucursalBusqueda, UbicacionUsuario };
+export type { 
+  CacheBusquedaPrecios, 
+  GrupoLista,
+  ProductoBusqueda, 
+  ProductoOpcion, 
+  SucursalBusqueda, 
+  UbicacionUsuario,
+  SucursalCercana 
+};
 
 export const useListaStore = create<StoreState>()(
   persist(

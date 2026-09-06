@@ -15,7 +15,12 @@ type SugerenciaLugar = {
 };
 
 export function useUbicacion() {
-  const { ubicacion, setUbicacion, cambiarRadioBusqueda } = useListaStore();
+  const ubicacion = useListaStore((state) => state.ubicacion);
+  const setUbicacion = useListaStore((state) => state.setUbicacion);
+  const cambiarRadioBusqueda = useListaStore((state) => state.cambiarRadioBusqueda);
+  const cargandoSucursales = useListaStore((state) => state.cargandoSucursales);
+  const setCargandoSucursales = useListaStore((state) => state.setCargandoSucursales);
+  const setSucursalesCercanas = useListaStore((state) => state.setSucursalesCercanas);
   
   const [direccion, setDireccion] = useState<string>(ubicacion.nombreLugar || '');
   const [sugerencias, setSugerencias] = useState<SugerenciaLugar[]>([]);
@@ -31,10 +36,10 @@ export function useUbicacion() {
 
   const map = useMap();
 
-  // Crea esta pequeña función auxiliar para limpiar la dirección
+  // Limpia la cadena de dirección recibida
   const limpiarDireccion = useCallback((direccion: string) => {
     const partes = direccion.split(',');
-    return partes.slice(0).join(',').trim(); //modificar en caso de recibir una dirección con formato diferente, por ejemplo sin comas. Por ahora asumo que siempre viene con formato "Calle 123, Ciudad, País"
+    return partes.slice(0).join(',').trim();
   }, []);
 
   const coordenadas = useMemo(() => ({ 
@@ -58,7 +63,6 @@ export function useUbicacion() {
 
     let cancelled = false;
 
-    // Esperamos 1000ms antes de buscar
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/maps/autocomplete?input=${encodeURIComponent(direccion)}`);
@@ -82,7 +86,6 @@ export function useUbicacion() {
       }
     }, 1000);
 
-    // Si el usuario sigue escribiendo, cancelamos el timer anterior
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -100,7 +103,7 @@ export function useUbicacion() {
     });
   }, [setUbicacion]);
 
-  //Geolocalización real usando la API de Geolocalización del navegador.
+  // Geolocalización real del navegador
   const obtenerGeolocalizacionReal = async () => {
     if (!navigator.geolocation) return;
     setCargandoGps(true);
@@ -114,10 +117,8 @@ export function useUbicacion() {
           const res = await fetch(`/api/maps/reverse-geocode?lat=${lat}&lng=${lng}`);
           const data = await res.json();
           
-          // Asignamos la dirección encontrada O las coordenadas como fallback
           const textoFinal = limpiarDireccion(data.direccion);
           
-          // ACTUALIZACIÓN UNIFICADA
           setDireccion(textoFinal);
           setCoordenadasPendientes({ lat, lng, texto: textoFinal });
           
@@ -168,9 +169,8 @@ export function useUbicacion() {
     }
   };
 
-  // Click/tap directo sobre el mapa: fija coordenadas al toque y resuelve la dirección en segundo plano
+  // Click directo sobre el mapa
   const manejarClickMapa = useCallback(async (lat: number, lng: number) => {
-    // Feedback inmediato: el marker ya se mueve mientras resolvemos la dirección
     setCoordenadasPendientes({ lat, lng, texto: 'Ubicación seleccionada en el mapa' });
     setDireccion('Buscando dirección...');
 
@@ -185,13 +185,11 @@ export function useUbicacion() {
     } catch (err) {
       console.error('Error en reverse geocode:', err);
       setDireccion('Ubicación seleccionada en el mapa');
-      // Dejamos las coordenadas pendientes igual, aunque falle el geocode
     }
   }, [limpiarDireccion]);
 
   const confirmarUbicacion = useCallback(() => {
     if (!coordenadasPendientes) return;
-    // Leemos el radio fresco directamente del store, no del closure
     const radioActual = useListaStore.getState().ubicacion.radioBusqueda;
     guardarUbicacionFiltro(
       radioActual,
@@ -208,15 +206,58 @@ export function useUbicacion() {
     }
   };
 
+  // Guarda la ubicación en Zustand y consulta el backend en Hono
+const confirmarYBuscarSucursales = useCallback(async () => {
+  if (!coordenadasPendientes) return;
+
+  const { lat, lng, texto } = coordenadasPendientes;
+  const radioActual = useListaStore.getState().ubicacion.radioBusqueda;
+
+  try {
+    setCargandoSucursales(true);
+
+    // 1. Hacer el fetch ANTES de limpiar el estado de pendientes
+    const res = await fetch(`/api/maps/sucursales-cercanas?lat=${lat}&lng=${lng}&radio=${radioActual}`);
+    
+    if (!res.ok) {
+      const errorDetail = await res.json().catch(() => null);
+      console.error('[Error de Endpoint sucursales-cercanas]:', res.status, errorDetail);
+      throw new Error(errorDetail?.error || `Error ${res.status} en el servidor`);
+    }
+
+    const data = await res.json();
+
+    if (data.sucursales) {
+      setSucursalesCercanas(data.sucursales);
+    }
+
+    // 2. Si la consulta fue exitosa, guardamos en Zustand y limpiamos pendientes
+    guardarUbicacionFiltro(
+      radioActual,
+      { lat, lng },
+      texto
+    );
+    setCoordenadasPendientes(null);
+
+  } catch (err) {
+    console.error('Excepción al consultar sucursales:', err);
+    throw err; // Re-lanzar para manejar en UI si es necesario
+  } finally {
+    setCargandoSucursales(false);
+  }
+}, [coordenadasPendientes, guardarUbicacionFiltro, setCargandoSucursales, setSucursalesCercanas]);
+
   return {
     radio: ubicacion.radioBusqueda,
     setRadio: cambiarRadioBusqueda,
-    zoom, setZoom,
+    zoom, 
+    setZoom,
     direccion, 
     setDireccion: handleDireccionChange, 
     cargandoGps,
     coordenadas,
-    sugerencias, setSugerencias,
+    sugerencias, 
+    setSugerencias,
     errorSugerencias,
     obtenerGeolocalizacionReal,
     manejarKeyDownInput,
@@ -224,6 +265,9 @@ export function useUbicacion() {
     manejarClickMapa,
     guardarUbicacionFiltro,
     coordenadasPendientes,  
-    confirmarUbicacion,  
+    confirmarUbicacion,
+    // Métodos e indicadores expuestos para la vista:
+    confirmarYBuscarSucursales,
+    cargandoSucursales,
   };
 }

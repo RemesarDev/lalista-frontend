@@ -3,112 +3,288 @@ import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
 import { productosQuerySchema, catalogoQuerySchema, preciosPorIdsQuerySchema } from '@/app/_lib/apiSchemas';
 import { mapToProductoResponse, DbProductoRow } from '@/app/_lib/mappers/productos'; 
-import { Producto } from '@/app/_types/productos';
+import { Producto, CategoriaArbol, EtiquetaDisponible, DetalleProducto } from '@/app/_types/productos';
 
-  //CONSULTA CON UBICACION
-export const productosRouter = new Hono()
-  .get('/productos', 
+function agruparProductosConSucursales(rows: any[]): Producto[] {
+  const mapaProductos = new Map<string, Producto>();
 
-    zValidator('query', productosQuerySchema),   
-    async (c) => {
-      const { search, lat, lng, radio } = c.req.valid('query');
-    
-      const { data, error } = await supabase.rpc('buscar_productos_por_area', {
-        lat, lng, radio_km: radio, search_term: search ?? null,
+  for (const fila of rows) {
+    const idProd = fila.id_producto || fila.id;
+
+    if (!mapaProductos.has(idProd)) {
+      mapaProductos.set(idProd, {
+        id: idProd,
+        nombre: fila.productos_descripcion || fila.nombre || '',
+        url_imagen: fila.url_imagen ?? null,
+        precioMinimo: null,
+        sucursales: [],
       });
+    }
 
-      if (error) return c.json({ error: error.message }, 500);
+    const producto = mapaProductos.get(idProd)!;
 
-      // Usamos DbProductoRow[] en lugar de any
-      const rows = (data as DbProductoRow[]) ?? [];
-      const mapaProductos = new Map<string, Producto>();
-
-      for (const fila of rows) {
-        if (!mapaProductos.has(fila.id_producto)) {
-          mapaProductos.set(fila.id_producto, {
-            ...mapToProductoResponse(fila), // Pasamos toda la fila directamente
-            sucursales: [] 
-          });
-        }
-
-        const producto = mapaProductos.get(fila.id_producto)!;
-        const dir = `${fila.sucursales_calle ?? ''} ${fila.sucursales_numero ?? ''}`.trim() || 'Ubicación';
-        const huella = `${fila.id_comercio}-${dir}`;
-
-        // Tipamos explícitamente el 'some' para eliminar el any
-        if (!producto.sucursales.some((s: { id_comercio: number; direccion: string }) => `${s.id_comercio}-${s.direccion}` === huella)) {
-          producto.sucursales.push({
-            cadena: fila.comercio_bandera_nombre ?? 'Genérico',
-            direccion: dir,
-            precio: fila.productos_precio_lista ?? 0,
-            id_comercio: fila.id_comercio,
-            id_bandera: fila.id_bandera,
-          });
-        }
-      }
-
-      const productos = Array.from(mapaProductos.values()).map(p => ({
-        ...p,
-        precioMinimo: p.sucursales[0]?.precio ?? 0,
+    // Caso 1: La RPC devuelve un array de sucursales en formato JSON
+    if (Array.isArray(fila.sucursales_json)) {
+      // Nos aseguramos de mantener las distancias si ya venían en el JSON
+      producto.sucursales = fila.sucursales_json.map((s: any) => ({
+        ...s,
+        distancia: s.distancia ?? s.distancia_km ?? null
       }));
+    } else if (Array.isArray(fila.sucursales)) {
+      producto.sucursales = fila.sucursales.map((s: any) => ({
+        ...s,
+        distancia: s.distancia ?? s.distancia_km ?? null
+      }));
+    } else {
+      // Caso 2: La RPC devuelve filas aplanadas (JOIN tradicional)
+      const dir = `${fila.sucursales_calle ?? ''} ${fila.sucursales_numero ?? ''}`.trim() || fila.direccion || 'Ubicación';
+      const huella = `${fila.id_comercio}-${fila.id_bandera}-${dir}`;
 
-      return c.json({ productos });
-    }
-  )
-
-  //CONSULTA SIN UBICACION
-  .get('/catalogo', 
-    zValidator('query', catalogoQuerySchema),
-    async (c) => {
-      const { search } = c.req.valid('query');
-
-      const { data, error } = await supabase.rpc('buscar_catalogo', { search_term: search });
-
-      if (error) return c.json({ error: error.message }, 500);
-
-      // 🚀 Ahora el mapping es directo y seguro
-      const rows = (data as DbProductoRow[]) ?? [];
-      const productos = rows.map(p => mapToProductoResponse(p));
-
-      return c.json({ productos });
-    }
-  )
-//CONSULTA POR IDS CON UBICACION PARA COMPARAR PRECIOS
-  .get('/precios-por-ids-area',
-  zValidator('query', preciosPorIdsQuerySchema),
-  async (c) => {
-    const { ids, lat, lng, radio } = c.req.valid('query');
-    const { data, error } = await supabase.rpc('buscar_precios_por_ids_area', {
-      ids_productos: ids, lat, lng, radio_km: radio,
-    });
-    if (error) return c.json({ error: error.message }, 500);
-
-    const rows = (data as DbProductoRow[]) ?? [];
-    const mapaProductos = new Map<string, Producto>();
-    for (const fila of rows) {
-      if (!mapaProductos.has(fila.id_producto)) {
-        mapaProductos.set(fila.id_producto, {
-          ...mapToProductoResponse(fila),
-          sucursales: [],
-        });
-      }
-      const producto = mapaProductos.get(fila.id_producto)!;
-      const dir = `${fila.sucursales_calle ?? ''} ${fila.sucursales_numero ?? ''}`.trim() || 'Ubicación';
-      const huella = `${fila.id_comercio}-${dir}`;
-      if (!producto.sucursales.some((s) => `${s.id_comercio}-${s.direccion}` === huella)) {
+      if (!producto.sucursales.some((s) => `${s.id_comercio}-${s.id_bandera}-${s.direccion}` === huella)) {
         producto.sucursales.push({
-          cadena: fila.comercio_bandera_nombre ?? 'Genérico',
+          cadena: fila.comercio_bandera_nombre ?? fila.cadena ?? 'Genérico',
           direccion: dir,
-          precio: fila.productos_precio_lista ?? 0,
+          precio: fila.productos_precio_lista ?? fila.precio ?? 0,
           id_comercio: fila.id_comercio,
           id_bandera: fila.id_bandera,
+          latitud: fila.latitud,
+          longitud: fila.longitud,
+          // Agregamos la distancia. Soporta nombres de columna "distancia_km" o "distancia"
+          distancia: fila.distancia_km ?? fila.distancia ?? null, 
         });
       }
     }
-    const productos = Array.from(mapaProductos.values()).map(p => ({
-      ...p,
-      precioMinimo: p.sucursales[0]?.precio ?? 0,
-    }));
-    return c.json({ productos });
   }
-);
+
+  // Ordenar sucursales por menor precio y calcular precioMinimo
+  return Array.from(mapaProductos.values()).map((p) => {
+    const sucursalesOrdenadas = [...p.sucursales].sort((a, b) => a.precio - b.precio);
+    return {
+      ...p,
+      sucursales: sucursalesOrdenadas,
+      precioMinimo: sucursalesOrdenadas[0]?.precio ?? null,
+    };
+  });
+}
+
+export const productosRouter = new Hono()
+
+  .get('/productos', zValidator('query', productosQuerySchema), async (c) => {
+    const { search, sucursales_ids, page, limit, categoria, etiquetas } = c.req.valid('query');
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const offset = (pageNum - 1) * limitNum;
+
+    // sucursales_ids ya viene como string[] gracias a Zod
+    const { data, error } = await supabase.rpc('buscar_productos_por_sucursales', {
+      p_sucursales_ids: sucursales_ids,
+      search_term: search ?? null,
+      p_limit: limitNum,
+      p_offset: offset,
+      p_categoria_slug: categoria ?? null,
+      p_etiquetas: etiquetas.length > 0 ? etiquetas : null,
+    });
+
+    if (error) {
+      console.error('Error RPC productos:', error);
+      return c.json({ error: error.message }, 500);
+    }
+
+    const rows = (data as any[]) ?? [];
+    const productos = agruparProductosConSucursales(rows);
+
+    return c.json({ 
+      productos,
+      hasMore: rows.length === limitNum 
+    });
+  })
+
+  .get('/catalogo', zValidator('query', catalogoQuerySchema), async (c) => {
+    const { search, page, limit, categoria, etiquetas } = c.req.valid('query');
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const offset = (pageNum - 1) * limitNum;
+
+    const { data, error } = await supabase.rpc('buscar_catalogo', {
+      search_term: search ?? null,
+      p_limit: limitNum,
+      p_offset: offset,
+      p_categoria_slug: categoria ?? null,
+      p_etiquetas: etiquetas.length > 0 ? etiquetas : null,
+    });
+
+    if (error) {
+      console.error('Error RPC catalogo:', error);
+      return c.json({ error: error.message }, 500);
+    }
+
+    const rows = (data as DbProductoRow[]) ?? [];
+    const productos = rows.map((p) => mapToProductoResponse(p));
+
+    return c.json({ 
+      productos,
+      hasMore: rows.length === limitNum
+    });
+  })
+
+  .get('/precios-por-ids-area', zValidator('query', preciosPorIdsQuerySchema), async (c) => {
+    const { ids, sucursales_ids,lat, lng } = c.req.valid('query');
+
+    const arrayIds = ids.split(',').map((id) => id.trim()).filter(Boolean);
+    const arraySucursales = sucursales_ids.split(',').map((id) => id.trim()).filter(Boolean);
+
+    const parsedLat = lat ? parseFloat(lat) : null;
+    const parsedLng = lng ? parseFloat(lng) : null;
+
+    const { data, error } = await supabase.rpc('buscar_precios_por_ids_sucursales', {
+      ids_productos: arrayIds,
+      p_sucursales_ids: arraySucursales,
+      p_lat: parsedLat,
+      p_lng: parsedLng,
+    });
+
+    if (error) {
+      console.error('Error RPC precios-por-ids-area:', error);
+      return c.json({ error: error.message }, 500);
+    }
+
+    const rows = (data as any[]) ?? [];
+    const productos = agruparProductosConSucursales(rows);
+
+    return c.json({ productos });
+  })
+
+// CATEGORIAS Y ETIQUETAS
+// Devuelve los rubros con sus categorias anidadas y las etiquetas dietarias con
+// su conteo. Van juntos en un solo endpoint porque el frontend los necesita a
+// la vez: asi se evita una segunda peticion.
+  .get('/categorias', async (c) => {
+    const [resCategorias, resEtiquetas] = await Promise.all([
+      supabase
+        .from('categorias')
+        .select('id, slug, nombre, orden, categoria_padre_id, es_canasta')
+        .order('orden', { ascending: true }),
+      supabase
+        .from('v_etiquetas_disponibles')
+        .select('codigo, nombre, productos'),
+    ]);
+
+    const { data, error } = resCategorias;
+    if (error) {
+      console.error('Error consultando categorias:', error);
+      return c.json({ error: error.message }, 500);
+    }
+
+    const filas = (data ?? []) as Array<{
+      id: number;
+      slug: string;
+      nombre: string;
+      orden: number;
+      categoria_padre_id: number | null;
+      es_canasta: boolean;
+    }>;
+
+    // Los rubros son las filas sin padre. Cada uno se arma con sus hijas.
+    const rubros: CategoriaArbol[] = filas
+      .filter((f) => f.categoria_padre_id === null)
+      .map((rubro) => ({
+        slug: rubro.slug,
+        nombre: rubro.nombre,
+        orden: rubro.orden,
+        es_canasta: rubro.es_canasta,
+        categorias: filas
+          .filter((f) => f.categoria_padre_id === rubro.id)
+          .sort((a, b) => a.orden - b.orden)
+          .map((hija) => ({
+            slug: hija.slug,
+            nombre: hija.nombre,
+            orden: hija.orden,
+            es_canasta: hija.es_canasta,
+          })),
+      }));
+
+    // Si fallan las etiquetas no se corta todo: el menu de categorias sirve
+    // igual y los filtros dietarios simplemente no se muestran.
+    const etiquetas = (resEtiquetas.data ?? []) as EtiquetaDisponible[];
+
+    return c.json({ rubros, etiquetas });
+  })
+
+// DETALLE DE UN PRODUCTO
+// Ficha para el modal: datos del SEPA mas la clasificacion propia.
+// El id es el EAN, asi que se valida que sean solo digitos.
+  .get('/producto/:id', async (c) => {
+    const id = c.req.param('id');
+
+    if (!/^[0-9]+$/.test(id)) {
+      return c.json({ error: 'Id de producto invalido' }, 400);
+    }
+
+    // La vista v_productos_categorizados solo trae la clasificacion, no todas
+    // las columnas de productos. Por eso se consultan las dos por separado.
+    const [resProducto, resCategoria, resContenido, resEtiquetas] = await Promise.all([
+      supabase
+        .from('productos')
+        .select('id_producto, productos_descripcion, productos_marca, url_imagen, ' +
+                'productos_cantidad_presentacion, productos_unidad_medida_presentacion')
+        .eq('id_producto', id)
+        .maybeSingle(),
+      supabase
+        .from('v_productos_categorizados')
+        .select('categoria, categoria_slug, rubro, rubro_slug')
+        .eq('id_producto', id)
+        .maybeSingle(),
+      // Solo las etiquetas declaradas en la descripcion. Las inferidas por IA
+      // quedan afuera por la misma razon que en el buscador: no son una
+      // declaracion del fabricante.
+      // Contenido del producto. El 72% del catalogo dice "1 UNI" en las
+      // columnas del SEPA, asi que el gramaje real se extrae de la descripcion
+      // y se guarda aparte. La vista combina las dos fuentes.
+      supabase
+        .from('v_producto_contenido')
+        .select('presentacion')
+        .eq('id_producto', id)
+        .maybeSingle(),
+      supabase
+        .from('producto_etiqueta')
+        .select('origen, etiquetas(codigo, nombre)')
+        .eq('id_producto', id)
+        .in('origen', ['keyword', 'manual']),
+    ]);
+
+    if (resProducto.error) {
+      console.error('Error consultando el producto:', resProducto.error);
+      return c.json({ error: resProducto.error.message }, 500);
+    }
+
+    if (!resProducto.data) {
+      return c.json({ error: 'Producto no encontrado' }, 404);
+    }
+
+    const fila = resProducto.data as any;
+    // Si el producto no esta clasificado, la ficha se muestra igual sin categoria.
+    const clasif = (resCategoria.data ?? {}) as any;
+
+    // Si fallan las etiquetas no se corta todo: la ficha sirve igual sin ellas.
+    const etiquetas = ((resEtiquetas.data ?? []) as any[])
+      .map((e) => e.etiquetas)
+      .filter(Boolean)
+      .map((e: any) => ({ codigo: e.codigo, nombre: e.nombre }));
+
+    const detalle: DetalleProducto = {
+      id_producto: fila.id_producto,
+      nombre: fila.productos_descripcion,
+      marca: fila.productos_marca?.trim() || null,
+      cantidad: fila.productos_cantidad_presentacion ?? null,
+      unidad: fila.productos_unidad_medida_presentacion?.trim() || null,
+      presentacion: (resContenido.data as any)?.presentacion ?? null,
+      url_imagen: fila.url_imagen,
+      categoria: clasif.categoria ?? null,
+      categoria_slug: clasif.categoria_slug ?? null,
+      rubro: clasif.rubro ?? null,
+      rubro_slug: clasif.rubro_slug ?? null,
+      etiquetas,
+    };
+
+    return c.json({ producto: detalle });
+  });

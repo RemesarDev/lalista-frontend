@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import BaseContainer from '@/app/_components/global/BaseContainer';
 import { UserIcon, EnvelopeIcon, TrashIcon, SignOutIcon } from '@phosphor-icons/react';
+import { ModalBorrarCuenta } from './_components/ModalBorrarCuenta';
 
 export default function PerfilPage() {
     const router = useRouter();
@@ -14,23 +15,20 @@ export default function PerfilPage() {
     const borrarCuenta = useListaStore((state) => state.borrarCuenta);
     const checkAuth = useListaStore((state) => state.checkAuth);
 
+    const [modalOpen, setModalOpen] = useState(false);
+    const [loadingBorrar, setLoadingBorrar] = useState(false);
+
     useEffect(() => {
         let mounted = true;
 
         const verifyAuth = async () => {
             const nextUser = await checkAuth();
-
             if (!mounted) return;
-            if (!nextUser) {
-                router.replace('/login');
-            }
+            if (!nextUser) router.replace('/login');
         };
 
         void verifyAuth();
-
-        return () => {
-            mounted = false;
-        };
+        return () => { mounted = false; };
     }, [checkAuth, router]);
 
     if (loadingAuth) return (
@@ -44,26 +42,20 @@ export default function PerfilPage() {
         router.replace('/');
     };
 
-    const handleBorrarCuenta = async () => {
-        const confirmar = window.confirm('¿Seguro que querés borrar tu cuenta? Esta acción no se puede deshacer.');
-        if (!confirmar) return;
-
-        const password = window.prompt('Ingresá tu contraseña actual para confirmar la eliminación:');
-        if (!password || !password.trim()) {
-            alert('La contraseña es obligatoria para borrar la cuenta.');
-            return;
-        }
-
+    const handleBorrarCuenta = async (password: string) => {
+        setLoadingBorrar(true);
         const result = await borrarCuenta(password);
+        setLoadingBorrar(false);
 
         if (result.success) {
-            alert('Tu cuenta fue eliminada correctamente.');
+            setModalOpen(false);
             router.replace('/');
             return;
         }
 
-        const message = result.error?.message || 'No se pudo borrar la cuenta.';
-        alert(message);
+        // El error se maneja dentro del modal via re-throw o podés pasarlo como estado
+        // Por ahora lo mostramos en consola y dejamos el modal abierto
+        console.error('Error al borrar cuenta:', result.error);
     };
 
     return (
@@ -101,7 +93,6 @@ export default function PerfilPage() {
 
                 <div className="border-t border-slate-100 pt-4 flex flex-col gap-2">
 
-                    {/* Cerrar sesión */}
                     <button
                         onClick={handleLogout}
                         className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
@@ -110,9 +101,8 @@ export default function PerfilPage() {
                         Cerrar sesión
                     </button>
 
-                    {/* Borrar cuenta */}
                     <button
-                        onClick={handleBorrarCuenta}
+                        onClick={() => setModalOpen(true)}
                         className="w-full flex items-center justify-center gap-2 rounded-2xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
                     >
                         <TrashIcon size={18} weight="bold" />
@@ -121,6 +111,13 @@ export default function PerfilPage() {
 
                 </div>
             </div>
+
+            <ModalBorrarCuenta
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                onConfirm={handleBorrarCuenta}
+                loading={loadingBorrar}
+            />
         </BaseContainer>
     );
 }

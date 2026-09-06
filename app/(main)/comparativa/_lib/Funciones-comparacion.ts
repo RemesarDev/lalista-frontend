@@ -1,21 +1,23 @@
-import type { ProductoBusqueda, SucursalBusqueda, ProductoLista } from '@/app/_store/store';
+import type { GrupoLista, SucursalBusqueda, ProductoOpcion } from '@/app/_store/store';
 
 export interface ProductoEnSucursal {
-  id: string;
+  id: string; // ID del producto individual seleccionado como el más conveniente en la sucursal
   nombre: string;
   precio: number | null;
   disponible: boolean;
+  grupoId: string; // ID del grupo disyuntivo al que pertenece
+  cantidad: number; // Cantidad solicitada para el grupo
 }
 
 export interface SucursalCarritoComparada extends SucursalBusqueda {
   total: number;
   productos: ProductoEnSucursal[];
-  productosDisponibles: number;
-  productosFaltantes: number;
+  productosDisponibles: number; // Grupos cubiertos con al menos una opción
+  productosFaltantes: number;   // Grupos sin ninguna opción disponible
 }
 
 export const obtenerSucursalesMasBaratasPorCadena = (
-  producto: ProductoBusqueda,
+  producto: ProductoOpcion,
 ): SucursalBusqueda[] => {
   const sucursalesPorCadena = new Map<number, SucursalBusqueda>();
 
@@ -33,87 +35,111 @@ export const obtenerSucursalesMasBaratasPorCadena = (
 };
 
 export const calcularTotalesPorSucursal = (
-  productosLista: ProductoLista[],
+  gruposLista: GrupoLista[],
 ): SucursalCarritoComparada[] => {
   const mapaSucursales = new Map<string, SucursalCarritoComparada>();
 
-  for (const producto of productosLista) {
-    if (!producto || !Array.isArray(producto.sucursales)) continue;
+  // 1. Identificar todas las sucursales únicas presentes en cualquier opción de cualquier grupo
+  for (const grupo of gruposLista) {
+    if (!grupo || !Array.isArray(grupo.opciones)) continue;
 
-    for (const sucursal of producto.sucursales) {
-      const claveSucursal = `${sucursal.id_comercio}-${sucursal.id_bandera}`;
-      
-      if (!mapaSucursales.has(claveSucursal)) {
-        mapaSucursales.set(claveSucursal, {
-          ...sucursal,
-          total: 0,
-          productos: [],
-          productosDisponibles: 0,
-          productosFaltantes: 0,
-        });
-      }
+    for (const opcion of grupo.opciones) {
+      if (!Array.isArray(opcion.sucursales)) continue;
 
-      const sucursalData = mapaSucursales.get(claveSucursal)!;
-      const yaProcesado = sucursalData.productos.some(p => p.id === producto.id);
-      
-      if (!yaProcesado) {
-        sucursalData.total += sucursal.precio * (producto.cantidad || 1);
-        
-        sucursalData.productos.push({
-          id: producto.id,
-          nombre: producto.nombre,
-          precio: sucursal.precio,
-          disponible: true,
-        });
-        sucursalData.productosDisponibles += 1;
+      for (const sucursal of opcion.sucursales) {
+        const claveSucursal = `${sucursal.id_comercio}-${sucursal.id_bandera}`;
+
+        if (!mapaSucursales.has(claveSucursal)) {
+          mapaSucursales.set(claveSucursal, {
+            ...sucursal,
+            total: 0,
+            productos: [],
+            productosDisponibles: 0,
+            productosFaltantes: 0,
+          });
+        }
       }
     }
   }
 
-  for (const sucursal of mapaSucursales.values()) {
-    const productosEnSucursal = new Set(sucursal.productos.map((p) => p.id));
-    
-    for (const producto of productosLista) {
-      if (!productosEnSucursal.has(producto.id)) {
-        sucursal.productos.push({
-          id: producto.id,
-          nombre: producto.nombre,
+  // 2. Para cada sucursal registrada, evaluamos cada GrupoLista
+  for (const [claveSucursal, sucursalData] of mapaSucursales.entries()) {
+    let totalSucursal = 0;
+
+    for (const grupo of gruposLista) {
+      let mejorOpcionEnSucursal: { opcion: ProductoOpcion; precio: number } | null = null;
+
+      // Buscar la opción más barata del grupo disponible en esta sucursal específica
+      for (const opcion of grupo.opciones) {
+        if (!Array.isArray(opcion.sucursales)) continue;
+
+        const sucursalItem = opcion.sucursales.find(
+          (s) => `${s.id_comercio}-${s.id_bandera}` === claveSucursal
+        );
+
+        if (sucursalItem && sucursalItem.precio != null) {
+          if (!mejorOpcionEnSucursal || sucursalItem.precio < mejorOpcionEnSucursal.precio) {
+            mejorOpcionEnSucursal = {
+              opcion,
+              precio: sucursalItem.precio,
+            };
+          }
+        }
+      }
+
+      if (mejorOpcionEnSucursal) {
+        const costoGrupo = mejorOpcionEnSucursal.precio * (grupo.cantidad || 1);
+        totalSucursal += costoGrupo;
+
+        sucursalData.productos.push({
+          id: mejorOpcionEnSucursal.opcion.id,
+          nombre: mejorOpcionEnSucursal.opcion.nombre,
+          precio: mejorOpcionEnSucursal.precio,
+          disponible: true,
+          grupoId: grupo.grupoId,
+          cantidad: grupo.cantidad,
+        });
+        sucursalData.productosDisponibles += 1;
+      } else {
+        // Ninguna de las opciones disyuntivas del grupo está disponible en esta sucursal
+        const opcionPrincipal = grupo.opciones[0];
+        sucursalData.productos.push({
+          id: opcionPrincipal?.id ?? grupo.grupoId,
+          nombre: opcionPrincipal?.nombre ?? 'Producto no disponible',
           precio: null,
           disponible: false,
+          grupoId: grupo.grupoId,
+          cantidad: grupo.cantidad,
         });
-        sucursal.productosFaltantes += 1;
+        sucursalData.productosFaltantes += 1;
       }
     }
+
+    sucursalData.total = totalSucursal;
   }
 
   return Array.from(mapaSucursales.values())
     .filter((sucursal) => sucursal.productosDisponibles > 0)
     .sort((a, b) => {
       const diferenciaCantidad = b.productosDisponibles - a.productosDisponibles;
-      if (diferenciaCantidad !== 0) return diferenciaCantidad; 
+      if (diferenciaCantidad !== 0) return diferenciaCantidad;
 
-      const precioA = a.total;
-      const precioB = b.total;
-      return precioA - precioB;
+      return a.total - b.total;
     });
 };
 
 export const obtenerTopTresCadenasMasBaratas = (
-  productosLista: ProductoLista[],
+  gruposLista: GrupoLista[],
 ): SucursalCarritoComparada[] => {
   const mejoresSucursalesPorCadena = new Map<number, SucursalCarritoComparada>();
 
-  for (const sucursal of calcularTotalesPorSucursal(productosLista)) {
+  for (const sucursal of calcularTotalesPorSucursal(gruposLista)) {
     const sucursalActual = mejoresSucursalesPorCadena.get(sucursal.id_bandera);
 
     if (!sucursalActual || sucursal.productosDisponibles > sucursalActual.productosDisponibles) {
       mejoresSucursalesPorCadena.set(sucursal.id_bandera, sucursal);
-    } 
-    else if (sucursal.productosDisponibles === sucursalActual.productosDisponibles) {
-      const totalNuevo = sucursal.total;
-      const totalExistente = sucursalActual.total;
-      
-      if (totalNuevo < totalExistente) {
+    } else if (sucursal.productosDisponibles === sucursalActual.productosDisponibles) {
+      if (sucursal.total < sucursalActual.total) {
         mejoresSucursalesPorCadena.set(sucursal.id_bandera, sucursal);
       }
     }
@@ -125,9 +151,8 @@ export const obtenerTopTresCadenasMasBaratas = (
       const dispB = b.productosDisponibles || 0;
 
       if (dispB !== dispA) return dispB - dispA;
-      
-      const totalA = a.total;
-      const totalB = b.total;
-      return totalA - totalB;
-    }).slice(0, 3);
+
+      return a.total - b.total;
+    })
+    .slice(0, 3);
 };

@@ -10,12 +10,29 @@ export interface UbicacionUsuario {
   cargandoUbicacion: boolean;   // Para mostrar un spinner visual
 }
 
+export interface SucursalCercana {
+  id_unico: string;
+  id_comercio: number;
+  id_bandera: number;
+  comercio_bandera_nombre: string;
+  sucursales_calle: string;
+  sucursales_numero: string;
+  distancia_metros: number;
+}
+
 export interface UbicacionSlice {
   ubicacion: UbicacionUsuario;
   
+  sucursalesCercanas: SucursalCercana[];
+  sucursalesIds: string[];
+  cargandoSucursales: boolean;
+
   cambiarRadioBusqueda: (nuevoRadio: number) => void;
   setUbicacion: (ubicacion: UbicacionUsuario) => void;
   obtenerGpsNavegador: () => void;
+
+  setSucursalesCercanas: (sucursales: SucursalCercana[]) => void;
+  setCargandoSucursales: (cargando: boolean) => void;
 }
 
 export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSlice> = (set, get) => ({
@@ -67,4 +84,17 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   },
+
+  sucursalesCercanas: [],
+  sucursalesIds: [],
+  cargandoSucursales: false,
+
+  setSucursalesCercanas: (sucursales) => 
+    set({ 
+      sucursalesCercanas: sucursales,
+      sucursalesIds: sucursales.map((s) => s.id_unico)
+    }),
+
+  setCargandoSucursales: (cargando) => 
+    set({ cargandoSucursales: cargando }),
 });

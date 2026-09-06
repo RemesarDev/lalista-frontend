@@ -292,7 +292,11 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                             {miembros.map((miembro) => (
                                 <div key={miembro.id} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
                                     <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200">
-                                        {miembro.imagen && <img src={miembro.imagen} alt="" className="h-full w-full object-cover" />}
+                                        <img
+                                            src={miembro.imagen || '/img/avatar-default.png'}
+                                            alt={miembro.imagen ? miembro.nombre : `${miembro.nombre} sin imagen de perfil`}
+                                            className="h-full w-full object-cover"
+                                        />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-sm font-semibold text-slate-900">{miembro.nombre}</p>

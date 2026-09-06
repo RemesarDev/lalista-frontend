@@ -2,8 +2,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CheckCircleIcon, XIcon, ShareNetworkIcon } from '@phosphor-icons/react';
+import { CheckCircleIcon, XIcon, ShareNetworkIcon, TrashIcon, UsersThreeIcon } from '@phosphor-icons/react';
 import type { UsuarioPublico } from '@/app/_types/usuarios';
+
+interface MiembroLista extends UsuarioPublico {
+    rol: 'owner' | 'viewer' | 'editor';
+}
 
 interface CompartirListaModalProps {
     isOpen: boolean;
@@ -20,6 +24,9 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [exito, setExito] = useState(false);
+    const [miembros, setMiembros] = useState<MiembroLista[]>([]);
+    const [cargandoMiembros, setCargandoMiembros] = useState(false);
+    const [miembroActualizando, setMiembroActualizando] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -31,9 +38,31 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             setUsuarioSeleccionado(null);
             setError(null);
             setExito(false);
+            setMiembros([]);
             setTimeout(() => inputRef.current?.focus(), 100);
         }
     }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen || !listaId) return;
+
+        let mounted = true;
+        setCargandoMiembros(true);
+        fetch(`/api/listas/${listaId}/miembros`, { credentials: 'include' })
+            .then(async (res) => {
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error ?? 'Error al cargar los miembros');
+                if (mounted) setMiembros(json.miembros ?? []);
+            })
+            .catch((err: Error) => {
+                if (mounted) setError(err.message);
+            })
+            .finally(() => {
+                if (mounted) setCargandoMiembros(false);
+            });
+
+        return () => { mounted = false; };
+    }, [isOpen, listaId]);
 
     useEffect(() => {
         if (usuarioSeleccionado) return;
@@ -85,7 +114,14 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             if (!res.ok) throw new Error(json.error ?? 'Error al compartir');
 
             setExito(true);
-            setTimeout(() => onClose(), 1500);
+            const miembroRes = await fetch(`/api/listas/${listaId}/miembros`, { credentials: 'include' });
+            if (miembroRes.ok) {
+                const miembrosJson = await miembroRes.json();
+                setMiembros(miembrosJson.miembros ?? []);
+            }
+            setUsuarioSeleccionado(null);
+            setEmail('');
+            setSugerencias([]);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -93,9 +129,49 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
         }
     };
 
+    const handleCambiarRol = async (miembro: MiembroLista, rol: 'viewer' | 'editor') => {
+        if (!listaId || miembro.rol === 'owner' || miembro.rol === rol) return;
+        setMiembroActualizando(miembro.id);
+        setError(null);
+        try {
+            const res = await fetch(`/api/listas/${listaId}/miembros/${miembro.id}`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rol }),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error ?? 'Error al cambiar el rol');
+            setMiembros((prev) => prev.map((item) => item.id === miembro.id ? { ...item, rol } : item));
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setMiembroActualizando(null);
+        }
+    };
+
+    const handleEliminarMiembro = async (miembro: MiembroLista) => {
+        if (!listaId || miembro.rol === 'owner' || !window.confirm(`¿Quitar a ${miembro.nombre} de la lista?`)) return;
+        setMiembroActualizando(miembro.id);
+        setError(null);
+        try {
+            const res = await fetch(`/api/listas/${listaId}/miembros/${miembro.id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error ?? 'Error al eliminar el miembro');
+            setMiembros((prev) => prev.filter((item) => item.id !== miembro.id));
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setMiembroActualizando(null);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" role="dialog" aria-modal="true">
+            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true">
 
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
@@ -200,6 +276,59 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                         Lista compartida correctamente
                     </p>
                 )}
+
+                <div className="mt-6 border-t border-slate-100 pt-5">
+                    <div className="mb-3 flex items-center gap-2">
+                        <UsersThreeIcon size={18} className="text-slate-500" />
+                        <h3 className="text-sm font-bold text-slate-900">Miembros de la lista</h3>
+                    </div>
+
+                    {cargandoMiembros ? (
+                        <p className="py-3 text-xs text-slate-400">Cargando miembros...</p>
+                    ) : miembros.length === 0 ? (
+                        <p className="py-3 text-xs text-slate-400">No hay miembros para mostrar.</p>
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            {miembros.map((miembro) => (
+                                <div key={miembro.id} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                                    <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200">
+                                        {miembro.imagen && <img src={miembro.imagen} alt="" className="h-full w-full object-cover" />}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold text-slate-900">{miembro.nombre}</p>
+                                        <p className="truncate text-xs text-slate-400">{miembro.email}</p>
+                                    </div>
+                                    {miembro.rol === 'owner' ? (
+                                        <span className="text-xs font-semibold text-slate-500">Owner</span>
+                                    ) : (
+                                        <>
+                                            <select
+                                                value={miembro.rol}
+                                                onChange={(event) => void handleCambiarRol(miembro, event.target.value as 'viewer' | 'editor')}
+                                                disabled={miembroActualizando === miembro.id}
+                                                className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 outline-none disabled:opacity-50"
+                                                aria-label={`Rol de ${miembro.nombre}`}
+                                            >
+                                                <option value="viewer">Lector</option>
+                                                <option value="editor">Editor</option>
+                                            </select>
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleEliminarMiembro(miembro)}
+                                                disabled={miembroActualizando === miembro.id}
+                                                className="p-1 text-slate-400 transition-colors hover:text-red-500 disabled:opacity-50"
+                                                title={`Quitar a ${miembro.nombre}`}
+                                                aria-label={`Quitar a ${miembro.nombre}`}
+                                            >
+                                                <TrashIcon size={17} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 {/* Botones */}
                 <div className="mt-6 flex flex-col gap-2">

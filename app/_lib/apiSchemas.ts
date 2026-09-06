@@ -117,6 +117,10 @@ export const compartirListaSchema = z.object({
   rol: z.enum(['viewer', 'editor']).default('viewer'),
 });
 
+export const actualizarRolMiembroSchema = z.object({
+  rol: z.enum(['viewer', 'editor']),
+});
+
 // ==========================================
 // 5. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================
@@ -130,3 +134,4 @@ export type GuardarListaBody = z.infer<typeof guardarListaSchema>;
 export type SincronizarListaBody = z.infer<typeof sincronizarListaSchema>;
 export type BuscarUsuariosQuery = z.infer<typeof buscarUsuariosSchema>;
 export type CompartirListaBody = z.infer<typeof compartirListaSchema>;
+export type ActualizarRolMiembroBody = z.infer<typeof actualizarRolMiembroSchema>;

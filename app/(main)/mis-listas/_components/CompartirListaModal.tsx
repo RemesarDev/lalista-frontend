@@ -177,7 +177,7 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-lila-100 text-lila-600 bg-purple-100 text-purple-600">
-                            <ShareNetworkIcon size={20} weight="regular" />
+                            <UsersThreeIcon size={20} weight="regular" />
                         </div>
                         <button onClick={onClose} disabled={loading} className="text-slate-400 hover:text-slate-600 disabled:opacity-50">
                             <XIcon size={20} weight="bold" />

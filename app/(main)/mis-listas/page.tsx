@@ -35,6 +35,7 @@ interface ModalCompartirContenidoState {
 export default function MisListasPage() {
     const router = useRouter();
     const user = useListaStore((state) => state.user);
+    const listaIdActiva = useListaStore((state) => state.listaId);
     const loadingAuth = useListaStore((state) => state.loadingAuth);
     const checkAuth = useListaStore((state) => state.checkAuth);
 
@@ -146,7 +147,10 @@ export default function MisListasPage() {
                     {listas.map((lista) => (
                         <div
                             key={lista.id}
-                            className="flex flex-col gap-3 rounded-2xl bg-white border border-slate-200 px-4 py-4 shadow-sm"
+                            className={`flex flex-col gap-3 rounded-2xl border px-4 py-4 shadow-sm transition-colors ${lista.id === listaIdActiva
+                                    ? 'border-orange-300 bg-orange-50/40 ring-1 ring-orange-200'
+                                    : 'border-slate-200 bg-white'
+                                }`}
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <button
@@ -154,7 +158,10 @@ export default function MisListasPage() {
                                     disabled={cargandoAbrir}
                                     className="flex min-w-0 flex-1 items-center gap-3 text-left transition-opacity hover:opacity-75 disabled:opacity-50"
                                 >
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${lista.id === listaIdActiva
+                                            ? 'bg-orange-100 text-orange-600'
+                                            : 'bg-slate-100 text-slate-500'
+                                        }`}>
                                         <ListIcon size={20} weight="regular" />
                                     </div>
                                     <div className="min-w-0">

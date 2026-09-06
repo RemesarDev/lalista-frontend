@@ -6,6 +6,7 @@ import {
   ScalesIcon,
   ShoppingCartIcon,
   FloppyDiskIcon,
+  CircleNotchIcon,
   XCircleIcon,
   CheckCircleIcon,
   PlusIcon
@@ -147,18 +148,20 @@ export default function MiListaPage() {
 
           {user && !isListaVacia && puedeEditar && (
             <DesktopActionButton
-              onClick={listaId ? handleSincronizar : abrirModalGuardar}
+              onClick={listaId ? (hayCambios ? handleSincronizar : undefined) : abrirModalGuardar}
+              disabled={loadingSincronizar || (!!listaId && !hayCambios)}
               label={
                 loadingSincronizar ? 'Sincronizando...' :
                   sincronizadoOk ? 'Sincronizado' :
                     listaId ? 'Sincronizar' : 'Guardar lista'
               }
               icon={
-                sincronizadoOk
-                  ? <CheckCircleIcon weight="bold" />
-                  : <FloppyDiskIcon weight="bold" />
+                loadingSincronizar ? <CircleNotchIcon size={18} weight="bold" className="animate-spin" /> :
+                  sincronizadoOk || (listaId && !hayCambios)
+                    ? <CheckCircleIcon weight="bold" />
+                    : <FloppyDiskIcon weight="bold" />
               }
-              color="lila"
+              color={sincronizadoOk ? 'verde' : 'lila'}
               variant="solid"
               className="inline-flex"
             />

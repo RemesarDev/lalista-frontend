@@ -151,9 +151,9 @@ export default function MiListaPage() {
               onClick={listaId ? (hayCambios ? handleSincronizar : undefined) : abrirModalGuardar}
               disabled={loadingSincronizar || (!!listaId && !hayCambios)}
               label={
-                loadingSincronizar ? 'Sincronizando...' :
-                  sincronizadoOk ? 'Sincronizado' :
-                    listaId ? 'Sincronizar' : 'Guardar lista'
+                loadingSincronizar ? 'Guardando...' :
+                  sincronizadoOk ? 'Guardado' :
+                    listaId ? 'Guardar cambios' : 'Guardar lista'
               }
               icon={
                 loadingSincronizar ? <CircleNotchIcon size={18} weight="bold" className="animate-spin" /> :

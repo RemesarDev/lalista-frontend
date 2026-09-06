@@ -3,7 +3,12 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
 import { auth } from '@/app/_lib/auth';
-import { guardarListaSchema,sincronizarListaSchema,compartirListaSchema } from '@/app/_lib/apiSchemas';
+import {
+  guardarListaSchema,
+  sincronizarListaSchema,
+  compartirListaSchema,
+  actualizarRolMiembroSchema,
+} from '@/app/_lib/apiSchemas';
 import { 
   DbLista, 
   DbItemLista, 
@@ -132,6 +137,62 @@ export const listasRouter = new Hono()
     if (error) return c.json({ error: error.message }, 500);
     if (data === 'not_owner') return c.json({ error: 'Solo el dueño puede compartir la lista' }, 403);
     if (data === 'same_user') return c.json({ error: 'No podés compartir la lista con vos mismo' }, 400);
+
+    return c.json({ success: true }, 200);
+  })
+
+  // GET /listas/:id/miembros — miembros y owner de una lista
+  .get('/listas/:id/miembros', async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: 'No autorizado' }, 401);
+
+    const listId = c.req.param('id');
+    const { data, error } = await supabase.rpc('get_miembros_lista', {
+      p_list_id: listId,
+      p_owner_id: session.user.id,
+    });
+
+    if (error) return c.json({ error: error.message }, 500);
+    if (data === null) return c.json({ error: 'Solo el dueño puede administrar los miembros' }, 403);
+
+    return c.json({ miembros: data ?? [] });
+  })
+
+  // PATCH /listas/:id/miembros/:userId — cambiar rol de un miembro
+  .patch('/listas/:id/miembros/:userId', zValidator('json', actualizarRolMiembroSchema), async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: 'No autorizado' }, 401);
+
+    const { rol } = c.req.valid('json');
+    const { data, error } = await supabase.rpc('actualizar_rol_miembro', {
+      p_list_id: c.req.param('id'),
+      p_owner_id: session.user.id,
+      p_user_id: c.req.param('userId'),
+      p_rol: rol,
+    });
+
+    if (error) return c.json({ error: error.message }, 500);
+    if (data === 'not_owner') return c.json({ error: 'Solo el dueño puede cambiar roles' }, 403);
+    if (data === 'invalid_role') return c.json({ error: 'Rol inválido' }, 400);
+    if (data === 'not_found') return c.json({ error: 'Miembro no encontrado' }, 404);
+
+    return c.json({ success: true }, 200);
+  })
+
+  // DELETE /listas/:id/miembros/:userId — quitar un miembro
+  .delete('/listas/:id/miembros/:userId', async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: 'No autorizado' }, 401);
+
+    const { data, error } = await supabase.rpc('eliminar_miembro_lista', {
+      p_list_id: c.req.param('id'),
+      p_owner_id: session.user.id,
+      p_user_id: c.req.param('userId'),
+    });
+
+    if (error) return c.json({ error: error.message }, 500);
+    if (data === 'not_owner') return c.json({ error: 'Solo el dueño puede eliminar miembros' }, 403);
+    if (data === 'not_found') return c.json({ error: 'Miembro no encontrado' }, 404);
 
     return c.json({ success: true }, 200);
   });

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CheckCircleIcon, XIcon, ShareNetworkIcon, UserIcon } from '@phosphor-icons/react';
+import { CheckCircleIcon, XIcon, ShareNetworkIcon } from '@phosphor-icons/react';
 import type { UsuarioPublico } from '@/app/_types/usuarios';
 
 interface CompartirListaModalProps {
@@ -140,7 +140,11 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                                         {u.imagen ? (
                                             <img src={u.imagen} alt={u.nombre} className="h-8 w-8 rounded-full object-cover" />
                                         ) : (
-                                            <UserIcon size={16} weight="regular" />
+                                            <img
+                                                src="/img/avatar-default.png"
+                                                alt={`${u.nombre} sin imagen de perfil`}
+                                                className="h-8 w-8 rounded-full object-cover"
+                                            />
                                         )}
                                     </div>
                                     <div className="min-w-0">
@@ -167,8 +171,8 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                             <button
                                 onClick={() => setRol('viewer')}
                                 className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors border ${rol === 'viewer'
-                                        ? 'bg-slate-900 text-white border-slate-900'
-                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                    ? 'bg-slate-900 text-white border-slate-900'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                     }`}
                             >
                                 Lector
@@ -176,8 +180,8 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                             <button
                                 onClick={() => setRol('editor')}
                                 className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors border ${rol === 'editor'
-                                        ? 'bg-slate-900 text-white border-slate-900'
-                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                    ? 'bg-slate-900 text-white border-slate-900'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                     }`}
                             >
                                 Editor

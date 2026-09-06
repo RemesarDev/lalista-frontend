@@ -105,11 +105,20 @@ export const sincronizarListaSchema = z.object({
   ).min(1),
 });
 
-export type GuardarListaBody = z.infer<typeof guardarListaSchema>;
-export type SincronizarListaBody = z.infer<typeof sincronizarListaSchema>;
+// ==========================================
+// 4. ESQUEMAS DE USUARIOS
+// ==========================================
+export const buscarUsuariosSchema = z.object({
+  email: z.string().min(5, 'Ingresá al menos 5 caracteres'),
+});
+
+export const compartirListaSchema = z.object({
+  userId: z.string(),
+  rol: z.enum(['viewer', 'editor']).default('viewer'),
+});
 
 // ==========================================
-// 4. INFERENCIA DE TIPOS PARA EL FRONTEND
+// 5. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================
 export type AutocompleteQuery = z.infer<typeof autocompleteQuerySchema>;
 export type GeocodeQuery = z.infer<typeof geocodeQuerySchema>;
@@ -117,3 +126,7 @@ export type PlaceDetailsQuery = z.infer<typeof placeDetailsQuerySchema>;
 export type ReverseGeocodeQuery = z.infer<typeof reverseGeocodeQuerySchema>;
 export type ProductosQuery = z.infer<typeof productosQuerySchema>;
 export type CatalogoQuery = z.infer<typeof catalogoQuerySchema>;
+export type GuardarListaBody = z.infer<typeof guardarListaSchema>;
+export type SincronizarListaBody = z.infer<typeof sincronizarListaSchema>;
+export type BuscarUsuariosQuery = z.infer<typeof buscarUsuariosSchema>;
+export type CompartirListaBody = z.infer<typeof compartirListaSchema>;

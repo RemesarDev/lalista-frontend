@@ -11,6 +11,7 @@ interface UseGestionListaReturn {
   loadingGuardar: boolean;
   loadingSincronizar: boolean;
   sincronizadoOk: boolean;
+  hayCambios: boolean;
 
   // Acciones de modales
   abrirModalGuardar: () => void;
@@ -28,8 +29,10 @@ interface UseGestionListaReturn {
 export function useGestionLista(): UseGestionListaReturn {
   const lista = useListaStore((state) => state.lista);
   const listaId = useListaStore((state) => state.listaId);
+  const hayCambios = useListaStore((state) => state.listaModificada);
   const limpiarLista = useListaStore((state) => state.limpiarLista);
   const setListaActiva = useListaStore((state) => state.setListaActiva);
+  const marcarListaSincronizada = useListaStore((state) => state.marcarListaSincronizada);
 
   const [modalGuardarOpen, setModalGuardarOpen] = useState(false);
   const [modalCerrarOpen, setModalCerrarOpen] = useState(false);
@@ -37,19 +40,17 @@ export function useGestionLista(): UseGestionListaReturn {
   const [loadingSincronizar, setLoadingSincronizar] = useState(false);
   const [sincronizadoOk, setSincronizadoOk] = useState(false);
 
-  // Arma el payload de items desde el estado local
-  const buildItems = () =>
-    lista.map((grupo) => ({
-      item_id: grupo.grupoId,
-      cantidad: grupo.cantidad,
-      comprado: grupo.comprado ?? false,
-      opciones: grupo.opciones.map((opcion, index) => ({
-        id_producto: opcion.id,
-        descripcion: opcion.nombre,
-        imagen: opcion.url_imagen ?? null,
-        es_principal: index === 0,
-      })),
-    }));
+  const buildItems = () => lista.map((grupo) => ({
+    item_id: grupo.grupoId,
+    cantidad: grupo.cantidad,
+    comprado: grupo.comprado ?? false,
+    opciones: grupo.opciones.map((opcion, index) => ({
+      id_producto: opcion.id,
+      descripcion: opcion.nombre,
+      imagen: opcion.url_imagen ?? null,
+      es_principal: index === 0,
+    })),
+  }));
 
   // POST — crea una lista nueva
   const handleGuardarLista = async (nombre: string) => {
@@ -65,6 +66,7 @@ export function useGestionLista(): UseGestionListaReturn {
       if (!res.ok) throw new Error('Error al guardar la lista');
 
       const { id } = await res.json();
+      marcarListaSincronizada();
       setListaActiva(id, 'owner');
       setModalGuardarOpen(false);
     } catch (err) {
@@ -87,6 +89,8 @@ export function useGestionLista(): UseGestionListaReturn {
       });
 
       if (!res.ok) throw new Error('Error al sincronizar la lista');
+
+      marcarListaSincronizada();
 
       // Feedback temporal de éxito
       setSincronizadoOk(true);
@@ -117,6 +121,7 @@ export function useGestionLista(): UseGestionListaReturn {
     loadingGuardar,
     loadingSincronizar,
     sincronizadoOk,
+    hayCambios,
     abrirModalGuardar: () => setModalGuardarOpen(true),
     cerrarModalGuardar: () => setModalGuardarOpen(false),
     abrirModalCerrar: () => setModalCerrarOpen(true),

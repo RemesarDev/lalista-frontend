@@ -6,6 +6,7 @@ import { productosRouter } from './productos';
 import { mapsRouter } from './maps';
 import { auth } from '@/app/_lib/auth';
 import { listasRouter } from './listas';
+import { usuariosRouter } from './usuarios';
 import { historicoRouter } from './historico';
 
 export const runtime = 'nodejs'; 
@@ -74,6 +75,7 @@ app.all('/auth/*', (c) => {
 const routes = app
   .route('/', productosRouter)
   .route('/', listasRouter)
+  .route('/', usuariosRouter)
   .route('/maps', mapsRouter)
   .route('/', historicoRouter);
 

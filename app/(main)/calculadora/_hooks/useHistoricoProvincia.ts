@@ -53,14 +53,23 @@ function puntosMensualesAPorcentaje(puntos: PuntoMensual[]): PuntoSerie[] {
  *   tramo de meses que `total`, para poder compararlos en el mismo eje
  *   ("¿mi changuito subió más o menos que la inflación oficial?").
  */
-export function useHistoricoProvincia(changuito: Changuito | null): {
+export function useHistoricoProvincia(
+  changuito: Changuito | null,
+  provinciaElegida?: string | null,
+): {
   porProducto: SerieInflacion[];
   total: SerieInflacion | null;
   indecGeneral: SerieInflacion | null;
   cargando: boolean;
 } {
   const nombreLugar = useListaStore((state) => state.ubicacion.nombreLugar);
-  const codigoProvincia = useMemo(() => obtenerCodigoProvincia(nombreLugar), [nombreLugar]);
+  // Si el usuario eligió provincia a mano, esa gana. Si no, la deducimos del
+  // nombre del lugar — que a veces no alcanza (ej: "Ubicación detectada",
+  // cuando Maps no pudo resolver el nombre desde las coordenadas).
+  const codigoProvincia = useMemo(
+    () => provinciaElegida ?? obtenerCodigoProvincia(nombreLugar),
+    [provinciaElegida, nombreLugar],
+  );
 
   const [porProducto, setPorProducto] = useState<SerieInflacion[]>([]);
   const [total, setTotal] = useState<SerieInflacion | null>(null);

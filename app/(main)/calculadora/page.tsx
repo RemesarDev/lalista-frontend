@@ -16,14 +16,29 @@ import { useChanguitos } from './_hooks/useChanguitos';
 import { useInflacion } from './_hooks/useInflacion';
 import { useHistoricoProductosIndec } from './_hooks/useHistoricoProductosIndec';
 import { useHistoricoProvincia } from './_hooks/useHistoricoProvincia';
+import { PROVINCIAS_PARA_SELECTOR, obtenerCodigoProvincia } from './_lib/provincias';
 import { GraficoInflacion } from './_components/GraficoInflacion';
 import { ResumenCanasta } from './_components/ResumenCanasta';
 
-const formateadorFecha = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+const formateadorFecha = new Intl.DateTimeFormat('es-AR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
 const formatearFecha = (fechaISO: string) => formateadorFecha.format(new Date(`${fechaISO}T00:00:00Z`));
 
 export default function CalculadoraPage() {
   const lista = useListaStore((state) => state.lista);
+  const nombreLugar = useListaStore((state) => state.ubicacion.nombreLugar);
+
+  // Provincia elegida a mano. Arranca en la que se deduce de la ubicación
+  // (si se pudo) y si no, en Buenos Aires, que es la única con datos hoy.
+  // Se elige explícitamente porque la ubicación no siempre trae un nombre
+  // que permita deducirla (ej: queda "Ubicación detectada").
+  const [provincia, setProvincia] = useState<string>(
+    () => obtenerCodigoProvincia(nombreLugar) ?? 'AR-B',
+  );
 
   const {
     changuitos,
@@ -47,13 +62,13 @@ export default function CalculadoraPage() {
   // del gráfico de histórico SEPA.
   useInflacion(changuitoSeleccionado, registrarPunto);
 
-    // Histórico SEPA promediado entre TODOS los supermercados de bs. as.
+  // Histórico SEPA promediado entre TODOS los supermercados de la provincia.
   const {
     porProducto: seriesPorProductoProvincia,
     total: serieTotalProvincia,
     indecGeneral: serieIndecGeneral,
     cargando: cargandoHistoricoReal,
-  } = useHistoricoProvincia(changuitoSeleccionado);
+  } = useHistoricoProvincia(changuitoSeleccionado, provincia);
 
   // Rango de meses que cubre el histórico SEPA — se lo pasamos al INDEC
   // para que las dos secciones muestren el MISMO tramo de tiempo y se
@@ -65,7 +80,7 @@ export default function CalculadoraPage() {
     return { desde: fechas.reduce((a, b) => (a < b ? a : b)), hasta: fechas.reduce((a, b) => (a > b ? a : b)) };
   }, [seriesPorProductoProvincia]);
 
-    const {
+  const {
     series: seriesProductosIndec,
     cargando: cargandoIndecProductos,
     categoriaPorProducto,
@@ -76,13 +91,13 @@ export default function CalculadoraPage() {
   // línea por producto. Cualquier otro valor es el id de un producto puntual.
   const [vista, setVista] = useState<'total' | 'todos' | string>('todos');
 
-  // Al cambiar de changuito, volvemos siempre a "Todos los productos" (el
+  // Al cambiar de changuito, volvemos siempre a "Por producto" (el
   // producto elegido antes podría no existir en el changuito nuevo).
   useEffect(() => {
     setVista('todos');
   }, [changuitoSeleccionado?.id]);
 
-    // La serie del INDEC ahora está agrupada por categoría, así que para un
+  // La serie del INDEC está agrupada por categoría, así que para un
   // producto puntual hay que traducir primero su id al de su categoría.
   const serieIndecProducto = seriesProductosIndec.find(
     (s) => s.id === categoriaPorProducto.get(vista),
@@ -192,10 +207,31 @@ export default function CalculadoraPage() {
 
           {changuitoSeleccionado && (
             <>
-              <p className="mb-3 px-1 text-[11px] font-medium text-slate-400 sm:text-xs">
-                Siguiendo desde el {formatearFecha(changuitoSeleccionado.fechaInicio)} · {changuitoSeleccionado.productos.length}{' '}
-                producto{changuitoSeleccionado.productos.length === 1 ? '' : 's'}
-              </p>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+                <p className="text-[11px] font-medium text-slate-400 sm:text-xs">
+                  Siguiendo desde el {formatearFecha(changuitoSeleccionado.fechaInicio)} ·{' '}
+                  {changuitoSeleccionado.productos.length} producto
+                  {changuitoSeleccionado.productos.length === 1 ? '' : 's'}
+                </p>
+
+                {/* Selector de provincia: el histórico del SEPA está guardado
+                    por provincia, así que hace falta saber cuál mirar. No se
+                    deduce siempre bien de la ubicación, por eso se elige. */}
+                <label className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 sm:text-xs">
+                  Provincia:
+                  <select
+                    value={provincia}
+                    onChange={(e) => setProvincia(e.target.value)}
+                    className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 sm:text-xs"
+                  >
+                    {PROVINCIAS_PARA_SELECTOR.map((p) => (
+                      <option key={p.codigo} value={p.codigo}>
+                        {p.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
 
               {/* Selector: changuito completo (un solo número, promediando
                   el precio de cada producto entre todos los supermercados
@@ -250,9 +286,8 @@ export default function CalculadoraPage() {
               )}
 
               {/* Gráfico 1: precio en tu provincia (SEPA) — promediado
-                  entre todos los supermercados de tu provincia, no
-                  restringido a los 3 más baratos de este changuito. Sin
-                  mezclar con el INDEC. */}
+                  entre todos los supermercados de la provincia elegida.
+                  Sin mezclar con el INDEC. */}
               <div className="mb-8">
                 <h2 className="mb-1 px-1 text-sm font-black text-slate-900 sm:text-base">
                   Precio en tu provincia
@@ -274,13 +309,13 @@ export default function CalculadoraPage() {
                 {seriesGraficoSupermercados.length === 0 && !cargandoHistoricoReal ? (
                   <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-xs text-slate-400">
                     {vista === 'total'
-                      ? 'Todavía no hay un mes en el que TODOS los productos de este changuito tengan precio SEPA en tu provincia.'
+                      ? 'Todavía no hay un mes en el que TODOS los productos de este changuito tengan precio SEPA en esta provincia.'
                       : vista === 'todos'
-                        ? 'El SEPA todavía no publicó historial para los productos de este changuito en tu provincia.'
+                        ? 'El SEPA todavía no publicó historial para los productos de este changuito en esta provincia.'
                         : (
                           <>
                             El SEPA todavía no publicó historial para{' '}
-                            <span className="font-bold text-slate-500">{nombreProductoSeleccionado}</span> en tu
+                            <span className="font-bold text-slate-500">{nombreProductoSeleccionado}</span> en esta
                             provincia.
                           </>
                         )}
@@ -293,12 +328,12 @@ export default function CalculadoraPage() {
               {/* Gráfico 2: según el INDEC — separado, es otra fuente de
                   datos (el índice oficial de inflación, no un
                   supermercado puntual).
-                  - "Changuito completo": el IPC Nivel General (la
-                    inflación oficial), recortado al mismo tramo de meses
-                    que el gráfico de arriba, para poder responder "¿mi
-                    changuito subió más o menos que la inflación?".
-                  - "Todos los productos": una línea por cada producto que
-                    matchea alguna categoría INDEC.
+                  - "Total": el IPC Nivel General (la inflación oficial),
+                    recortado al mismo tramo de meses que el gráfico de
+                    arriba, para poder responder "¿mi changuito subió más o
+                    menos que la inflación?".
+                  - "Por producto": una línea por cada categoría INDEC que
+                    matchean los productos.
                   - Producto puntual: solo la categoría de ese producto. */}
               <div className="mb-8">
                 <h2 className="mb-1 px-1 text-sm font-black text-slate-900 sm:text-base">Según el INDEC</h2>

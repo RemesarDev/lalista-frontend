@@ -59,3 +59,32 @@ export function obtenerCodigoProvincia(nombreLugar: string | null): string | nul
   }
   return null;
 }
+
+/** Lista de provincias para el selector de la calculadora. El usuario la
+ * elige a mano cuando no se pudo deducir de su ubicación. */
+export const PROVINCIAS_PARA_SELECTOR: Array<{ codigo: string; nombre: string }> = [
+  { codigo: 'AR-B', nombre: 'Buenos Aires' },
+  { codigo: 'AR-K', nombre: 'Catamarca' },
+  { codigo: 'AR-H', nombre: 'Chaco' },
+  { codigo: 'AR-U', nombre: 'Chubut' },
+  { codigo: 'AR-C', nombre: 'Ciudad Autónoma de Buenos Aires' },
+  { codigo: 'AR-X', nombre: 'Córdoba' },
+  { codigo: 'AR-W', nombre: 'Corrientes' },
+  { codigo: 'AR-E', nombre: 'Entre Ríos' },
+  { codigo: 'AR-P', nombre: 'Formosa' },
+  { codigo: 'AR-Y', nombre: 'Jujuy' },
+  { codigo: 'AR-L', nombre: 'La Pampa' },
+  { codigo: 'AR-F', nombre: 'La Rioja' },
+  { codigo: 'AR-M', nombre: 'Mendoza' },
+  { codigo: 'AR-N', nombre: 'Misiones' },
+  { codigo: 'AR-Q', nombre: 'Neuquén' },
+  { codigo: 'AR-R', nombre: 'Río Negro' },
+  { codigo: 'AR-A', nombre: 'Salta' },
+  { codigo: 'AR-J', nombre: 'San Juan' },
+  { codigo: 'AR-D', nombre: 'San Luis' },
+  { codigo: 'AR-Z', nombre: 'Santa Cruz' },
+  { codigo: 'AR-S', nombre: 'Santa Fe' },
+  { codigo: 'AR-G', nombre: 'Santiago del Estero' },
+  { codigo: 'AR-V', nombre: 'Tierra del Fuego' },
+  { codigo: 'AR-T', nombre: 'Tucumán' },
+];

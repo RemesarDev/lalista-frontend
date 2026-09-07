@@ -14,7 +14,11 @@ const PADDING = { top: 20, right: 16, bottom: 28, left: 44 };
 
 const parsearFecha = (fechaISO: string) => new Date(`${fechaISO}T00:00:00Z`).getTime();
 
-const formateadorMes = new Intl.DateTimeFormat('es-AR', { month: 'short', year: '2-digit' });
+const formateadorMes = new Intl.DateTimeFormat('es-AR', {
+  month: 'short',
+  year: '2-digit',
+  timeZone: 'UTC',
+});
 const formatearMes = (fechaISO: string) => {
   const texto = formateadorMes.format(new Date(`${fechaISO}T00:00:00Z`));
   return texto.charAt(0).toUpperCase() + texto.slice(1).replace('.', '');

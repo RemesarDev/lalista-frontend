@@ -6,6 +6,12 @@ import { auth } from '@/app/_lib/auth';
 import { buscarUsuariosSchema } from '@/app/_lib/apiSchemas';
 import { DbUsuarioPublico, mapearUsuarioPublico } from '@/app/_lib/mappers/usuarios';
 
+const enmascararEmail = (email: string): string => {
+  const [usuario, dominio] = email.split('@');
+  const visible = usuario.slice(0, 3);
+  return `${visible}****@${dominio}`;
+};
+
 export const usuariosRouter = new Hono()
 
   // GET /usuarios?email= — buscar usuarios por email para compartir lista
@@ -25,6 +31,10 @@ export const usuariosRouter = new Hono()
 
     if (error) return c.json({ error: error.message }, 500);
 
-    const usuarios = ((data as DbUsuarioPublico[]) ?? []).map(mapearUsuarioPublico);
+    const usuarios = ((data as DbUsuarioPublico[]) ?? []).map((u) => ({
+      ...mapearUsuarioPublico(u),
+      email: enmascararEmail(u.email), // 👈 se enmascara en el servidor
+    }));
+
     return c.json({ usuarios });
   });

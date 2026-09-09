@@ -296,7 +296,7 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                                             <p className="truncate text-xs text-slate-400">{miembro.email}</p>
                                         </div>
                                         {miembro.rol === 'owner' ? (
-                                            <span className="text-xs font-semibold text-slate-500">Owner</span>
+                                            <span className="text-xs font-semibold text-slate-500">Vos</span>
                                         ) : (
                                             <>
                                                 <select

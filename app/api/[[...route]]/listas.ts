@@ -15,6 +15,7 @@ import {
   mapearLista, 
   mapearGrupoItemsLista 
 } from '@/app/_lib/mappers/listas';
+import { enmascararEmail } from '@/app/_lib/utils/enmascararEmail';
 
 export const listasRouter = new Hono()
 
@@ -155,7 +156,12 @@ export const listasRouter = new Hono()
     if (error) return c.json({ error: error.message }, 500);
     if (data === null) return c.json({ error: 'Solo el dueño puede administrar los miembros' }, 403);
 
-    return c.json({ miembros: data ?? [] });
+    const miembros = ((data as Array<{ email: string }>) ?? []).map((miembro) => ({
+      ...miembro,
+      email: enmascararEmail(miembro.email),
+    }));
+
+    return c.json({ miembros });
   })
 
   // PATCH /listas/:id/miembros/:userId — cambiar rol de un miembro

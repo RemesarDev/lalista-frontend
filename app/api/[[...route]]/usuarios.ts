@@ -5,6 +5,7 @@ import { supabase } from '@/app/_lib/supabase';
 import { auth } from '@/app/_lib/auth';
 import { buscarUsuariosSchema } from '@/app/_lib/apiSchemas';
 import { DbUsuarioPublico, mapearUsuarioPublico } from '@/app/_lib/mappers/usuarios';
+import { enmascararEmail } from '@/app/_lib/utils/enmascararEmail';
 
 export const usuariosRouter = new Hono()
 
@@ -25,6 +26,10 @@ export const usuariosRouter = new Hono()
 
     if (error) return c.json({ error: error.message }, 500);
 
-    const usuarios = ((data as DbUsuarioPublico[]) ?? []).map(mapearUsuarioPublico);
+    const usuarios = ((data as DbUsuarioPublico[]) ?? []).map((u) => ({
+      ...mapearUsuarioPublico(u),
+      email: enmascararEmail(u.email),
+    }));
+
     return c.json({ usuarios });
   });

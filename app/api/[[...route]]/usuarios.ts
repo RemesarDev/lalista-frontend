@@ -28,7 +28,7 @@ export const usuariosRouter = new Hono()
 
     const usuarios = ((data as DbUsuarioPublico[]) ?? []).map((u) => ({
       ...mapearUsuarioPublico(u),
-      email: enmascararEmail(u.email), // 👈 se enmascara en el servidor
+      email: enmascararEmail(u.email),
     }));
 
     return c.json({ usuarios });

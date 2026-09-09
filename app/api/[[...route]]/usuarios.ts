@@ -5,12 +5,7 @@ import { supabase } from '@/app/_lib/supabase';
 import { auth } from '@/app/_lib/auth';
 import { buscarUsuariosSchema } from '@/app/_lib/apiSchemas';
 import { DbUsuarioPublico, mapearUsuarioPublico } from '@/app/_lib/mappers/usuarios';
-
-const enmascararEmail = (email: string): string => {
-  const [usuario, dominio] = email.split('@');
-  const visible = usuario.slice(0, 3);
-  return `${visible}****@${dominio}`;
-};
+import { enmascararEmail } from '@/app/_lib/utils/enmascararEmail';
 
 export const usuariosRouter = new Hono()
 

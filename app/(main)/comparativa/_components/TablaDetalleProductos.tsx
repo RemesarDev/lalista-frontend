@@ -121,31 +121,50 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                         .trim()
                         .split(' ')[0];
 
+                      // Cálculo de subtotales por producto/sucursal
+                      const cantidadFinal = prodEnSucursal?.cantidad ?? cantidadGrupo;
+                      const subtotal = prodEnSucursal?.precio != null 
+                        ? prodEnSucursal.precio * cantidadFinal 
+                        : null;
+
                       return (
                         <td
                           key={`${cadena.id_comercio}-${cadena.id_bandera}`}
                           className="px-1 py-3 text-center font-semibold text-slate-900 md:px-4"
                         >
-                          {prodEnSucursal?.disponible && prodEnSucursal.precio !== null ? (
+                          {prodEnSucursal?.disponible && subtotal !== null && prodEnSucursal.precio !== null ? (
                             <div 
                               onClick={() => prodEnSucursal?.id && abrirFicha(prodEnSucursal.id)}
                               className="group relative flex flex-col items-center cursor-pointer hover:text-orange-500 transition-colors"
                             >
+                              {/* Subtotal real para el grupo en esta sucursal */}
                               <span className="text-xs md:text-base font-bold">
-                                ${formatearPrecio(prodEnSucursal.precio)}
+                                ${formatearPrecio(subtotal)}
                               </span>
 
+                              {/* Desglose claro de cantidad si es mayor a 1 */}
+                              {cantidadFinal > 1 && (
+                                <span className="text-[9px] font-medium text-slate-500 md:text-[10px]">
+                                  {cantidadFinal}u. × ${formatearPrecio(prodEnSucursal.precio)}
+                                </span>
+                              )}
+
                               <span 
-                                className="max-w-[65px] md:max-w-[80px] truncate text-[9px] md:text-[10px] text-slate-500 group-hover:text-orange-500 underline decoration-dotted underline-offset-2"
+                                className="max-w-[65px] md:max-w-[80px] truncate text-[9px] md:text-[10px] text-slate-500 group-hover:text-orange-500 underline decoration-dotted underline-offset-2 mt-0.5"
                                 title={nombreSucursalFormateado}
                               >
                                 {primeraPalabraSucursal}...
                               </span>
 
+                              {/* Tooltip explicativo con desglose completo */}
                               <div className="pointer-events-none absolute bottom-full mb-1 hidden group-hover:flex group-focus:flex flex-col items-center z-20">
-                                <span className="relative z-10 whitespace-normal rounded-md bg-slate-900 px-2 py-1 text-[10px] text-white shadow-md max-w-[150px] text-center leading-tight">
-                                  {nombreSucursalFormateado}
-                                </span>
+                                <div className="relative z-10 whitespace-normal rounded-md bg-slate-900 px-2.5 py-1.5 text-[10px] text-white shadow-md max-w-[180px] text-center leading-tight">
+                                  <div className="font-semibold mb-1">{nombreSucursalFormateado}</div>
+                                  <div className="text-slate-300 text-[9px]">
+                                    Precio un.: ${formatearPrecio(prodEnSucursal.precio)}
+                                    {cantidadFinal > 1 && ` | Total (${cantidadFinal}u.): $${formatearPrecio(subtotal)}`}
+                                  </div>
+                                </div>
                                 <div className="-mt-1 h-2 w-2 rotate-45 bg-slate-900"></div>
                               </div>
                             </div>

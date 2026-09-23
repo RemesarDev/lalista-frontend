@@ -49,6 +49,7 @@ export function useGestionLista(): UseGestionListaReturn {
       descripcion: opcion.nombre,
       imagen: opcion.url_imagen ?? null,
       es_principal: index === 0,
+      cantidad_opcion: opcion.cantidadOpcion ?? 1,
     })),
   }));
 

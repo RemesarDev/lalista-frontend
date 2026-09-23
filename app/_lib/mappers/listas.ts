@@ -20,6 +20,7 @@ export interface DbItemLista {
   cantidad: number;       // Cantidad deseada para el grupo
   comprado: boolean;      // Estado de chequeo
   es_principal?: boolean; // Opción principal vs alternativa
+  cantidad_opcion?: number;
 }
 
 // ==========================================
@@ -55,6 +56,7 @@ export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
     nombre: item.descripcion,
     url_imagen: item.imagen,
     esPrincipal: item.es_principal ?? idx === 0,
+    cantidadOpcion: item.cantidad_opcion ?? 1,
   }));
 
   return {
@@ -78,5 +80,6 @@ export const mapearItemListaADb = (item: ItemLista): DbItemLista[] => {
     cantidad: item.cantidad,
     comprado: item.comprado,
     es_principal: opcion.esPrincipal ?? false,
+    cantidad_opcion: opcion.cantidadOpcion ?? 1,
   }));
 };

@@ -4,14 +4,12 @@ import { useState } from 'react';
 import { useListaStore } from '../../_store/store';
 import { supabase } from '../../_lib/supabase';
 
-// 1. Mapeamos exactamente los tipos reales de tu base de datos
 interface ProductoBuscado {
   id_producto: string;
   productos_descripcion: string | null;
 }
 
 export default function DebugPage() {
-  // Traemos las acciones y estados de Zustand
   const { 
     lista, 
     ubicacion, 
@@ -22,12 +20,10 @@ export default function DebugPage() {
     obtenerGpsNavegador 
   } = useListaStore();
 
-  // Estados locales para el buscador bruto
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [resultados, setResultados] = useState<ProductoBuscado[]>([]);
   const [cargandoResultados, setCargandoResultados] = useState(false);
 
-  // 2. Función de búsqueda adaptada a la estructura oficial del SEPA
   const manejarBuscar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!terminoBusqueda.trim()) return;
@@ -35,9 +31,9 @@ export default function DebugPage() {
     setCargandoResultados(true);
     try {
       const { data, error } = await supabase
-        .from('productos') // Tu tabla de catálogo único
+        .from('productos')
         .select('id_producto, productos_descripcion')
-        .ilike('productos_descripcion', `%${terminoBusqueda}%`) // Buscador parcial ignorando mayúsculas/minúsculas
+        .ilike('productos_descripcion', `%${terminoBusqueda}%`)
         .limit(15);
 
       if (error) throw error;
@@ -52,7 +48,7 @@ export default function DebugPage() {
 
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>🛒 LALIsta de Compras (Esqueleto Funcional)</h1>
+      <h1>🛒 LALIsta de Compras (Entorno de Debug)</h1>
       <p style={{ color: '#666' }}>Entorno de prueba directo contra base de datos activa.</p>
       <hr />
 
@@ -95,7 +91,8 @@ export default function DebugPage() {
                   id: prod.id_producto,
                   nombre: prod.productos_descripcion || 'Producto sin nombre',
                   url_imagen: null,
-                  sucursales: []
+                  sucursales: [],
+                  cantidadOpcion: 1, // Fix para TypeScript
                 })}
               >
                 ➕ Agregar a mi Lista
@@ -112,7 +109,7 @@ export default function DebugPage() {
 
       {/* SECCIÓN 3: RENDIMIENTO DEL STORE DE ZUSTAND */}
       <section>
-        <h2>📋 Carrito en Memoria ({lista.length} ítems)</h2>
+        <h2>📋 Carrito en Memoria ({lista.length} grupos disyuntivos)</h2>
         {lista.length > 0 && (
           <button onClick={limpiarLista} style={{ color: 'red', marginBottom: '10px' }}>
             🗑️ Vaciar Todo
@@ -122,9 +119,9 @@ export default function DebugPage() {
         <table border={1} cellPadding={8} style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
           <thead style={{ backgroundColor: '#eee' }}>
             <tr>
-              <th>ID (SEPA)</th>
-              <th>Descripción</th>
-              <th>Cantidad</th>
+              <th>ID Grupo</th>
+              <th>Opciones (Principal + Alternativas)</th>
+              <th>Cant. Grupo</th>
               <th>Operación</th>
             </tr>
           </thead>
@@ -132,7 +129,16 @@ export default function DebugPage() {
             {lista.map((item) => (
               <tr key={item.grupoId}>
                 <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>{item.grupoId}</td>
-                <td>{item.opciones[0]?.nombre || 'Producto sin nombre'}</td>
+                <td>
+                  <ul style={{ margin: 0, paddingLeft: '18px' }}>
+                    {item.opciones.map((op, idx) => (
+                      <li key={op.id}>
+                        {idx === 0 ? <strong>[Principal] </strong> : <span>[Alt] </span>}
+                        {op.nombre} (x{op.cantidadOpcion || 1})
+                      </li>
+                    ))}
+                  </ul>
+                </td>
                 <td>
                   <input 
                     type="number" 

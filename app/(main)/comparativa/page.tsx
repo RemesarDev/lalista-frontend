@@ -1,15 +1,21 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useListaStore } from '@/app/_store/store';
 import { useComparativa } from './_hooks/useComparativa';
-import { obtenerTopTresCadenasMasBaratas, type SucursalCarritoComparada } from './_lib/Funciones-comparacion';
+import { 
+  obtenerTopTresCadenasMasBaratas, 
+  type SucursalCarritoComparada,
+  type CriterioComparacion 
+} from './_lib/Funciones-comparacion';
 import { CardComercioGanador } from './_components/CardComercioGanador';
 import { CardComercioAlternativo } from './_components/CardComercioAlternativo';
 import { TablaDetalleProductos } from './_components/TablaDetalleProductos';
+import { SelectorCriterio } from './_components/SelectorCriterio';
 
 export default function ComparativaPage() {
   const lista = useListaStore((state) => state.lista);
+  const [criterio, setCriterio] = useState<CriterioComparacion>('mas_barata');
 
   // 1. Filtrar los grupos disyuntivos pendientes (checkbox "comprado" en false)
   const listaPendiente = useMemo(
@@ -44,11 +50,11 @@ export default function ComparativaPage() {
     }));
   }, [listaPendiente, precios]);
 
-  // 4. Cálculo del Top 3 de cadenas considerando la lógica de opciones disyuntivas
+  // 4. Cálculo del Top 3 de cadenas aplicando la estrategia/criterio seleccionado
   const topTresCadenas: SucursalCarritoComparada[] = useMemo(() => {
     if (listaConPreciosActualizados.length === 0) return [];
-    return obtenerTopTresCadenasMasBaratas(listaConPreciosActualizados);
-  }, [listaConPreciosActualizados]);
+    return obtenerTopTresCadenasMasBaratas(listaConPreciosActualizados, criterio);
+  }, [listaConPreciosActualizados, criterio]);
 
   // --- ESTADOS DE SALIDA TEMPRANA (Early Returns) ---
 
@@ -110,7 +116,13 @@ export default function ComparativaPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-5xl space-y-4">
+        {/* Cabecera con selector de criterio */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-xl font-bold text-slate-900">Comparativa de Supermercados</h1>
+          <SelectorCriterio criterio={criterio} onChange={setCriterio} />
+        </div>
+
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)] lg:items-start">
           <section className="flex flex-col gap-4" aria-label="Comercio ganador y alternativas">
             <CardComercioGanador sucursal={ganador} />

@@ -111,6 +111,7 @@ function ResultadosBusqueda() {
             nombre: producto.nombre,
             url_imagen: producto.url_imagen,
             sucursales: producto.sucursales || [],
+            cantidadOpcion: 1,
           },
           grupoId as string
         );
@@ -135,6 +136,7 @@ function ResultadosBusqueda() {
         nombre: producto.nombre,
         url_imagen: producto.url_imagen,
         sucursales: producto.sucursales || [],
+        cantidadOpcion: 1,
       });
     } else {
       actualizarCantidadGrupo(grupoAsociado.grupoId, cantidad);

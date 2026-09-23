@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { PlusIcon, TrashIcon, PlusCircleIcon, MinusCircleIcon } from '@phosphor-icons/react/dist/ssr';
+import { PlusIcon, TrashIcon, PlusCircleIcon, MinusCircleIcon, MinusIcon } from '@phosphor-icons/react/dist/ssr';
 import type { GrupoLista } from '@/app/_store/slices/listaSlice';
 import { formatearNombre } from '@/app/_lib/utils/formatters';
 import { obtenerNombreComunGrupo } from '@/app/_lib/utils/obtenerNombreComunGrupo';
@@ -12,6 +12,8 @@ interface GrupoListItemProps {
   grupo: GrupoLista;
   onIncrementar: (grupoId: string) => void;
   onDecrementar: (grupoId: string) => void;
+  onIncrementarOpcion: (grupoId: string, productoId: string) => void;
+  onDecrementarOpcion: (grupoId: string, productoId: string) => void;
   onEliminarOpcion: (grupoId: string, productoId: string) => void;
   onEliminarGrupo: (grupoId: string) => void;
   onToggleComprado: (grupoId: string) => void;
@@ -21,6 +23,8 @@ export function GrupoListItem({
   grupo,
   onIncrementar,
   onDecrementar,
+  onIncrementarOpcion,
+  onDecrementarOpcion,
   onEliminarOpcion,
   onToggleComprado,
 }: GrupoListItemProps) {
@@ -90,11 +94,12 @@ export function GrupoListItem({
       <div className="flex flex-row items-center gap-2 overflow-x-auto pb-1 scrollbar-none snap-x">
         {grupo.opciones.map((producto, idx) => {
           const esPrincipal = idx === 0;
+          const cantidadOpcion = producto.cantidadOpcion ?? 1;
 
           return (
             <div
               key={producto.id}
-              className={`relative flex items-center gap-2 p-1.5 rounded-lg border shrink-0 w-[170px] sm:w-[200px] snap-start transition-all ${
+              className={`relative flex items-center gap-2 p-1.5 rounded-lg border shrink-0 w-[185px] sm:w-[210px] snap-start transition-all ${
                 esPrincipal
                   ? 'border-orange-200 bg-orange-50/30'
                   : 'border-slate-100 bg-slate-50/50'
@@ -118,7 +123,7 @@ export function GrupoListItem({
               </div>
 
               {/* Información y Acción */}
-              <div className="flex flex-col min-w-0 flex-1 justify-between h-full">
+              <div className="flex flex-col min-w-0 flex-1 justify-between gap-1 h-full">
                 <div className="flex items-center justify-between gap-1">
                   <span
                     className={`inline-block px-1 py-0.2 text-[8px] font-extrabold rounded ${
@@ -141,13 +146,37 @@ export function GrupoListItem({
 
                 <p
                   onClick={() => abrirFicha(producto.id)}
-                  className={`text-[11px] font-semibold leading-tight truncate cursor-pointer hover:text-orange-500 transition-colors mt-0.5 ${
+                  className={`text-[11px] font-semibold leading-tight truncate cursor-pointer hover:text-orange-500 transition-colors ${
                     grupo.comprado ? 'line-through text-slate-400' : 'text-slate-800'
                   }`}
                   title={producto.nombre}
                 >
                   {formatearNombre(producto.nombre)}
                 </p>
+
+                {/* Control de Cantidad por Opción */}
+                <div className="flex items-center justify-between pt-0.5 border-t border-slate-200/60">
+                  <span className="text-[9px] text-slate-400 font-medium">Unidades:</span>
+                  <div className="flex items-center gap-1 bg-white border border-slate-200 rounded px-1 py-0.5 shadow-2xs">
+                    <button
+                      onClick={() => onDecrementarOpcion(grupo.grupoId, producto.id)}
+                      className="text-slate-400 hover:text-slate-700 transition-colors"
+                      title="Restar unidad"
+                    >
+                      <MinusIcon size={10} weight="bold" />
+                    </button>
+                    <span className="text-[10px] font-extrabold text-slate-700 w-3 text-center">
+                      {cantidadOpcion}
+                    </span>
+                    <button
+                      onClick={() => onIncrementarOpcion(grupo.grupoId, producto.id)}
+                      className="text-slate-400 hover:text-slate-700 transition-colors"
+                      title="Sumar unidad"
+                    >
+                      <PlusIcon size={10} weight="bold" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           );
@@ -156,7 +185,7 @@ export function GrupoListItem({
         {/* Tarjeta de Agregar Opción */}
         <Link
           href={`/buscar?modo=alternativa&grupoId=${grupo.grupoId}&q=${terminoSugerido}`}
-          className="flex items-center justify-center gap-2 p-1.5 rounded-lg border border-dashed border-orange-300 bg-orange-50/40 hover:bg-orange-100/50 text-orange-600 transition-all shrink-0 w-[170px] sm:w-[200px] h-[54px] snap-start"
+          className="flex items-center justify-center gap-2 p-1.5 rounded-lg border border-dashed border-orange-300 bg-orange-50/40 hover:bg-orange-100/50 text-orange-600 transition-all shrink-0 w-[185px] sm:w-[210px] h-[68px] snap-start"
           title="Agregar alternativa a este grupo"
         >
           <PlusIcon size={16} weight="bold" />

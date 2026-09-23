@@ -27,6 +27,7 @@ export interface ProductoOpcion {
   url_imagen: string | null;
   sucursales: SucursalBusqueda[];
   actualizadoEn: number;
+  cantidadOpcion: number;
 }
 
 // Representa un Grupo Disyuntivo en la lista (Canasta)
@@ -71,6 +72,7 @@ export interface ListaSlice {
   eliminarOpcion: (grupoId: string, productoId: string) => void;
   eliminarGrupo: (grupoId: string) => void;
   actualizarCantidadGrupo: (grupoId: string, cantidad: number) => void;
+  actualizarCantidadOpcion: (grupoId: string, productoId: string, cantidadOpcion: number) => void;
   toggleCompradoGrupo: (grupoId: string) => void;
   limpiarLista: () => void;
   setListaActiva: (id: string | null, rol: RolLista | null) => void;
@@ -94,7 +96,11 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
 
   agregarProducto: (nuevoProd, targetGrupoId) => set((state) => {
     const ahora = Date.now();
-    const prodOpcion: ProductoOpcion = { ...nuevoProd, actualizadoEn: ahora };
+    const prodOpcion: ProductoOpcion = { 
+    ...nuevoProd, 
+    cantidadOpcion: nuevoProd.cantidadOpcion ?? 1,
+    actualizadoEn: ahora 
+    };
 
     if (targetGrupoId) {
       return {
@@ -152,6 +158,21 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
       g.grupoId === grupoId ? { ...g, cantidad: Math.max(1, cantidad) } : g
     ),
   })),
+
+  actualizarCantidadOpcion: (grupoId, productoId, cantidadOpcion) => set((state) => ({
+  listaModificada: true,
+  lista: state.lista.map((grupo) => {
+    if (grupo.grupoId !== grupoId) return grupo;
+    return {
+      ...grupo,
+      opciones: grupo.opciones.map((opcion) =>
+        opcion.id === productoId
+          ? { ...opcion, cantidadOpcion: Math.max(1, cantidadOpcion) }
+          : opcion
+      ),
+    };
+  }),
+})),
 
   toggleCompradoGrupo: (grupoId) => set((state) => ({
     listaModificada: true,

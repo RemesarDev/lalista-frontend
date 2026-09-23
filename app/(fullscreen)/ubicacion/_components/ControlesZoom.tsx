@@ -1,6 +1,5 @@
 'use client';
 
-import { useMap } from '@vis.gl/react-google-maps';
 import { PlusIcon, MinusIcon } from '@phosphor-icons/react/dist/ssr';
 
 interface ControlesZoomProps {
@@ -9,14 +8,11 @@ interface ControlesZoomProps {
 }
 
 export default function ControlesZoom({ zoom, setZoom }: ControlesZoomProps) {
-  const map = useMap();
-
   const cambiarZoom = (factor: number) => {
     const nuevoZoom = zoom + factor;
-    // Mantenemos los límites de seguridad que ya tenías configurados
+    // Mantenemos los límites de seguridad de zoom
     if (nuevoZoom >= 10 && nuevoZoom <= 19) {
       setZoom(nuevoZoom);
-      if (map) map.setZoom(nuevoZoom);
     }
   };
 

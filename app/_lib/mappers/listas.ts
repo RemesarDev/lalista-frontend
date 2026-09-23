@@ -56,6 +56,7 @@ export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
     nombre: item.descripcion,
     url_imagen: item.imagen,
     esPrincipal: item.es_principal ?? idx === 0,
+    cantidadOpcion: item.cantidad_opcion ?? 1,
   }));
 
   return {

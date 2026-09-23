@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useMap } from '@vis.gl/react-google-maps';
 import { useListaStore } from '@/app/_store/store';
 
 // Tipo local para las sugerencias que devuelve nuestro endpoint
@@ -34,8 +33,6 @@ export function useUbicacion() {
     texto: string;
   } | null>(null);
 
-  const map = useMap();
-
   // Limpia la cadena de dirección recibida
   const limpiarDireccion = useCallback((direccion: string) => {
     const partes = direccion.split(',');
@@ -57,7 +54,7 @@ export function useUbicacion() {
     }
   };
 
-  // Autocomplete via Hono
+  // Autocomplete via Hono / Backend
   useEffect(() => {
     if (direccion.trim().length < 3) return;
 
@@ -81,7 +78,7 @@ export function useUbicacion() {
       } catch {
         if (!cancelled) {
           setSugerencias([]);
-          setErrorSugerencias("No pudimos cargar sugerencias. Si usás Brave o uBlock, habilitá Google Maps para este sitio.");
+          setErrorSugerencias("No pudimos cargar sugerencias.");
         }
       }
     }, 1000);
@@ -121,11 +118,7 @@ export function useUbicacion() {
           
           setDireccion(textoFinal);
           setCoordenadasPendientes({ lat, lng, texto: textoFinal });
-          
-          if (map) { 
-            map.panTo({ lat, lng }); 
-            map.setZoom(16); 
-          }
+          setZoom(16); // Actualiza el zoom para que el mapa lo refleje
         } catch (err) {
           console.error("Error:", err);
         } finally {
@@ -162,11 +155,7 @@ export function useUbicacion() {
 
     const nuevasCoords = { lat: data.lat, lng: data.lng };
     setCoordenadasPendientes({ ...nuevasCoords, texto: textoDireccion });
-
-    if (map) {
-      map.panTo(nuevasCoords);
-      map.setZoom(16);
-    }
+    setZoom(16);
   };
 
   // Click directo sobre el mapa
@@ -206,46 +195,44 @@ export function useUbicacion() {
     }
   };
 
-  // Guarda la ubicación en Zustand y consulta el backend en Hono
-const confirmarYBuscarSucursales = useCallback(async () => {
-  if (!coordenadasPendientes) return;
+  // Guarda la ubicación en Zustand y consulta el backend
+  const confirmarYBuscarSucursales = useCallback(async () => {
+    if (!coordenadasPendientes) return;
 
-  const { lat, lng, texto } = coordenadasPendientes;
-  const radioActual = useListaStore.getState().ubicacion.radioBusqueda;
+    const { lat, lng, texto } = coordenadasPendientes;
+    const radioActual = useListaStore.getState().ubicacion.radioBusqueda;
 
-  try {
-    setCargandoSucursales(true);
+    try {
+      setCargandoSucursales(true);
 
-    // 1. Hacer el fetch ANTES de limpiar el estado de pendientes
-    const res = await fetch(`/api/maps/sucursales-cercanas?lat=${lat}&lng=${lng}&radio=${radioActual}`);
-    
-    if (!res.ok) {
-      const errorDetail = await res.json().catch(() => null);
-      console.error('[Error de Endpoint sucursales-cercanas]:', res.status, errorDetail);
-      throw new Error(errorDetail?.error || `Error ${res.status} en el servidor`);
+      const res = await fetch(`/api/maps/sucursales-cercanas?lat=${lat}&lng=${lng}&radio=${radioActual}`);
+      
+      if (!res.ok) {
+        const errorDetail = await res.json().catch(() => null);
+        throw new Error(errorDetail?.error || `Error ${res.status} en el servidor`);
+      }
+
+      const data = await res.json();
+
+      if (data.sucursales) {
+        setSucursalesCercanas(data.sucursales);
+      }
+
+      guardarUbicacionFiltro(
+        radioActual,
+        { lat, lng },
+        texto
+      );
+      setCoordenadasPendientes(null);
+
+    } catch (err) {
+      console.error('Excepción al consultar sucursales:', err);
+      throw err;
+    } finally {
+      setCargandoGps(false);
+      setCargandoSucursales(false);
     }
-
-    const data = await res.json();
-
-    if (data.sucursales) {
-      setSucursalesCercanas(data.sucursales);
-    }
-
-    // 2. Si la consulta fue exitosa, guardamos en Zustand y limpiamos pendientes
-    guardarUbicacionFiltro(
-      radioActual,
-      { lat, lng },
-      texto
-    );
-    setCoordenadasPendientes(null);
-
-  } catch (err) {
-    console.error('Excepción al consultar sucursales:', err);
-    throw err; // Re-lanzar para manejar en UI si es necesario
-  } finally {
-    setCargandoSucursales(false);
-  }
-}, [coordenadasPendientes, guardarUbicacionFiltro, setCargandoSucursales, setSucursalesCercanas]);
+  }, [coordenadasPendientes, guardarUbicacionFiltro, setCargandoSucursales, setSucursalesCercanas]);
 
   return {
     radio: ubicacion.radioBusqueda,
@@ -255,7 +242,7 @@ const confirmarYBuscarSucursales = useCallback(async () => {
     direccion, 
     setDireccion: handleDireccionChange, 
     cargandoGps,
-    coordenadas,
+    coordenadas: coordenadasPendientes ? { lat: coordenadasPendientes.lat, lng: coordenadasPendientes.lng } : coordenadas,
     sugerencias, 
     setSugerencias,
     errorSugerencias,
@@ -266,7 +253,6 @@ const confirmarYBuscarSucursales = useCallback(async () => {
     guardarUbicacionFiltro,
     coordenadasPendientes,  
     confirmarUbicacion,
-    // Métodos e indicadores expuestos para la vista:
     confirmarYBuscarSucursales,
     cargandoSucursales,
   };

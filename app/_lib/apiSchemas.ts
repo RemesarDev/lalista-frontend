@@ -81,6 +81,7 @@ export const opcionProductoSchema = z.object({
   descripcion: z.string(),
   imagen: z.string().nullable().optional(),
   es_principal: z.boolean().default(false),
+  cantidad_opcion: z.number().int().positive().optional().default(1),
 });
 
 export const guardarListaSchema = z.object({

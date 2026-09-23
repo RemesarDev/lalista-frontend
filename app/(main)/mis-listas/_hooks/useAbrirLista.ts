@@ -23,8 +23,9 @@ const transformarItemsAGrupos = (items: ItemLista[]): GrupoLista[] => {
       id: opcion.id,
       nombre: opcion.nombre,
       url_imagen: opcion.url_imagen ?? null,
-      sucursales: [], // los precios se recargan cuando el usuario los necesite
-      actualizadoEn: 0, // forzamos recarga de precios al abrir
+      sucursales: [], 
+      actualizadoEn: 0, 
+      cantidadOpcion: opcion.cantidadOpcion ?? 1,
     })),
   }));
 };

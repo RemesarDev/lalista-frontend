@@ -88,7 +88,9 @@ export const calcularTotalesPorSucursal = (
       }
 
       if (mejorOpcionEnSucursal) {
-        const costoGrupo = mejorOpcionEnSucursal.precio * (grupo.cantidad || 1);
+        const cantidadOpcion = mejorOpcionEnSucursal.opcion.cantidadOpcion || 1;
+        const cantidadTotalProducto = (grupo.cantidad || 1) * cantidadOpcion;
+        const costoGrupo = mejorOpcionEnSucursal.precio * cantidadTotalProducto;
         totalSucursal += costoGrupo;
 
         sucursalData.productos.push({
@@ -97,19 +99,21 @@ export const calcularTotalesPorSucursal = (
           precio: mejorOpcionEnSucursal.precio,
           disponible: true,
           grupoId: grupo.grupoId,
-          cantidad: grupo.cantidad,
+          cantidad: cantidadTotalProducto,
         });
         sucursalData.productosDisponibles += 1;
       } else {
-        // Ninguna de las opciones disyuntivas del grupo está disponible en esta sucursal
         const opcionPrincipal = grupo.opciones[0];
+        const cantidadOpcionPrincipal = opcionPrincipal?.cantidadOpcion ?? 1;
+        const cantidadTotal = (grupo.cantidad || 1) * cantidadOpcionPrincipal;
+
         sucursalData.productos.push({
           id: opcionPrincipal?.id ?? grupo.grupoId,
           nombre: opcionPrincipal?.nombre ?? 'Producto no disponible',
           precio: null,
           disponible: false,
           grupoId: grupo.grupoId,
-          cantidad: grupo.cantidad,
+          cantidad: cantidadTotal,
         });
         sucursalData.productosFaltantes += 1;
       }

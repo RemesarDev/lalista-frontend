@@ -23,6 +23,7 @@ import { useGestionLista } from './_hooks/useGestionLista';
 function ListaProductos() {
   const lista = useListaStore((state) => state.lista);
   const actualizarCantidadGrupo = useListaStore((state) => state.actualizarCantidadGrupo);
+  const actualizarCantidadOpcion = useListaStore((state) => state.actualizarCantidadOpcion);
   const eliminarOpcion = useListaStore((state) => state.eliminarOpcion);
   const eliminarGrupo = useListaStore((state) => state.eliminarGrupo);
   const toggleCompradoGrupo = useListaStore((state) => state.toggleCompradoGrupo);
@@ -64,13 +65,27 @@ function ListaProductos() {
             }
             actualizarCantidadGrupo(grupoId, actual.cantidad - 1);
           }}
+          onIncrementarOpcion={(grupoId, productoId) => {
+            const grupoActual = lista.find((g) => g.grupoId === grupoId);
+            const opcionActual = grupoActual?.opciones.find((p) => p.id === productoId);
+            const cantidadActual = opcionActual?.cantidadOpcion ?? 1;
+            actualizarCantidadOpcion(grupoId, productoId, cantidadActual + 1);
+          }}
+          onDecrementarOpcion={(grupoId, productoId) => {
+            const grupoActual = lista.find((g) => g.grupoId === grupoId);
+            const opcionActual = grupoActual?.opciones.find((p) => p.id === productoId);
+            const cantidadActual = opcionActual?.cantidadOpcion ?? 1;
+            if (cantidadActual > 1) {
+              actualizarCantidadOpcion(grupoId, productoId, cantidadActual - 1);
+            }
+          }}
           onEliminarOpcion={eliminarOpcion}
           onEliminarGrupo={eliminarGrupo}
           onToggleComprado={toggleCompradoGrupo}
         />
       ))}
 
-      {/* Botón "Agregar producto" al final del listado con el mismo formato que los ítems */}
+      {/* Botón "Agregar producto" al final del listado */}
       <Link
         href="/buscar"
         className="flex items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50/40 p-3 sm:p-4 text-orange-600 transition-all hover:bg-orange-100/50 hover:border-orange-300 shadow-sm"

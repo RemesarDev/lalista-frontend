@@ -4,6 +4,7 @@ export interface OpcionProducto {
   nombre: string;           // Nombre/descripción del producto
   url_imagen?: string | null;
   esPrincipal?: boolean;    // true para el producto base, false para alternativas
+  cantidadOpcion?: number;
 }
 
 // Representación para persistencia/API (Supabase)

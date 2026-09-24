@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { TrashIcon, XIcon, EyeIcon, EyeSlashIcon, WarningIcon } from '@phosphor-icons/react';
+import { Button } from '@/app/_components/global/Button';
 
 interface ModalBorrarCuentaProps {
     isOpen: boolean;
@@ -58,13 +59,9 @@ export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: Modal
                             <p className="text-xs text-slate-400 mt-0.5">Esta acción no se puede deshacer</p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        disabled={loading}
-                        className="text-slate-400 hover:text-slate-600 transition disabled:opacity-50"
-                    >
+                    <Button variant="ghost" onClick={onClose} disabled={loading}>
                         <XIcon size={20} weight="bold" />
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Body */}
@@ -90,6 +87,9 @@ export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: Modal
                                 className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 pr-12 text-sm text-slate-900 outline-none transition focus:bg-white disabled:opacity-50 ${error ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-slate-900'
                                     }`}
                             />
+                            {/* Ojito de contraseña: mismo caso que en login/page.tsx (hover:text-slate-700,
+                                no slate-600 como ghost) + posicionamiento absoluto propio. Sin migrar,
+                                mismo criterio que ya usamos ahí. */}
                             <button
                                 type="button"
                                 onClick={() => setMostrarPass(!mostrarPass)}
@@ -105,21 +105,25 @@ export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: Modal
 
                     {/* Botones */}
                     <div className="flex flex-col gap-2 pt-1">
-                        <button
+                        <Button
+                            variant="destructive"
+                            fullWidth
                             onClick={handleConfirm}
                             disabled={loading}
-                            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                            className="gap-2 rounded-2xl px-4 py-3"
                         >
                             <TrashIcon size={18} weight="bold" />
                             {loading ? 'Borrando cuenta...' : 'Sí, borrar mi cuenta'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            fullWidth
                             onClick={onClose}
                             disabled={loading}
-                            className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                            className="rounded-2xl px-4 py-3"
                         >
                             Cancelar
-                        </button>
+                        </Button>
                     </div>
                 </div>
 

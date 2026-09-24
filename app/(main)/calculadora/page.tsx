@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr';
 import BaseContainer from '@/app/_components/global/BaseContainer';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
+import { FilterPill } from '@/app/_components/global/FilterPill';
 import { useListaStore } from '@/app/_store/store';
 import { useChanguitos } from './_hooks/useChanguitos';
 import { useInflacion } from './_hooks/useInflacion';
@@ -166,7 +167,12 @@ export default function CalculadoraPage() {
         )
       ) : (
         <>
-          {/* Selector de changuitos: se pueden tener varios en simultáneo */}
+          {/* Selector de changuitos: se pueden tener varios en simultáneo.
+              Sin migrar — es un chip compuesto (div con DOS botones adentro:
+              elegir + borrar), no un único botón clickeable como FilterPill
+              espera. Y el botón de borrar cambia de color hover según el
+              estado del padre (blanco/20 vs slate-100), algo que tampoco
+              cubre ningún variant hoy. */}
           <div className="mb-4 flex flex-wrap items-center gap-2 px-1">
             {changuitos.map((ch) => (
               <div
@@ -193,6 +199,9 @@ export default function CalculadoraPage() {
               </div>
             ))}
 
+            {/* "Seguir mi lista actual": pill de un solo estado (no toggle),
+                con borde punteado propio para marcar "agregar nuevo". No es
+                un caso de FilterPill (que necesita active/inactive). Sin migrar. */}
             {lista.length > 0 && (
               <button
                 type="button"
@@ -240,41 +249,16 @@ export default function CalculadoraPage() {
                   separado (una línea por producto, sin sumar), o un
                   producto puntual. */}
               <div className="mb-5 flex flex-wrap items-center gap-2 px-1">
-                <button
-                  type="button"
-                  onClick={() => setVista('total')}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
-                    vista === 'total'
-                      ? 'border-transparent bg-primary-500 text-white'
-                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
+                <FilterPill active={vista === 'total'} onClick={() => setVista('total')}>
                   Total
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVista('todos')}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
-                    vista === 'todos'
-                      ? 'border-transparent bg-primary-500 text-white'
-                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
+                </FilterPill>
+                <FilterPill active={vista === 'todos'} onClick={() => setVista('todos')}>
                   Por producto
-                </button>
+                </FilterPill>
                 {changuitoSeleccionado.productos.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setVista(p.id)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
-                      vista === p.id
-                        ? 'border-transparent bg-primary-500 text-white'
-                        : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                    }`}
-                  >
+                  <FilterPill key={p.id} active={vista === p.id} onClick={() => setVista(p.id)}>
                     {p.nombre}
-                  </button>
+                  </FilterPill>
                 ))}
               </div>
 

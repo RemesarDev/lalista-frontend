@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react'; // Importamos los íconos
+import { Button } from '@/app/_components/global/Button';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -91,13 +92,9 @@ export default function LoginPage() {
                     </div>
 
                     {/* Botón Submit */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full mt-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
-                    >
+                    <Button type="submit" variant="primary" fullWidth disabled={loading} className="mt-2">
                         {loading ? "Entrando..." : "Entrar"}
-                    </button>
+                    </Button>
 
                     {/* Mensaje de Error Visual */}
                     {mensajeError && (

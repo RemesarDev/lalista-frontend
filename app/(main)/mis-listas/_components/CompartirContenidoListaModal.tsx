@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react';
 import type { ItemLista } from '@/app/_types/listas';
 import { generarTextoLista } from '@/app/_lib/utils/generarTextoLista';
+import { Button } from '@/app/_components/global/Button';
 
 interface CompartirContenidoListaModalProps {
     isOpen: boolean;
@@ -108,14 +109,9 @@ export function CompartirContenidoListaModal({
                         <h2 className="text-lg font-bold text-slate-900">Compartir lista</h2>
                         <p className="mt-1 text-sm text-slate-500">{listaNombre}</p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="text-slate-400 hover:text-slate-600"
-                        aria-label="Cerrar"
-                    >
+                    <Button variant="ghost" onClick={onClose} aria-label="Cerrar">
                         <XIcon size={20} weight="bold" />
-                    </button>
+                    </Button>
                 </div>
 
                 {cargando && (
@@ -137,33 +133,36 @@ export function CompartirContenidoListaModal({
                 )}
 
                 <div className="mt-5 flex flex-col gap-2">
-                    <button
-                        type="button"
+                    <Button
+                        variant="primary"
+                        fullWidth
                         onClick={() => void compartir()}
                         disabled={cargando || !items.length}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
+                        className="gap-2 rounded-xl px-4 py-2.5"
                     >
                         <ShareNetworkIcon size={17} weight="bold" />
                         Compartir
-                    </button>
-                    <button
-                        type="button"
+                    </Button>
+                    <Button
+                        variant="success"
+                        fullWidth
                         onClick={compartirWhatsApp}
                         disabled={cargando || !items.length}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                        className="gap-2 rounded-xl px-4 py-2.5"
                     >
                         <WhatsappLogoIcon size={17} weight="bold" />
                         WhatsApp
-                    </button>
-                    <button
-                        type="button"
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        fullWidth
                         onClick={() => void copiar()}
                         disabled={cargando || !items.length}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                        className="gap-2 rounded-xl px-4 py-2.5"
                     >
                         <CopyIcon size={17} weight="bold" />
                         {copiado ? 'Copiado' : 'Copiar texto'}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

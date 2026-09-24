@@ -6,6 +6,7 @@ import { useListaStore } from '@/app/_store/store';
 import BaseContainer from '@/app/_components/global/BaseContainer';
 import { UserIcon, EnvelopeIcon, TrashIcon, SignOutIcon } from '@phosphor-icons/react';
 import { ModalBorrarCuenta } from './_components/ModalBorrarCuenta';
+import { Button } from '@/app/_components/global/Button';
 
 export default function PerfilPage() {
     const router = useRouter();
@@ -93,14 +94,19 @@ export default function PerfilPage() {
 
                 <div className="border-t border-slate-100 pt-4 flex flex-col gap-2">
 
-                    <button
+                    <Button
+                        variant="secondary"
+                        fullWidth
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                        className="gap-2 rounded-2xl px-4 py-3"
                     >
                         <SignOutIcon size={18} weight="bold" />
                         Cerrar sesión
-                    </button>
+                    </Button>
 
+                    {/* Borrar cuenta: destructivo pero OUTLINE (border-red-200/text-red-600/hover:bg-red-50),
+                        no sólido como el variant "destructive" (bg-red-600). Es un patrón nuevo:
+                        "destructive-outline". Sin migrar, a la espera de la charla de propiedades. */}
                     <button
                         onClick={() => setModalOpen(true)}
                         className="w-full flex items-center justify-center gap-2 rounded-2xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"

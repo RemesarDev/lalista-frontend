@@ -195,6 +195,34 @@ export function useUbicacion() {
     }
   };
 
+  // Efecto para buscar sucursales en tiempo real cada vez que el usuario mueve el pin o hace clic en el mapa
+  useEffect(() => {
+    if (!coordenadasPendientes) return;
+
+    let cancelled = false;
+    const { lat, lng } = coordenadasPendientes;
+    const radioActual = useListaStore.getState().ubicacion.radioBusqueda;
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/maps/sucursales-cercanas?lat=${lat}&lng=${lng}&radio=${radioActual}`);
+        if (!res.ok) return;
+        
+        const data = await res.json();
+        if (!cancelled && data.sucursales) {
+          setSucursalesCercanas(data.sucursales);
+        }
+      } catch (err) {
+        console.error('Error al actualizar sucursales en tiempo real:', err);
+      }
+    }, 400); // Debounce de 400ms para evitar saturar al mover el mapa rápidamente
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [coordenadasPendientes, setSucursalesCercanas]);
+  
   // Guarda la ubicación en Zustand y consulta el backend
   const confirmarYBuscarSucursales = useCallback(async () => {
     if (!coordenadasPendientes) return;
@@ -255,5 +283,6 @@ export function useUbicacion() {
     confirmarUbicacion,
     confirmarYBuscarSucursales,
     cargandoSucursales,
+    sucursalesCercanas: useListaStore.getState().sucursalesCercanas,
   };
 }

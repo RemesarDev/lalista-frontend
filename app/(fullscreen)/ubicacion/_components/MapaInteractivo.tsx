@@ -1,7 +1,9 @@
 'use client';
-import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Circle, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useMemo } from 'react';
+import { obtenerIconoSupermercado } from './IconosSupermercadas';
+
 
 interface Coordenadas {
   lat: number;
@@ -13,6 +15,16 @@ interface MarcadorSucursal {
   nombre?: string;
 }
 
+interface SucursalCercana {
+  id_unico: string;
+  lat: number;
+  lng: number;
+  comercio_bandera_nombre: string;
+  sucursales_calle?: string;
+  sucursales_numero?: string;
+  distancia_km?: number;
+}
+
 interface MapaInteractivoProps {
   coordenadas: Coordenadas;
   zoom: number;
@@ -20,6 +32,7 @@ interface MapaInteractivoProps {
   radio: number;
   onMapClick: (lat: number, lng: number) => void;
   marcadorSucursal?: MarcadorSucursal | null;
+  sucursalesCercanas?: SucursalCercana[];
 }
 
 // Componente auxiliar para capturar eventos del mapa (clics y cambios de zoom)
@@ -59,6 +72,7 @@ export default function MapaInteractivo({
   radio,
   onMapClick,
   marcadorSucursal,
+  sucursalesCercanas = [],
 }: MapaInteractivoProps) {
 
   // Conversión de coordenadas al formato que usa Leaflet: [lat, lng]
@@ -129,6 +143,29 @@ export default function MapaInteractivo({
 
         {/* MARCADOR UBICACIÓN DE BÚSQUEDA DEL USUARIO */}
         <Marker position={posUsuario} icon={iconoUsuario} />
+
+        {/* SUCURSALES CERCANAS ENCONTRADAS (DINÁMICAS) */}
+        {sucursalesCercanas.map((sucursal) => (
+          <Marker 
+            key={sucursal.id_unico}
+            position={[sucursal.lat, sucursal.lng]}
+            icon={obtenerIconoSupermercado(sucursal.comercio_bandera_nombre)}
+          >
+            <Popup>
+              <div className="p-1 font-sans">
+                <p className="font-bold text-slate-900 text-sm">{sucursal.comercio_bandera_nombre}</p>
+                <p className="text-xs text-slate-600">
+                  {sucursal.sucursales_calle} {sucursal.sucursales_numero}
+                </p>
+                {sucursal.distancia_km !== undefined && (
+                  <p className="text-[11px] font-semibold text-emerald-600 mt-1">
+                    A {sucursal.distancia_km.toFixed(1)} km de vos
+                  </p>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
 
         {/* MARCADOR SUCURSAL SELECCIONADA */}
         {marcadorSucursal && iconoSucursal && (

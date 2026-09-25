@@ -128,7 +128,7 @@ export const mapsRouter = new Hono()
   )
 
   // 5. SUCURSALES CERCANAS (Intacta con Supabase - Sin cambios)
-  .get('/sucursales-cercanas',
+ .get('/sucursales-cercanas',
     zValidator('query', sucursalesCercanasQuerySchema),
     async (c) => {
       const { lat, lng, radio } = c.req.valid('query');
@@ -142,9 +142,10 @@ export const mapsRouter = new Hono()
       }
 
       try {
+        // Actualizado con los nombres de parámetros de la nueva función SQL
         const { data, error } = await supabase.rpc('obtener_sucursales_cercanas', {
-          lat: latNum,
-          lng: lngNum,
+          lat_input: latNum,   // <-- Cambiado de 'lat' a 'lat_input'
+          lng_input: lngNum,   // <-- Cambiado de 'lng' a 'lng_input'
           radio_km: radioNum,
         });
 
@@ -158,6 +159,7 @@ export const mapsRouter = new Hono()
           }, 500);
         }
 
+        // data ya incluye automáticamente 'lat' y 'lng' gracias al nuevo RETURNS TABLE
         return c.json({ sucursales: data ?? [] });
       } catch (err: any) {
         console.error('Excepción en sucursales-cercanas:', err);

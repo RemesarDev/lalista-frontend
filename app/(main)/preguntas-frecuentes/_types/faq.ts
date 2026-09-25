@@ -1,7 +1,7 @@
 export type CategoriaFaq =
   | "General"
   | "Los datos y los precios"
-  | "Cómo usar LALIsta"
+  | "Cómo usar Lalista"
   | "Cobertura y próximos pasos"
   | "Tus datos y tu privacidad";
 

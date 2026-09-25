@@ -1,6 +1,7 @@
 "use client";
 
-import { InstagramLogoIcon, FacebookLogoIcon } from "@phosphor-icons/react";
+import Link from "next/link";
+import { InstagramLogoIcon, FacebookLogoIcon, QuestionIcon } from "@phosphor-icons/react";
 import SocialMediaLink from "./Social-media-links";
 
 export default function FooterLanding() {
@@ -12,6 +13,13 @@ export default function FooterLanding() {
         icon={<InstagramLogoIcon size={20} weight="fill" />}
         className="primary-400"
         />
+        <Link
+          href="/preguntas-frecuentes"
+          aria-label="Preguntas frecuentes"
+          className="text-white/70 transition-colors hover:text-white"
+        >
+          <QuestionIcon size={20} weight="fill" />
+        </Link>
       </div>
       <div className="text-center text-sm text-white/70 mt-2">
         &copy; {new Date().getFullYear()} LaLista. Todos los derechos reservados.

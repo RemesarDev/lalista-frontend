@@ -3,9 +3,9 @@ import { preguntas } from "./_data/preguntas";
 import { FaqPagina } from "./_components/FaqPagina";
 
 export const metadata: Metadata = {
-  title: "Preguntas frecuentes | LALIsta",
+  title: "Preguntas frecuentes | Lalista",
   description:
-    "Resolvé tus dudas sobre cómo funciona LALIsta: de dónde salen los precios, qué zonas cubrimos y cómo armar tu canasta para ahorrar en el super.",
+    "Resolvé tus dudas sobre cómo funciona Lalista: de dónde salen los precios, qué zonas cubrimos y cómo armar tu canasta para ahorrar en el super.",
 };
 
 // NOTA: no se usa <main> acá porque el layout de (main) ya envuelve la vista
@@ -18,7 +18,7 @@ export default function PreguntasFrecuentesPage() {
           Preguntas frecuentes
         </h1>
         <p className="mt-2 text-sm text-neutral-600 sm:text-base">
-          Todo lo que necesitás saber sobre LALIsta antes de armar tu primera
+          Todo lo que necesitás saber sobre Lalista antes de armar tu primera
           canasta.
         </p>
       </header>

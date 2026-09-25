@@ -3,8 +3,20 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { SignOutIcon, ListIcon, UserIcon } from '@phosphor-icons/react/dist/ssr';
+import { SignOutIcon, ListIcon, UserIcon, QuestionIcon } from '@phosphor-icons/react/dist/ssr';
 import { useListaStore } from '@/app/_store/store';
+
+function FaqLink() {
+  return (
+    <Link
+      href="/preguntas-frecuentes"
+      aria-label="Preguntas frecuentes"
+      className="flex items-center justify-center p-2 rounded-full bg-white/10 border border-white/20 text-white transition hover:bg-white/15"
+    >
+      <QuestionIcon className="text-base" />
+    </Link>
+  );
+}
 
 export default function HeaderUser() {
   const router = useRouter();
@@ -30,6 +42,7 @@ export default function HeaderUser() {
   if (loadingAuth) {
     return (
       <div className="flex items-center gap-2 min-w-[92px] justify-end">
+        <FaqLink />
         <div className="h-8 w-20 rounded-full bg-white/10 animate-pulse border border-white/10" />
       </div>
     );
@@ -38,6 +51,7 @@ export default function HeaderUser() {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
+        <FaqLink />
         <Link href="/login" className="text-white text-xs md:text-sm font-semibold hover:underline px-2">
           Entrar
         </Link>
@@ -52,56 +66,59 @@ export default function HeaderUser() {
   }
 
   return (
-    <div ref={menuRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setMenuOpen((prev) => !prev)}
-        className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-2 py-1.5 text-white transition hover:bg-white/15"
-        aria-expanded={menuOpen}
-        aria-haspopup="menu"
-      >
-        <span className="hidden md:block text-sm font-medium">Hola, {user.name}</span>
-        <span className="md:hidden text-xs font-medium truncate max-w-[80px]">Hola, {user.name}</span>
-        <span className="text-[10px] leading-none">▾</span>
-      </button>
-
-      {menuOpen && (
-        <div
-          role="menu"
-          className="absolute right-0 top-full z-50 mt-2 w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
+    <div className="flex items-center gap-2">
+      <FaqLink />
+      <div ref={menuRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setMenuOpen((prev) => !prev)}
+          className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-2 py-1.5 text-white transition hover:bg-white/15"
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
         >
-          <Link
-            href="/perfil"
-            onClick={() => setMenuOpen(false)}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-          >
-            <UserIcon className="text-base" />
-            Perfil
-          </Link>
+          <span className="hidden md:block text-sm font-medium">Hola, {user.name}</span>
+          <span className="md:hidden text-xs font-medium truncate max-w-[80px]">Hola, {user.name}</span>
+          <span className="text-[10px] leading-none">▾</span>
+        </button>
 
-          <Link
-            href="/mis-listas"
-            onClick={() => setMenuOpen(false)}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+        {menuOpen && (
+          <div
+            role="menu"
+            className="absolute right-0 top-full z-50 mt-2 w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
           >
-            <ListIcon className="text-base" />
-            Mis listas
-          </Link>
+            <Link
+              href="/perfil"
+              onClick={() => setMenuOpen(false)}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              <UserIcon className="text-base" />
+              Perfil
+            </Link>
 
-          <button
-            type="button"
-            onClick={async () => {
-              await logout();
-              setMenuOpen(false);
-              router.replace('/');
-            }}
-            className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-          >
-            <SignOutIcon className="text-base" />
-            Cerrar sesión
-          </button>
-        </div>
-      )}
+            <Link
+              href="/mis-listas"
+              onClick={() => setMenuOpen(false)}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              <ListIcon className="text-base" />
+              Mis listas
+            </Link>
+
+            <button
+              type="button"
+              onClick={async () => {
+                await logout();
+                setMenuOpen(false);
+                router.replace('/');
+              }}
+              className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              <SignOutIcon className="text-base" />
+              Cerrar sesión
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

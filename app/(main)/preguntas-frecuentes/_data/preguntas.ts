@@ -60,14 +60,14 @@ export const preguntas: Pregunta[] = [
   },
   {
     id: "elegir-ubicacion",
-    categoria: "Cómo usar LALIsta",
+    categoria: "Cómo usar Lalista",
     pregunta: "¿Puedo comparar precios en una ubicación que no es la mía?",
     respuesta:
       "Sí. Podés dejar que la app use tu ubicación actual o ingresar manualmente otra dirección, por ejemplo la zona donde vas a hacer la compra grande del mes.",
   },
   {
     id: "varias-canastas",
-    categoria: "Cómo usar LALIsta",
+    categoria: "Cómo usar Lalista",
     pregunta: "¿Puedo guardar más de una canasta?",
     respuesta:
       "Sí. Podés armar y guardar varias canastas —por ejemplo, una de almacén y otra de limpieza— para no tener que cargarlas de nuevo cada vez que quieras comparar precios.",

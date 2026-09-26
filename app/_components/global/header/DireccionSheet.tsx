@@ -13,6 +13,7 @@ interface DireccionSheetProps {
 export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps) {
     const { ubicacion } = useListaStore();
     const {
+        user,
         mostrarGuardadas,
         direccionesGuardadas,
         irAgregarDireccion,
@@ -41,7 +42,7 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                     </button>
                 </div>
 
-                {/* Direcciones guardadas (logueado) */}
+                {/* Direcciones guardadas (logueado con direcciones) */}
                 {mostrarGuardadas && (
                     <div className="mb-2 divide-y divide-slate-100">
                         {direccionesGuardadas.map((dir: DireccionGuardada) => (
@@ -77,22 +78,24 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                     </div>
                 )}
 
-                {/* Dirección anónima */}
+                {/* Dirección anónima con ubicación */}
                 {!mostrarGuardadas && ubicacion.nombreLugar && (
-                    <div className="flex items-center justify-between py-3 border-b border-slate-100 mb-2">
-                        <div className="flex items-center gap-3">
+                    <button
+                        onClick={irAgregarDireccion}
+                        className="flex items-center justify-between w-full py-3 border-b border-slate-100 mb-2 group"
+                    >
+                        <div className="flex items-center gap-3 min-w-0">
                             <MapPinIcon size={20} className="text-orange-500 shrink-0" weight="fill" />
-                            <span className="text-sm font-semibold text-slate-900">{ubicacion.nombreLugar}</span>
+                            <span className="text-sm font-semibold text-slate-900 truncate">{ubicacion.nombreLugar}</span>
                         </div>
-                        <CheckCircleIcon size={22} className="text-emerald-600" weight="fill" />
-                    </div>
+                        <span className="text-xs font-semibold text-orange-500 shrink-0 ml-2 group-hover:underline">
+                            Cambiar
+                        </span>
+                    </button>
                 )}
 
-                {/* Separador */}
-                <div className="border-t border-slate-100 mt-4 pt-4">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
-                        Más opciones
-                    </p>
+                {/* Sin direcciones aún (anónimo sin ubicación o logueado sin guardadas) */}
+                {!mostrarGuardadas && !ubicacion.nombreLugar && (
                     <button
                         onClick={irAgregarDireccion}
                         className="flex items-center gap-3 w-full py-3 group"
@@ -101,11 +104,32 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                             <PlusIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
                         </div>
                         <div className="text-left">
-                            <p className="text-sm font-semibold text-slate-900">Agregar dirección</p>
-                            <p className="text-xs text-slate-400">Ingresá una nueva dirección de entrega.</p>
+                            <p className="text-sm font-semibold text-slate-900">Añadir dirección</p>
+                            <p className="text-xs text-slate-400">Ingresá una dirección para ver precios cercanos.</p>
                         </div>
                     </button>
-                </div>
+                )}
+
+                {/* Más opciones — solo logueados */}
+                {!!user && (
+                    <div className="border-t border-slate-100 mt-4 pt-4">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+                            Más opciones
+                        </p>
+                        <button
+                            onClick={irAgregarDireccion}
+                            className="flex items-center gap-3 w-full py-3 group"
+                        >
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 group-hover:bg-orange-100 transition-colors shrink-0">
+                                <PlusIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-sm font-semibold text-slate-900">Agregar dirección</p>
+                                <p className="text-xs text-slate-400">Ingresá una nueva dirección de entrega.</p>
+                            </div>
+                        </button>
+                    </div>
+                )}
 
             </div>
         </div>

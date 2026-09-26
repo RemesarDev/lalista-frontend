@@ -59,6 +59,7 @@ export interface ListaSlice {
   lista: GrupoLista[];
   listaId: string | null;       // null = lista local sin guardar, UUID = lista sincronizada con la nube
   listaRol: RolLista | null;    // null = lista local, rol = permisos dentro de la lista en la nube
+  listaNombre: string | null;
   listaModificada: boolean;
   cacheBusquedaPrecios: CacheBusquedaPrecios | null;
   terminoBusqueda: string;
@@ -75,7 +76,7 @@ export interface ListaSlice {
   actualizarCantidadOpcion: (grupoId: string, productoId: string, cantidadOpcion: number) => void;
   toggleCompradoGrupo: (grupoId: string) => void;
   limpiarLista: () => void;
-  setListaActiva: (id: string | null, rol: RolLista | null) => void;
+  setListaActiva: (id: string | null, rol: RolLista | null, nombre: string | null) => void;
   marcarListaSincronizada: () => void;
 
   // Métodos de caché y búsqueda
@@ -89,6 +90,7 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
   lista: [],
   listaId: null,
   listaRol: null,
+  listaNombre: null,
   listaModificada: false,
   cacheBusquedaPrecios: null,
   terminoBusqueda: "",
@@ -181,9 +183,9 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
     ),
   })),
 
-  limpiarLista: () => set({ lista: [], listaId: null, listaRol: null, listaModificada: false }),
+  limpiarLista: () => set({ lista: [], listaId: null, listaRol: null, listaNombre: null, listaModificada: false }),
 
-  setListaActiva: (id, rol) => set({ listaId: id, listaRol: rol }),
+  setListaActiva: (id, rol, nombre) => set({ listaId: id, listaRol: rol, listaNombre: nombre }),
 
   marcarListaSincronizada: () => set({ listaModificada: false }),
 

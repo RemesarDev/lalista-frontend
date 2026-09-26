@@ -68,7 +68,7 @@ export function useGestionLista(): UseGestionListaReturn {
 
       const { id } = await res.json();
       marcarListaSincronizada();
-      setListaActiva(id, 'owner');
+      setListaActiva(id, 'owner', nombre);
       setModalGuardarOpen(false);
     } catch (err) {
       console.error(err);

@@ -39,5 +39,10 @@
     "serwist": "^9.5.12",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "@swc/core": true,
+    "esbuild": true,
+    "unrs-resolver": true
   }
 }

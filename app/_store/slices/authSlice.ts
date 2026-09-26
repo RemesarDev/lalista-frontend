@@ -1,10 +1,9 @@
 import { StateCreator } from 'zustand';
 import type { StoreState } from '../store';
-// Importamos el cliente y el tipo inferido automáticamente
 import { authClient, type User } from '../../_lib/auth-client';
 
 export interface AuthSlice {
-  user: User | null; // Usamos el tipo inferido, no la interfaz manual
+  user: User | null;
   loadingAuth: boolean;
   
   setUser: (user: User | null) => void;
@@ -12,7 +11,6 @@ export interface AuthSlice {
   registroConEmail: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: any }>;
   logout: () => Promise<void>;
   borrarCuenta: (password: string) => Promise<{ success: boolean; error?: any }>;
-  // Añadimos esta acción vital para sincronizar el estado al cargar la página
   checkAuth: () => Promise<User | null>;
 }
 
@@ -22,13 +20,18 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
   
   setUser: (user) => set({ user }),
 
-  // Verificación de sesión al montar la app
   checkAuth: async () => {
     set({ loadingAuth: true });
     try {
       const { data } = await authClient.getSession();
       const nextUser = data?.user || null;
       set({ user: nextUser });
+
+      // Si hay sesión, hidratamos las direcciones guardadas
+      if (nextUser) {
+        await get().cargarDirecciones();
+      }
+
       return nextUser;
     } catch {
       set({ user: null });
@@ -43,7 +46,8 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
     try {
       const { data, error } = await authClient.signIn.email({ email, password });
       if (data) {
-        set({ user: data.user, loadingAuth: false }); // Ya no necesitas el "as UserSession"
+        set({ user: data.user, loadingAuth: false });
+        await get().cargarDirecciones();
         return { success: true };
       }
       set({ loadingAuth: false });
@@ -76,7 +80,8 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
       await authClient.signOut();
     } finally {
       set({ user: null, loadingAuth: false });
-      get().limpiarLista(); 
+      get().limpiarLista();
+      get().limpiarDirecciones();
     }
   },
 
@@ -93,6 +98,7 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
       await authClient.signOut();
       set({ user: null, loadingAuth: false });
       get().limpiarLista();
+      get().limpiarDirecciones();
 
       return { success: true };
     } catch (error) {

@@ -155,7 +155,7 @@ export default function MisListasPage() {
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <button
-                                    onClick={() => abrirLista(lista.id, lista.rol as RolLista)}
+                                    onClick={() => abrirLista(lista.id, lista.rol as RolLista, lista.nombre)}
                                     disabled={cargandoAbrir}
                                     className="flex min-w-0 flex-1 items-center gap-3 text-left transition-opacity hover:opacity-75 disabled:opacity-50"
                                 >

@@ -103,6 +103,7 @@ export default function MiListaPage() {
   const checkAuth = useListaStore((state) => state.checkAuth);
   const listaId = useListaStore((state) => state.listaId);
   const listaRol = useListaStore((state) => state.listaRol);
+  const listaNombre = useListaStore((state) => state.listaNombre);
   const isListaVacia = totalEnLista === 0;
 
   const {
@@ -133,7 +134,7 @@ export default function MiListaPage() {
       <div className="mb-6 flex flex-row items-center justify-between gap-4 px-1 w-full border-b border-slate-50 pb-3">
         <div className="flex flex-col">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Mi lista
+            {listaNombre ?? 'Mi lista'}
           </h1>
           <p className="text-[11px] sm:text-xs font-medium text-slate-400 mt-0.5">
             {totalEnLista === 0

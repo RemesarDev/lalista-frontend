@@ -8,7 +8,7 @@ import type { RolLista, GrupoLista, ProductoOpcion } from '@/app/_store/slices/l
 import type { ItemLista } from '@/app/_types/listas';
 
 interface UseAbrirListaReturn {
-  abrirLista: (id: string, rol: RolLista) => Promise<void>;
+  abrirLista: (id: string, rol: RolLista, nombre: string) => Promise<void>;
   cargandoAbrir: boolean;
   errorAbrir: string | null;
 }
@@ -38,7 +38,7 @@ export function useAbrirLista(): UseAbrirListaReturn {
   const [cargandoAbrir, setCargandoAbrir] = useState(false);
   const [errorAbrir, setErrorAbrir] = useState<string | null>(null);
 
-  const abrirLista = async (id: string, rol: RolLista) => {
+  const abrirLista = async (id: string, rol: RolLista, nombre: string) => {
     setCargandoAbrir(true);
     setErrorAbrir(null);
 
@@ -60,7 +60,7 @@ export function useAbrirLista(): UseAbrirListaReturn {
       useListaStore.setState({ lista: grupos });
 
       // Vinculamos la lista activa
-      setListaActiva(id, rol);
+      setListaActiva(id, rol, nombre);
 
       router.push('/mi-lista');
     } catch (err: any) {

@@ -18,6 +18,8 @@ export interface SucursalCercana {
   sucursales_calle: string;
   sucursales_numero: string;
   distancia_metros: number;
+  lat: number;
+  lng: number;
 }
 
 export interface UbicacionSlice {

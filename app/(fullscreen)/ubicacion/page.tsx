@@ -63,6 +63,8 @@ function ContenidoMapa() {
     nombre: sucursalNombre || undefined,
   } : null;
 
+  const sucursalesCercanas = useListaStore((state) => state.sucursalesCercanas);
+
   const {
     radio, setRadio,
     zoom, setZoom,
@@ -91,6 +93,7 @@ function ContenidoMapa() {
         radio={radio} 
         onMapClick={manejarClickMapa}
         marcadorSucursal={marcadorSucursal}
+        sucursalesCercanas={sucursalesCercanas} 
       />
 
       {/* CONTROLES ZOOM MANUAL */}

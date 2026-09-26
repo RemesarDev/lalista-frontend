@@ -46,14 +46,14 @@ export const preguntas: Pregunta[] = [
   },
   {
     id: "necesito-cuenta",
-    categoria: "Cómo usar Lalista",
+    categoria: "Cómo usar LALIsta",
     pregunta: "¿Necesito crear una cuenta para usarla?",
     respuesta:
       "No hace falta una cuenta para buscar productos y comparar precios. Si querés guardar tu canasta para reutilizarla sin cargarla de cero cada vez, te conviene crear un perfil: así tus canastas y tus preferencias quedan guardadas.",
   },
   {
     id: "armar-canasta",
-    categoria: "Cómo usar Lalista",
+    categoria: "Cómo usar LALIsta",
     pregunta: "¿Cómo armo mi canasta de compras?",
     respuesta:
       "Buscá los productos que solés comprar, indicá la cantidad de cada uno y agregalos a tu canasta. Una vez armada, Lalista calcula el costo total de esa canasta en los comercios cercanos a la ubicación que elijas y te muestra un ranking ordenado de menor a mayor precio.",

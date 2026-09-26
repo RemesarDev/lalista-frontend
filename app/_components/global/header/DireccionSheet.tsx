@@ -23,11 +23,18 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-t-2xl bg-white p-6 shadow-xl animate-in slide-in-from-bottom duration-200">
-
+        <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+            onClick={onClose}
+        >
+            <div
+                className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+                role="dialog"
+                aria-modal="true"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold text-slate-900">Elegí tu dirección</h2>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
                         <XIcon size={20} weight="bold" />
@@ -72,7 +79,7 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
 
                 {/* Dirección anónima */}
                 {!mostrarGuardadas && ubicacion.nombreLugar && (
-                    <div className="flex items-center justify-between py-3 border-b border-slate-100">
+                    <div className="flex items-center justify-between py-3 border-b border-slate-100 mb-2">
                         <div className="flex items-center gap-3">
                             <MapPinIcon size={20} className="text-orange-500 shrink-0" weight="fill" />
                             <span className="text-sm font-semibold text-slate-900">{ubicacion.nombreLugar}</span>
@@ -81,23 +88,24 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                     </div>
                 )}
 
-                {/* Más opciones */}
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-4 mb-2">
-                    Más opciones
-                </p>
-
-                <button
-                    onClick={irAgregarDireccion}
-                    className="flex items-center gap-3 w-full py-3 group"
-                >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 group-hover:bg-orange-100 transition-colors shrink-0">
-                        <PlusIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
-                    </div>
-                    <div className="text-left">
-                        <p className="text-sm font-semibold text-slate-900">Agregar dirección</p>
-                        <p className="text-xs text-slate-400">Ingresá una nueva dirección de entrega.</p>
-                    </div>
-                </button>
+                {/* Separador */}
+                <div className="border-t border-slate-100 mt-4 pt-4">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+                        Más opciones
+                    </p>
+                    <button
+                        onClick={irAgregarDireccion}
+                        className="flex items-center gap-3 w-full py-3 group"
+                    >
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 group-hover:bg-orange-100 transition-colors shrink-0">
+                            <PlusIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-semibold text-slate-900">Agregar dirección</p>
+                            <p className="text-xs text-slate-400">Ingresá una nueva dirección de entrega.</p>
+                        </div>
+                    </button>
+                </div>
 
             </div>
         </div>

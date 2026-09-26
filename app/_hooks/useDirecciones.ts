@@ -14,31 +14,36 @@ export function useDirecciones(onClose: () => void) {
   };
 
   const seleccionarDireccion = async (dir: DireccionGuardada) => {
-  // Actualización optimista: el UI responde inmediato
-  setUbicacion({
-    latitud: dir.latitud,
-    longitud: dir.longitud,
-    precision: null,
-    radioBusqueda: dir.radioBusqueda,
-    nombreLugar: dir.nombreLugar,
-    cargandoUbicacion: false,
-  });
-  onClose();
+    // Actualización optimista: mueve el check visualmente de inmediato
+    useListaStore.setState((state) => ({
+      direccionesGuardadas: state.direccionesGuardadas.map((d) => ({
+        ...d,
+        esActiva: d.id === dir.id,
+      })),
+    }));
 
-  // Persiste en DB en segundo plano
-  await cambiarDireccionActiva(dir.id);
-};
+    setUbicacion({
+      latitud: dir.latitud,
+      longitud: dir.longitud,
+      precision: null,
+      radioBusqueda: dir.radioBusqueda,
+      nombreLugar: dir.nombreLugar,
+      cargandoUbicacion: false,
+    });
+
+    onClose();
+
+    // Persiste en DB en segundo plano
+    const res = await fetch(`/api/direcciones/${dir.id}/activar`, { method: 'PATCH' });
+    if (!res.ok) {
+      // Si falla, resincroniza desde DB
+      await cargarDirecciones();
+    }
+  };
 
   const eliminarDireccion = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const res = await fetch(`/api/direcciones/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      await cargarDirecciones(); // refresca la lista desde DB
-    }
-  };
-
-  const cambiarDireccionActiva = async (id: string) => {
-    const res = await fetch(`/api/direcciones/${id}/activar`, { method: 'PATCH' });
     if (res.ok) {
       await cargarDirecciones();
     }

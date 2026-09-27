@@ -50,7 +50,7 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                             <button
                                 key={dir.id}
                                 onClick={() => seleccionarDireccion(dir)}
-                                className="flex items-center justify-between w-full py-3 group"
+                                className="flex items-center justify-between w-full py-3"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
                                     <MapPinIcon
@@ -79,10 +79,9 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                     </div>
                 )}
 
-                {/* Dirección anónima con ubicación */}
-                {!mostrarGuardadas && ubicacion.nombreLugar && (
-                    <div className="flex items-center justify-between w-full py-3 border-b border-slate-100 mb-2"
-                    >
+                {/* Dirección anónima — solo para no logueados */}
+                {!user && !mostrarGuardadas && ubicacion.nombreLugar && (
+                    <div className="flex items-center justify-between w-full py-3 border-b border-slate-100 mb-2">
                         <button
                             onClick={irAgregarDireccion}
                             className="flex items-center gap-3 min-w-0 flex-1 group"
@@ -93,7 +92,6 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                         </button>
                         <button
                             onClick={limpiarUbicacion}
-                            aria-label="Limpiar ubicación"
                             className="p-1.5 rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors ml-2 shrink-0"
                         >
                             <TrashIcon size={16} weight="bold" />
@@ -101,7 +99,7 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                     </div>
                 )}
 
-                {/* Sin direcciones aún (anónimo sin ubicación o logueado sin guardadas) */}
+                {/* Sin direcciones aún */}
                 {!mostrarGuardadas && !ubicacion.nombreLugar && (
                     <button
                         onClick={irAgregarDireccion}

@@ -68,7 +68,7 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                                     <span
                                         role="button"
                                         onClick={(e) => eliminarDireccion(e, dir.id)}
-                                        className="p-1 rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                                        className="p-1 rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors"
                                     >
                                         <TrashIcon size={16} weight="bold" />
                                     </span>

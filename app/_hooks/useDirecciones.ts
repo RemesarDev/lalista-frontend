@@ -46,6 +46,19 @@ export function useDirecciones(onClose: () => void) {
     const res = await fetch(`/api/direcciones/${id}`, { method: 'DELETE' });
     if (res.ok) {
       await cargarDirecciones();
+      // Si no quedan direcciones, limpiar la ubicación del store
+      const restantes = useListaStore.getState().direccionesGuardadas;
+      if (restantes.length === 0) {
+        useListaStore.setState((state) => ({
+          ubicacion: {
+            ...state.ubicacion,
+            latitud: null,
+            longitud: null,
+            nombreLugar: null,
+            precision: null,
+          },
+        }));
+      }
     }
   };
 

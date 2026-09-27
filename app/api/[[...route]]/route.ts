@@ -94,7 +94,6 @@ const routes = app
   .route('/', usuariosRouter)
   .route('/', direccionesRouter)
   .route('/maps', mapsRouter)
-  .route('/', direccionesRouter)
   .route('/', historicoRouter);
 
 // ==========================================

@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPinIcon, PlusIcon, XIcon, CheckCircleIcon, TrashIcon } from '@phosphor-icons/react';
+import { MapPinIcon, PlusIcon, XIcon, CheckCircleIcon, TrashIcon, CaretRightIcon } from '@phosphor-icons/react';
 import { useListaStore } from '@/app/_store/store';
 import { useDirecciones } from '@/app/_hooks/useDirecciones';
 import type { DireccionGuardada } from '@/app/_types/direcciones';
@@ -88,9 +88,7 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                             <MapPinIcon size={20} className="text-orange-500 shrink-0" weight="fill" />
                             <span className="text-sm font-semibold text-slate-900 truncate">{ubicacion.nombreLugar}</span>
                         </div>
-                        <span className="text-xs font-semibold text-orange-500 shrink-0 ml-2 group-hover:underline">
-                            Cambiar
-                        </span>
+                        <CaretRightIcon size={16} className="text-slate-400 shrink-0 ml-2" weight="bold" />
                     </button>
                 )}
 

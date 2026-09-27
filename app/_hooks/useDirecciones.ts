@@ -62,6 +62,19 @@ export function useDirecciones(onClose: () => void) {
     }
   };
 
+  const limpiarUbicacion = () => {
+    useListaStore.setState((state) => ({
+      ubicacion: {
+        ...state.ubicacion,
+        latitud: null,
+        longitud: null,
+        nombreLugar: null,
+        precision: null,
+      },
+    }));
+    onClose();
+  };
+
   const mostrarGuardadas = !!user && direccionesGuardadas.length > 0;
 
   return {
@@ -71,5 +84,6 @@ export function useDirecciones(onClose: () => void) {
     irAgregarDireccion,
     seleccionarDireccion,
     eliminarDireccion,
+    limpiarUbicacion,
   };
 }

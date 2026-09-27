@@ -19,6 +19,7 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
         irAgregarDireccion,
         seleccionarDireccion,
         eliminarDireccion,
+        limpiarUbicacion,
     } = useDirecciones(onClose);
 
     if (!isOpen) return null;
@@ -80,16 +81,24 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
 
                 {/* Dirección anónima con ubicación */}
                 {!mostrarGuardadas && ubicacion.nombreLugar && (
-                    <button
-                        onClick={irAgregarDireccion}
-                        className="flex items-center justify-between w-full py-3 border-b border-slate-100 mb-2 group"
+                    <div className="flex items-center justify-between w-full py-3 border-b border-slate-100 mb-2"
                     >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <button
+                            onClick={irAgregarDireccion}
+                            className="flex items-center gap-3 min-w-0 flex-1 group"
+                        >
                             <MapPinIcon size={20} className="text-orange-500 shrink-0" weight="fill" />
                             <span className="text-sm font-semibold text-slate-900 truncate">{ubicacion.nombreLugar}</span>
-                        </div>
-                        <CaretRightIcon size={16} className="text-slate-400 shrink-0 ml-2" weight="bold" />
-                    </button>
+                            <CaretRightIcon size={16} className="text-slate-400 shrink-0 ml-1" weight="bold" />
+                        </button>
+                        <button
+                            onClick={limpiarUbicacion}
+                            aria-label="Limpiar ubicación"
+                            className="p-1.5 rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors ml-2 shrink-0"
+                        >
+                            <TrashIcon size={16} weight="bold" />
+                        </button>
+                    </div>
                 )}
 
                 {/* Sin direcciones aún (anónimo sin ubicación o logueado sin guardadas) */}

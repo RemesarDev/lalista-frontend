@@ -23,6 +23,8 @@ export default function StickySearch() {
       const modo = searchParams.get('modo');
       const grupoId = searchParams.get('grupoId');
       const comparar = searchParams.get('comparar');
+      const categoria = searchParams.get('categoria');
+      const etiquetas = searchParams.get('etiquetas');
 
       const params = new URLSearchParams({q: terminoLimpio});
       if (modo === 'alternativa' && grupoId) {
@@ -32,6 +34,11 @@ export default function StickySearch() {
       // La seleccion para comparar sobrevive a una busqueda nueva: el usuario
       // elige una Sprite, busca "coca" y espera que la Sprite siga elegida.
       if (comparar) params.set('comparar', comparar);
+      // El filtro de categoria y las etiquetas dietarias tambien sobreviven:
+      // si el usuario ya eligio "Almacen" y despues escribe "aceite", espera
+      // que las dos condiciones se crucen, no que se pierda la categoria.
+      if (categoria) params.set('categoria', categoria);
+      if (etiquetas) params.set('etiquetas', etiquetas);
       router.push(`/buscar?${params.toString()}`);
     }
   };

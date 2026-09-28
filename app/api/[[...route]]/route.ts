@@ -8,6 +8,7 @@ import { auth } from '@/app/_lib/auth';
 import { listasRouter } from './listas';
 import { usuariosRouter } from './usuarios';
 import { historicoRouter } from './historico';
+import { direccionesRouter } from './direcciones';
 
 export const runtime = 'nodejs'; 
 
@@ -91,6 +92,7 @@ const routes = app
   .route('/', productosRouter)
   .route('/', listasRouter)
   .route('/', usuariosRouter)
+  .route('/', direccionesRouter)
   .route('/maps', mapsRouter)
   .route('/', historicoRouter);
 

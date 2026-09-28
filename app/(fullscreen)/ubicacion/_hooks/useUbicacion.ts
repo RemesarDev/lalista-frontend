@@ -15,7 +15,9 @@ type SugerenciaLugar = {
 
 export function useUbicacion() {
   const ubicacion = useListaStore((state) => state.ubicacion);
+  const user = useListaStore((state) => state.user);
   const setUbicacion = useListaStore((state) => state.setUbicacion);
+  const cargarDirecciones = useListaStore((state) => state.cargarDirecciones);
   const cambiarRadioBusqueda = useListaStore((state) => state.cambiarRadioBusqueda);
   const cargandoSucursales = useListaStore((state) => state.cargandoSucursales);
   const setCargandoSucursales = useListaStore((state) => state.setCargandoSucursales);
@@ -253,6 +255,21 @@ export function useUbicacion() {
       );
       setCoordenadasPendientes(null);
 
+      // Persistir en DB si está logueado
+      if (user) {
+        await fetch('/api/direcciones', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre_lugar: texto,
+            latitud: lat,
+            longitud: lng,
+            radio_busqueda: radioActual,
+          }),
+        });
+        await cargarDirecciones();
+      }
+
     } catch (err) {
       console.error('Excepción al consultar sucursales:', err);
       throw err;
@@ -260,7 +277,7 @@ export function useUbicacion() {
       setCargandoGps(false);
       setCargandoSucursales(false);
     }
-  }, [coordenadasPendientes, guardarUbicacionFiltro, setCargandoSucursales, setSucursalesCercanas]);
+  }, [coordenadasPendientes, guardarUbicacionFiltro, setCargandoSucursales, setSucursalesCercanas, user, cargarDirecciones]);
 
   return {
     radio: ubicacion.radioBusqueda,

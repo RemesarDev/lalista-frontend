@@ -1,5 +1,7 @@
 import { StateCreator } from 'zustand';
 import type { StoreState } from '../store';
+import type { DireccionGuardada } from '@/app/_types/direcciones';
+import { mapearDireccion, type DbDireccion } from '@/app/_lib/mappers/direcciones';
 
 export interface UbicacionUsuario {
   latitud: number | null;
@@ -24,10 +26,14 @@ export interface SucursalCercana {
 
 export interface UbicacionSlice {
   ubicacion: UbicacionUsuario;
-  
+
   sucursalesCercanas: SucursalCercana[];
   sucursalesIds: string[];
   cargandoSucursales: boolean;
+
+  direccionesGuardadas: DireccionGuardada[];
+  cargarDirecciones: () => Promise<void>;
+  limpiarDirecciones: () => void;
 
   cambiarRadioBusqueda: (nuevoRadio: number) => void;
   setUbicacion: (ubicacion: UbicacionUsuario) => void;
@@ -38,14 +44,42 @@ export interface UbicacionSlice {
 }
 
 export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSlice> = (set, get) => ({
-  ubicacion: { 
-    latitud: null, 
-    longitud: null, 
-    precision: null, 
+  ubicacion: {
+    latitud: null,
+    longitud: null,
+    precision: null,
     radioBusqueda: 3,
     nombreLugar: null,
-    cargandoUbicacion: false 
+    cargandoUbicacion: false,
   },
+
+  direccionesGuardadas: [],
+
+  cargarDirecciones: async () => {
+    const res = await fetch('/api/direcciones');
+    if (!res.ok) return;
+
+    const { direcciones } = await res.json() as { direcciones: DbDireccion[] };
+    const mapeadas = direcciones.map(mapearDireccion);
+
+    set({ direccionesGuardadas: mapeadas });
+
+    // Si hay una activa, la ponemos como ubicación actual
+    const activa = mapeadas.find((d) => d.esActiva);
+    if (activa) {
+      set((state) => ({
+        ubicacion: {
+          ...state.ubicacion,
+          latitud: activa.latitud,
+          longitud: activa.longitud,
+          nombreLugar: activa.nombreLugar,
+          radioBusqueda: activa.radioBusqueda,
+        },
+      }));
+    }
+  },
+
+  limpiarDirecciones: () => set({ direccionesGuardadas: [] }),
 
   cambiarRadioBusqueda: (nuevoRadio) => set((state) => ({
     ubicacion: { ...state.ubicacion, radioBusqueda: nuevoRadio }
@@ -78,8 +112,8 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
       },
       (error) => {
         console.error("Error al obtener la ubicación web:", error);
-        set((state) => ({ 
-          ubicacion: { ...state.ubicacion, cargandoUbicacion: false } 
+        set((state) => ({
+          ubicacion: { ...state.ubicacion, cargandoUbicacion: false }
         }));
         alert("No pudimos obtener tu ubicación. Por favor, seleccionala manualmente.");
       },
@@ -91,12 +125,12 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
   sucursalesIds: [],
   cargandoSucursales: false,
 
-  setSucursalesCercanas: (sucursales) => 
-    set({ 
+  setSucursalesCercanas: (sucursales) =>
+    set({
       sucursalesCercanas: sucursales,
-      sucursalesIds: sucursales.map((s) => s.id_unico)
+      sucursalesIds: sucursales.map((s) => s.id_unico),
     }),
 
-  setCargandoSucursales: (cargando) => 
+  setCargandoSucursales: (cargando) =>
     set({ cargandoSucursales: cargando }),
 });

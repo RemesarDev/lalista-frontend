@@ -121,9 +121,18 @@ export const compartirListaSchema = z.object({
 export const actualizarRolMiembroSchema = z.object({
   rol: z.enum(['viewer', 'editor']),
 });
+// ==========================================
+// 5. ESQUEMAS DE DIRECCIONES
+// ==========================================
+export const agregarDireccionSchema = z.object({
+  nombre_lugar:   z.string().min(1, 'El nombre del lugar es obligatorio'),
+  latitud:        z.number({ message: 'Latitud inválida' }),
+  longitud:       z.number({ message: 'Longitud inválida' }),
+  radio_busqueda: z.number().int().min(1).max(50).optional().default(3),
+});
 
 // ==========================================
-// 5. INFERENCIA DE TIPOS PARA EL FRONTEND
+// 6. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================
 export type AutocompleteQuery = z.infer<typeof autocompleteQuerySchema>;
 export type GeocodeQuery = z.infer<typeof geocodeQuerySchema>;
@@ -136,3 +145,4 @@ export type SincronizarListaBody = z.infer<typeof sincronizarListaSchema>;
 export type BuscarUsuariosQuery = z.infer<typeof buscarUsuariosSchema>;
 export type CompartirListaBody = z.infer<typeof compartirListaSchema>;
 export type ActualizarRolMiembroBody = z.infer<typeof actualizarRolMiembroSchema>;
+export type AgregarDireccionBody = z.infer<typeof agregarDireccionSchema>;

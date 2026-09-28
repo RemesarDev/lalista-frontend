@@ -2,21 +2,29 @@
 import { useListaStore } from '@/app/_store/store';
 import { MenuCategorias } from './MenuCategorias';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { DesktopActionButton } from './DesktopActionButton';
 import { ShoppingCartIcon } from '@phosphor-icons/react';
 
 export default function StickySearch() {
-  const [query, setQuery] = useState("");
-  const router = useRouter();
   const searchParams = useSearchParams();
+  // Inicializamos el input con lo que ya esté en la URL para que no arranque vacío si recargás la página
+  const [query, setQuery] = useState(searchParams.get('q') || "");
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const setTerminoBusqueda = useListaStore((state) => state.setTerminoBusqueda);
+
+  // Mantenemos sincronizado el input por si la búsqueda se limpia desde otro lado
+  useEffect(() => {
+    setQuery(searchParams.get('q') || "");
+  }, [searchParams]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const terminoLimpio = query.trim();
-    if (query.trim().length >= 3) {
+    
+    // LA SOLUCIÓN: Solo avanzamos si tiene 3+ caracteres, O si está completamente vacío
+    if (terminoLimpio.length >= 3 || terminoLimpio.length === 0) {
       inputRef.current?.blur();
       setTerminoBusqueda(terminoLimpio);
 
@@ -26,7 +34,14 @@ export default function StickySearch() {
       const categoria = searchParams.get('categoria');
       const etiquetas = searchParams.get('etiquetas');
 
-      const params = new URLSearchParams({q: terminoLimpio});
+      // Empezamos los parámetros desde cero para limpiar basuras previas (ej: paginación)
+      const params = new URLSearchParams();
+      
+      // Solo agregamos 'q' a la URL si el usuario escribió algo
+      if (terminoLimpio.length > 0) {
+        params.set('q', terminoLimpio);
+      }
+
       if (modo === 'alternativa' && grupoId) {
         params.set('modo', modo);
         params.set('grupoId', grupoId);
@@ -39,6 +54,7 @@ export default function StickySearch() {
       // que las dos condiciones se crucen, no que se pierda la categoria.
       if (categoria) params.set('categoria', categoria);
       if (etiquetas) params.set('etiquetas', etiquetas);
+      
       router.push(`/buscar?${params.toString()}`);
     }
   };

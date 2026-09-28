@@ -10,7 +10,7 @@ export interface AuthSlice {
   loginConEmail: (email: string, password: string) => Promise<{ success: boolean; error?: any }>;
   registroConEmail: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: any }>;
   logout: () => Promise<void>;
-  borrarCuenta: (password: string) => Promise<{ success: boolean; error?: any }>;
+  borrarCuenta: (password: string) => Promise<{ success: boolean; scheduled?: boolean; error?: any }>;
   checkAuth: () => Promise<User | null>;
 }
 
@@ -91,6 +91,14 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
       const { error } = await authClient.deleteUser({ password });
 
       if (error) {
+        // DELETION_SCHEDULED es el resultado esperado del soft-delete
+        if (error.message === 'DELETION_SCHEDULED') {
+          await authClient.signOut();
+          set({ user: null, loadingAuth: false });
+          get().limpiarLista();
+          get().limpiarDirecciones();
+          return { success: true, scheduled: true };
+        }
         set({ loadingAuth: false });
         return { success: false, error };
       }

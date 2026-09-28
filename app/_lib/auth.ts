@@ -48,19 +48,23 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  hooks: {
+hooks: {
   after: async (ctx) => {
-    const c = ctx as unknown as { path: string; context: { newSession?: { user: { id: string } } } };
-    
-    if (c.path !== '/sign-in/email') return;
-    
-    const userId = c.context.newSession?.user?.id;
-    if (!userId) return;
+    try {
+      const path = (ctx as any).path;
+      if (path !== '/sign-in/email') return {};
 
-    await pool.query(
-      `update "user" set "deletionScheduledAt" = null where id = $1 and "deletionScheduledAt" is not null`,
-      [userId]
-    );
+      const newSession = (ctx as any).context?.newSession;
+      if (!newSession?.user?.id) return {};
+
+      await pool.query(
+        `update "user" set "deletionScheduledAt" = null where id = $1 and "deletionScheduledAt" is not null`,
+        [newSession.user.id]
+      );
+    } catch {
+      // silencioso
+    }
+    return {};
   },
 },
   advanced: {

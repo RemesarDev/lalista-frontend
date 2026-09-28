@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { XIcon, ShareNetworkIcon, TrashIcon, UsersThreeIcon } from '@phosphor-icons/react';
 import type { UsuarioPublico } from '@/app/_types/usuarios';
 import ConfirmModal from '@/app/_components/global/ConfirmModal';
+import { Button } from '@/app/_components/global/Button';
 
 interface MiembroLista extends UsuarioPublico {
     rol: 'owner' | 'viewer' | 'editor';
@@ -176,12 +177,15 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
 
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
+                        {/* Ojo: bg-lila-100/text-lila-600 no son clases válidas (no existen en el theme,
+                            no pintan nada) y quedaron duplicadas con bg-purple-100/text-purple-600 que sí
+                            funcionan. Bug aparte, no lo toco acá, fuera del alcance de esta migración. */}
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-lila-100 text-lila-600 bg-purple-100 text-purple-600">
                             <UsersThreeIcon size={20} weight="regular" />
                         </div>
-                        <button onClick={onClose} disabled={loading} className="text-slate-400 hover:text-slate-600 disabled:opacity-50">
+                        <Button variant="ghost" onClick={onClose} disabled={loading}>
                             <XIcon size={20} weight="bold" />
-                        </button>
+                        </Button>
                     </div>
 
                     <h2 className="text-lg font-bold text-slate-900">Compartir lista</h2>
@@ -203,7 +207,8 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                             className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:bg-white focus:border-slate-900 disabled:opacity-50"
                         />
 
-                        {/* Sugerencias */}
+                        {/* Sugerencias — fila de lista clickeable, no un botón del design
+                            system (sin color de fondo propio). Sin migrar. */}
                         {sugerencias.length > 0 && (
                             <div className="absolute top-full left-0 right-0 mt-1 rounded-2xl border border-slate-200 bg-white shadow-lg z-10 overflow-hidden">
                                 {sugerencias.map((u) => (
@@ -239,7 +244,10 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                         )}
                     </div>
 
-                    {/* Selector de rol */}
+                    {/* Selector de rol — es un toggle de 2 estados (segmented control), no un
+                        Button estático: cambia de color entero según cuál esté seleccionado.
+                        Ni FilterPill (otro radio/color) ni Button lo cubren tal cual hoy.
+                        Sin migrar, a la espera de definir ese patrón en la charla de propiedades. */}
                     {usuarioSeleccionado && (
                         <div className="mt-4">
                             <label className="mb-1 block text-sm font-medium text-slate-700">Rol</label>
@@ -309,6 +317,10 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
                                                     <option value="viewer">Lector</option>
                                                     <option value="editor">Editor</option>
                                                 </select>
+                                                {/* Ícono de borrar: hover:text-red-500 propio, distinto del
+                                                    hover:text-slate-600 que trae el variant ghost. Forzarlo acá
+                                                    generaría la misma colisión de clases que evitamos en fase 1,
+                                                    ahora en color en vez de tamaño. Sin migrar. */}
                                                 <button
                                                     type="button"
                                                     onClick={() => setMiembroPendienteEliminar(miembro)}
@@ -329,14 +341,18 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
 
                     {/* Botones */}
                     <div className="mt-6 flex flex-col gap-2">
-                        <button
+                        <Button
+                            variant="primary"
+                            fullWidth
                             onClick={handleCompartir}
                             disabled={!usuarioSeleccionado || loading}
-                            className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
+                            className="gap-2 rounded-xl px-4 py-2.5"
                         >
                             <ShareNetworkIcon size={16} weight="bold" />
                             {loading ? 'Compartiendo...' : 'Compartir'}
-                        </button>
+                        </Button>
+                        {/* Cancelar: bg-slate-100, el mismo "patrón muted" pendiente
+                            (3ra vez que aparece). Sin migrar, a propósito. */}
                         <button
                             onClick={onClose}
                             disabled={loading}

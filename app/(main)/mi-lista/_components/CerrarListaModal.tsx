@@ -2,6 +2,7 @@
 'use client';
 
 import { XIcon, WarningCircleIcon, FloppyDiskIcon, DoorOpenIcon } from '@phosphor-icons/react';
+import { Button } from '@/app/_components/global/Button';
 
 interface CerrarListaModalProps {
     isOpen: boolean;
@@ -31,13 +32,9 @@ export function CerrarListaModal({
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-orange-600">
                         <WarningCircleIcon size={24} weight="regular" />
                     </div>
-                    <button
-                        onClick={onClose}
-                        disabled={loading}
-                        className="text-slate-400 hover:text-slate-600 disabled:opacity-50"
-                    >
+                    <Button variant="ghost" onClick={onClose} disabled={loading}>
                         <XIcon size={20} weight="bold" />
-                    </button>
+                    </Button>
                 </div>
 
                 <h2 className="text-lg font-bold text-slate-900">¿Cerrar lista?</h2>
@@ -46,14 +43,19 @@ export function CerrarListaModal({
                 </p>
 
                 <div className="mt-6 flex flex-col gap-2">
-                    <button
+                    <Button
+                        variant="primary"
+                        fullWidth
                         onClick={onSincronizarYCerrar}
                         disabled={loading}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
+                        className="gap-2 rounded-xl px-4 py-2.5"
                     >
                         <FloppyDiskIcon size={16} weight="bold" />
                         {loading ? 'Sincronizando...' : 'Sincronizar y cerrar'}
-                    </button>
+                    </Button>
+
+                    {/* Sin migrar a propósito: bg-slate-100 no matchea ningún variant
+                        actual de Button (es el "patrón muted" pendiente de definir). */}
                     <button
                         onClick={onCerrarSinGuardar}
                         disabled={loading}
@@ -62,13 +64,16 @@ export function CerrarListaModal({
                         <DoorOpenIcon size={16} weight="bold" />
                         Cerrar sin guardar
                     </button>
-                    <button
+
+                    <Button
+                        variant="ghost"
+                        fullWidth
                         onClick={onClose}
                         disabled={loading}
-                        className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+                        className="rounded-xl px-4 py-2.5"
                     >
                         Cancelar
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

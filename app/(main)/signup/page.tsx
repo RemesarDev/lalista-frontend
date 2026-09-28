@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import { useSignupForm } from './_hooks/useSignupForm';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
+import { Button } from '@/app/_components/global/Button';
 
 export default function SignupPage() {
     const router = useRouter();
@@ -116,13 +117,9 @@ export default function SignupPage() {
                     </div>
 
                     {/* Botón Submit */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full mt-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
-                    >
+                    <Button type="submit" variant="primary" fullWidth disabled={loading} className="mt-2 rounded-2xl px-4 py-3">
                         {loading ? "Creando cuenta..." : "Registrarse"}
-                    </button>
+                    </Button>
 
                     {mensajeError && (
                         <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

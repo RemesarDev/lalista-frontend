@@ -3,6 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { FloppyDiskIcon, XIcon } from '@phosphor-icons/react';
+import { Button } from '@/app/_components/global/Button';
 
 interface ModalGuardarListaProps {
     isOpen: boolean;
@@ -52,13 +53,9 @@ export function ModalGuardarLista({ isOpen, onClose, onConfirm, loading }: Modal
                         <h2 className="text-base font-bold text-slate-900">Guardar lista</h2>
                         <p className="text-xs text-slate-400 mt-0.5">Se guardará en tu cuenta</p>
                     </div>
-                    <button
-                        onClick={onClose}
-                        disabled={loading}
-                        className="text-slate-400 hover:text-slate-600 transition disabled:opacity-50"
-                    >
+                    <Button variant="ghost" onClick={onClose} disabled={loading}>
                         <XIcon size={20} weight="bold" />
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Body */}
@@ -80,21 +77,25 @@ export function ModalGuardarLista({ isOpen, onClose, onConfirm, loading }: Modal
                     </div>
 
                     <div className="flex flex-col gap-2 pt-1">
-                        <button
+                        <Button
+                            variant="primary"
+                            fullWidth
                             onClick={handleConfirm}
                             disabled={loading}
-                            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                            className="gap-2 rounded-2xl px-4 py-3"
                         >
                             <FloppyDiskIcon size={18} weight="bold" />
                             {loading ? 'Guardando...' : 'Guardar lista'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            fullWidth
                             onClick={onClose}
                             disabled={loading}
-                            className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                            className="rounded-2xl px-4 py-3"
                         >
                             Cancelar
-                        </button>
+                        </Button>
                     </div>
                 </div>
 

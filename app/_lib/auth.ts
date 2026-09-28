@@ -48,6 +48,21 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  hooks: {
+  after: async (ctx) => {
+    const c = ctx as unknown as { path: string; context: { newSession?: { user: { id: string } } } };
+    
+    if (c.path !== '/sign-in/email') return;
+    
+    const userId = c.context.newSession?.user?.id;
+    if (!userId) return;
+
+    await pool.query(
+      `update "user" set "deletionScheduledAt" = null where id = $1 and "deletionScheduledAt" is not null`,
+      [userId]
+    );
+  },
+},
   advanced: {
     useSecureCookies: process.env.NODE_ENV === "production",
   },

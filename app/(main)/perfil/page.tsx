@@ -50,12 +50,14 @@ export default function PerfilPage() {
 
         if (result.success) {
             setModalOpen(false);
-            router.replace('/');
+            if (result.scheduled) {
+                router.replace('/?cuenta=eliminacion-programada');
+            } else {
+                router.replace('/');
+            }
             return;
         }
 
-        // El error se maneja dentro del modal via re-throw o podés pasarlo como estado
-        // Por ahora lo mostramos en consola y dejamos el modal abierto
         console.error('Error al borrar cuenta:', result.error);
     };
 

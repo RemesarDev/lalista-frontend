@@ -6,10 +6,10 @@ import { mapearDireccion, type DbDireccion } from '@/app/_lib/mappers/direccione
 export interface UbicacionUsuario {
   latitud: number | null;
   longitud: number | null;
-  precision: number | null;
+  precision: number | null;     // En metros
   radioBusqueda: number;
-  nombreLugar: string | null;
-  cargandoUbicacion: boolean;
+  nombreLugar: string | null;   // Ej: "Ituzaingó, Buenos Aires"
+  cargandoUbicacion: boolean;   // Para mostrar un spinner visual
 }
 
 export interface SucursalCercana {

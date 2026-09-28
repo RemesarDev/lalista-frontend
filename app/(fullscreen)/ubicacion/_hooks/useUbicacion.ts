@@ -11,6 +11,8 @@ type SugerenciaLugar = {
     mainText: { text: string };
     secondaryText?: { text: string };
   };
+  lat?: number; 
+  lng?: number;
 };
 
 export function useUbicacion() {
@@ -145,20 +147,33 @@ export function useUbicacion() {
 
   // Geocoding via Hono
   const manejarSeleccionDireccion = async (sug: SugerenciaLugar) => {
-    const textoDireccion = sug.text.text;
-    setDireccion(textoDireccion);
-    setSugerencias([]);
+      const textoDireccion = sug.text.text;
+      setDireccion(textoDireccion);
+      setSugerencias([]);
 
-    const res = await fetch(`/api/maps/details?placeId=${encodeURIComponent(sug.placeId)}`);
-    if (!res.ok) return;
+      // Si la sugerencia ya trae las coordenadas desde el autocomplete, las usamos de inmediato
+      if (sug.lat !== undefined && sug.lng !== undefined) {
+        const nuevasCoords = { lat: sug.lat, lng: sug.lng };
+        setCoordenadasPendientes({ ...nuevasCoords, texto: textoDireccion });
+        setZoom(16);
+        return;
+      }
 
-    const data = await res.json();
-    if (!data.lat || !data.lng) return;
+      // Fallback por seguridad en caso de que vinieran vacías
+      try {
+        const res = await fetch(`/api/maps/details?placeId=${encodeURIComponent(sug.placeId)}`);
+        if (!res.ok) return;
 
-    const nuevasCoords = { lat: data.lat, lng: data.lng };
-    setCoordenadasPendientes({ ...nuevasCoords, texto: textoDireccion });
-    setZoom(16);
-  };
+        const data = await res.json();
+        if (!data.lat || !data.lng) return;
+
+        const nuevasCoords = { lat: Number(data.lat), lng: Number(data.lng) };
+        setCoordenadasPendientes({ ...nuevasCoords, texto: textoDireccion });
+        setZoom(16);
+      } catch (err) {
+        console.error('Error al obtener coordenadas del lugar:', err);
+      }
+    };
 
   // Click directo sobre el mapa
   const manejarClickMapa = useCallback(async (lat: number, lng: number) => {

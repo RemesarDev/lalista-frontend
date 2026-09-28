@@ -130,7 +130,6 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                             </div>
                             <div className="text-left">
                                 <p className="text-sm font-semibold text-slate-900">Agregar dirección</p>
-                                <p className="text-xs text-slate-400">Ingresá una nueva dirección de entrega.</p>
                             </div>
                         </button>
                     </div>

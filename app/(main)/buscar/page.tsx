@@ -26,7 +26,6 @@ function ResultadosBusqueda() {
   const categoria = searchParams.get('categoria') || "";
   const etiquetasParam = searchParams.get('etiquetas') || "";
   const etiquetas = etiquetasParam ? etiquetasParam.split(',').filter(Boolean) : [];
-  const hayFiltros = Boolean(categoria) || etiquetas.length > 0;
 
   const actualizarUrl = useCallback(
     (cambios: { categoria?: string; etiquetas?: string[] }) => {
@@ -143,9 +142,13 @@ function ResultadosBusqueda() {
     }
   };
 
-  // Los filtros se muestran siempre que haya alguno activo, incluso mientras
-  // carga o si no hubo resultados: si no, el usuario no tendria como sacarlos.
-  const barraFiltros = hayFiltros ? (
+  // La barra se muestra siempre en esta vista, no solo cuando hay un filtro
+  // activo: los chips especiales tienen que poder elegirse en
+  // cualquier momento, sin necesidad de elegir antes una categoria. El chip
+  // de categoria en si ya se oculta solo cuando no hay categoria elegida
+  // (logica interna de FiltrosBusqueda), asi que no hace falta duplicar esa
+  // condicion aca afuera.
+  const barraFiltros = (
     <div className="pb-4">
       <FiltrosBusqueda
         categoria={categoria}
@@ -154,7 +157,7 @@ function ResultadosBusqueda() {
         onToggleEtiqueta={handleToggleEtiqueta}
       />
     </div>
-  ) : null;
+  );
 
   if (cargando) return (
     <>

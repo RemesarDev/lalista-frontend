@@ -37,7 +37,9 @@ export const mapsRouter = new Hono()
             structuredFormat: {
               mainText: { text: item.name || item.address?.road || item.display_name.split(',')[0] },
               secondaryText: { text: item.display_name }
-            }
+            },
+            lat: parseFloat(item.lat), // 
+            lng: parseFloat(item.lon)
           }
         }));
 

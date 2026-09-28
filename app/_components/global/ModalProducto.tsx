@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowsLeftRightIcon, ShoppingBagIcon, XIcon } from '@phosphor-icons/react/dist/ssr';
+import { ArrowsLeftRightIcon, ShoppingBagIcon, XIcon, MagnifyingGlassPlusIcon } from '@phosphor-icons/react/dist/ssr';
 import { useComparar } from '@/app/_hooks/useComparar';
 import { useDetalleProducto } from '@/app/_hooks/useDetalleProducto';
 import { formatearNombre } from '@/app/_lib/utils/formatters';
@@ -27,8 +27,14 @@ export function ModalProducto() {
   const { ids: idsComparar, agregar: agregarAComparar, quitar: quitarDeComparar, esperandoSegundo } = useComparar();
 
   const [errorImagen, setErrorImagen] = useState(false);
+  const [zoomActivo, setZoomActivo] = useState(false);
 
   const cerrar = () => {
+    if (zoomActivo) {
+      setZoomActivo(false);
+      return;
+    }
+
     const params = new URLSearchParams(searchParams.toString());
     params.delete('producto');
     const query = params.toString();
@@ -52,11 +58,12 @@ export function ModalProducto() {
       document.body.style.overflow = overflowPrevio;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idProducto]);
+  }, [idProducto, zoomActivo]);
 
-  // Cada producto nuevo arranca sin error de imagen.
+  // Cada producto nuevo arranca sin error de imagen y con el zoom cerrado.
   useEffect(() => {
     setErrorImagen(false);
+    setZoomActivo(false);
   }, [idProducto]);
 
   if (!idProducto) return null;
@@ -66,141 +73,175 @@ export function ModalProducto() {
   // El contenido sale de v_producto_contenido, que combina las columnas del
   // SEPA con lo extraido de la descripcion: el 72% del catalogo llega como
   // "1 UNI" aunque el paquete diga 500 g en el nombre.
-  //
-  // Si no se pudo determinar, la fila no se muestra: "1 UNI" no informa nada.
   const presentacion = producto?.presentacion ?? null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-center"
-      onClick={cerrar}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Detalle del producto"
-    >
+    <>
       <div
-        className="max-h-[85vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:max-w-md sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-center"
+        onClick={cerrar}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Detalle del producto"
       >
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <h2 className="font-display text-sm font-black uppercase tracking-wide text-slate-400">
-            Detalle del producto
-          </h2>
-          <button
-            type="button"
-            onClick={cerrar}
-            aria-label="Cerrar"
-            className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-          >
-            <XIcon size={18} weight="bold" />
-          </button>
-        </div>
-
-        {cargando && (
-          <div className="flex flex-col gap-3 py-4">
-            <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
-            <div className="h-4 w-3/4 animate-pulse rounded bg-slate-100" />
-            <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+        <div
+          className="max-h-[85vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:max-w-md sm:rounded-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <h2 className="font-display text-sm font-black uppercase tracking-wide text-slate-400">
+              Detalle del producto
+            </h2>
+            <button
+              type="button"
+              onClick={cerrar}
+              aria-label="Cerrar"
+              className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            >
+              <XIcon size={18} weight="bold" />
+            </button>
           </div>
-        )}
 
-        {error && !cargando && (
-          <p className="py-8 text-center text-sm text-slate-400">
-            No pudimos cargar este producto. Probá de nuevo en un rato.
-          </p>
-        )}
+          {cargando && (
+            <div className="flex flex-col gap-3 py-4">
+              <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
+              <div className="h-4 w-3/4 animate-pulse rounded bg-slate-100" />
+              <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+            </div>
+          )}
 
-        {producto && !cargando && (
-          <>
-            <div className="relative mb-4 flex h-44 w-full items-center justify-center overflow-hidden rounded-xl bg-slate-50">
-              {mostrarImagen ? (
-                <Image
-                  src={producto.url_imagen!}
-                  alt={producto.nombre}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 400px"
-                  className="object-contain p-4"
-                  onError={() => setErrorImagen(true)}
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-2 px-6 text-slate-400">
-                  <ShoppingBagIcon size={32} weight="thin" />
-                  <span className="text-center text-[11px] leading-tight">
-                    Sin imagen disponible
-                  </span>
+          {error && !cargando && (
+            <p className="py-8 text-center text-sm text-slate-400">
+              No pudimos cargar este producto. Probá de nuevo en un rato.
+            </p>
+          )}
+
+          {producto && !cargando && (
+            <>
+              {/* Contenedor de la imagen con indicador de zoom */}
+              <div 
+                onClick={() => mostrarImagen && setZoomActivo(true)}
+                className={`relative mb-4 flex h-44 w-full items-center justify-center overflow-hidden rounded-xl bg-slate-50 ${mostrarImagen ? 'cursor-zoom-in group' : ''}`}
+              >
+                {mostrarImagen ? (
+                  <>
+                    <Image
+                      src={producto.url_imagen!}
+                      alt={producto.nombre}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 400px"
+                      className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+                      onError={() => setErrorImagen(true)}
+                    />
+                    <div className="absolute bottom-2 right-2 bg-slate-900/60 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-1 rounded-md flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MagnifyingGlassPlusIcon size={14} weight="bold" />
+                      Ampliar envase
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 px-6 text-slate-400">
+                    <ShoppingBagIcon size={32} weight="thin" />
+                    <span className="text-center text-[11px] leading-tight">
+                      Sin imagen disponible
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <h3 className="font-display text-lg font-black leading-tight text-slate-900">
+                {formatearNombre(producto.nombre)}
+              </h3>
+
+              {producto.etiquetas.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {producto.etiquetas.map((e) => (
+                    <span
+                      key={e.codigo}
+                      className="rounded-full bg-accent-600 px-2.5 py-1 font-display text-[11px] font-bold text-white"
+                    >
+                      {e.nombre}
+                    </span>
+                  ))}
                 </div>
               )}
-            </div>
 
-            <h3 className="font-display text-lg font-black leading-tight text-slate-900">
-              {formatearNombre(producto.nombre)}
-            </h3>
+              <dl className="mt-4 divide-y divide-slate-100 border-t border-slate-100">
+                <Fila etiqueta="Marca" valor={producto.marca} />
+                <Fila etiqueta="Presentación" valor={presentacion} />
+                <Fila
+                  etiqueta="Categoría"
+                  valor={producto.categoria}
+                  href={
+                    producto.categoria_slug
+                      ? `/buscar?categoria=${encodeURIComponent(producto.categoria_slug)}`
+                      : undefined
+                  }
+                  onNavegar={cerrar}
+                />
+                <Fila etiqueta="Rubro" valor={producto.rubro} />
+                <Fila etiqueta="Código de barras" valor={producto.id_producto} mono />
+              </dl>
 
-            {producto.etiquetas.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {producto.etiquetas.map((e) => (
-                  <span
-                    key={e.codigo}
-                    className="rounded-full bg-accent-600 px-2.5 py-1 font-display text-[11px] font-bold text-white"
-                  >
-                    {e.nombre}
-                  </span>
-                ))}
-              </div>
-            )}
+              {producto.etiquetas.length > 0 && (
+                <p className="mt-4 text-[11px] leading-relaxed text-slate-400">
+                  Los datos vienen de la descripción del fabricante: verificá siempre el envase.
+                </p>
+              )}
 
-            <dl className="mt-4 divide-y divide-slate-100 border-t border-slate-100">
-              <Fila etiqueta="Marca" valor={producto.marca} />
-              <Fila etiqueta="Presentación" valor={presentacion} />
-              <Fila
-                etiqueta="Categoría"
-                valor={producto.categoria}
-                href={
-                  producto.categoria_slug
-                    ? `/buscar?categoria=${encodeURIComponent(producto.categoria_slug)}`
-                    : undefined
-                }
-                onNavegar={cerrar}
-              />
-              <Fila etiqueta="Rubro" valor={producto.rubro} />
-              <Fila etiqueta="Código de barras" valor={producto.id_producto} mono />
-            </dl>
+              {idsComparar.includes(producto.id_producto) && (
+                <button
+                  type="button"
+                  onClick={() => quitarDeComparar(producto.id_producto)}
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent-300 bg-slate-50 px-4 py-2.5 font-display text-sm font-bold text-slate-500 transition hover:text-slate-700 active:scale-[0.98]"
+                >
+                  <XIcon size={16} weight="bold" />
+                  Quitar de la comparación
+                </button>
+              )}
 
-            {producto.etiquetas.length > 0 && (
-              <p className="mt-4 text-[11px] leading-relaxed text-slate-400">
-                Los datos vienen de la descripción del fabricante: verificá siempre el envase.
-              </p>
-            )}
-
-            {/* Comparar: el primer toque elige el producto, el segundo abre la
-                comparacion. No se ofrece comparar un producto consigo mismo. */}
-            {/* Si el producto abierto ya es el elegido, se ofrece cancelar en
-                vez de dejar el espacio vacio sin explicacion. */}
-            {idsComparar.includes(producto.id_producto) && (
-              <button
-                type="button"
-                onClick={() => quitarDeComparar(producto.id_producto)}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent-300 bg-slate-50 px-4 py-2.5 font-display text-sm font-bold text-slate-500 transition hover:text-slate-700 active:scale-[0.98]"
-              >
-                <XIcon size={16} weight="bold" />
-                Quitar de la comparación
-              </button>
-            )}
-
-            {!idsComparar.includes(producto.id_producto) && (
-              <button
-                type="button"
-                onClick={() => agregarAComparar(producto.id_producto)}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent-300 bg-white px-4 py-2.5 font-display text-sm font-bold text-slate-700 transition hover:border-primary-400 hover:text-primary-500 active:scale-[0.98]"
-              >
-                <ArrowsLeftRightIcon size={16} weight="bold" />
-                {esperandoSegundo ? 'Comparar con el elegido' : 'Comparar con otro producto'}
-              </button>
-            )}
-          </>
-        )}
+              {!idsComparar.includes(producto.id_producto) && (
+                <button
+                  type="button"
+                  onClick={() => agregarAComparar(producto.id_producto)}
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent-300 bg-white px-4 py-2.5 font-display text-sm font-bold text-slate-700 transition hover:border-primary-400 hover:text-primary-500 active:scale-[0.98]"
+                >
+                  <ArrowsLeftRightIcon size={16} weight="bold" />
+                  {esperandoSegundo ? 'Comparar con el elegido' : 'Comparar con otro producto'}
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Visor de Zoom en Pantalla Completa (Lightbox) */}
+      {zoomActivo && producto?.url_imagen && (
+        <div
+          onClick={() => setZoomActivo(false)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 cursor-zoom-out"
+        >
+          <button
+            type="button"
+            onClick={() => setZoomActivo(false)}
+            aria-label="Cerrar zoom"
+            className="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
+          >
+            <XIcon size={24} weight="bold" />
+          </button>
+          
+          <div className="relative w-full h-full max-w-4xl max-h-[90vh] flex items-center justify-center">
+            <Image
+              src={producto.url_imagen}
+              alt={producto.nombre}
+              fill
+              sizes="100vw"
+              className="object-contain p-2"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -213,7 +254,6 @@ interface FilaProps {
 }
 
 function Fila({ etiqueta, valor, href, onNavegar, mono }: FilaProps) {
-  // Sin dato no se muestra la fila: una ficha con "Marca: —" no aporta.
   if (!valor) return null;
 
   const contenido = (

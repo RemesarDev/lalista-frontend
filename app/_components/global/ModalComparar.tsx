@@ -94,6 +94,7 @@ export function ModalComparar() {
                 etiqueta="Presentación"
                 a={a.detalle.presentacion}
                 b={b.detalle.presentacion}
+                resaltar
               />
               <FilaComparada etiqueta="Categoría" a={a.detalle.categoria} b={b.detalle.categoria} />
               <FilaComparada
@@ -142,9 +143,10 @@ interface FilaProps {
   etiqueta: string;
   a: string | null;
   b: string | null;
+  resaltar?: boolean;
 }
 
-function FilaComparada({ etiqueta, a, b }: FilaProps) {
+function FilaComparada({ etiqueta, a, b, resaltar }: FilaProps) {
   // Si ninguno de los dos tiene el dato, la fila no aporta nada.
   if (!a && !b) return null;
 
@@ -153,9 +155,9 @@ function FilaComparada({ etiqueta, a, b }: FilaProps) {
       <dt className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
         {etiqueta}
       </dt>
-      <dd className="grid grid-cols-2 gap-3 text-sm text-slate-800">
-        <span>{a ?? <span className="text-slate-300">—</span>}</span>
-        <span>{b ?? <span className="text-slate-300">—</span>}</span>
+      <dd className={`grid grid-cols-2 gap-3 text-sm ${resaltar ? 'font-bold text-slate-900' : 'text-slate-800'}`}>
+        <span>{a ?? <span className="text-slate-300 font-normal">—</span>}</span>
+        <span>{b ?? <span className="text-slate-300 font-normal">—</span>}</span>
       </dd>
     </div>
   );
@@ -172,12 +174,6 @@ function Precios({ a, b }: { a: ProductoComparado; b: ProductoComparado }) {
     );
   }
 
-  // Se listan TODOS los comercios donde este alguno de los dos, no solo donde
-  // esten ambos. Saber que un producto no se consigue en cierto super tambien
-  // es informacion util, y ocultarlo dejaba la comparacion casi vacia.
-  //
-  // Primero los comercios donde estan los dos (que son los que sirven para
-  // comparar), y despues el resto.
   const todas = [...a.sucursales.map((s) => s.cadena), ...b.sucursales.map((s) => s.cadena)];
   const unicos = Array.from(new Set(todas)).sort((x, y) => {
     const xCompleto = a.sucursales.some((s) => s.cadena === x) && b.sucursales.some((s) => s.cadena === x);
@@ -202,7 +198,6 @@ function Precios({ a, b }: { a: ProductoComparado; b: ProductoComparado }) {
             const pa = a.sucursales.find((s) => s.cadena === cadena)?.precio ?? null;
             const pb = b.sucursales.find((s) => s.cadena === cadena)?.precio ?? null;
 
-            // El mas barato se resalta. Empate: ninguno.
             const aGana = pa !== null && pb !== null && pa < pb;
             const bGana = pa !== null && pb !== null && pb < pa;
 
@@ -228,8 +223,6 @@ function Precios({ a, b }: { a: ProductoComparado; b: ProductoComparado }) {
 }
 
 function Precio({ valor, destacado }: { valor: number | null; destacado: boolean }) {
-  // Sin precio significa que ese comercio no vende ese producto, no que falte
-  // el dato. Se aclara para que el guion no se lea como un error.
   if (valor === null) {
     return <span className="text-xs text-slate-300">No disponible</span>;
   }

@@ -24,6 +24,15 @@ body {
   color: var(--color-slate-900);
 }
 
+@keyframes sheet-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.animate-sheet-up {
+  animation: sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
 a.auto-href::before {
   content: attr(href);
   color: color-mix(in srgb, var(--color-primary-400), black 20%);

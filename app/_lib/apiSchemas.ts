@@ -49,19 +49,36 @@ const etiquetasParam = z
   });
 
 export const productosQuerySchema = z.object({
-  search: z.string().optional(),
+  search: z.string().max(100, { message: 'La búsqueda es demasiado larga' }).optional(),
   sucursales_ids: z.string().transform((val) => val.split(',').filter(Boolean)),
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('20'),
+  page: z.coerce
+    .number()
+    .int('La página debe ser un número entero')
+    .min(1, 'La página mínima es 1')
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int('El límite debe ser un número entero')
+    .min(1, 'El límite mínimo es 1')
+    .max(50, 'El límite máximo por consulta es 50') 
+    .default(20),
   categoria: categoriaParam,
   etiquetas: etiquetasParam,
 });
 
 export const catalogoQuerySchema = z.object({
-  // Opcional: se puede navegar por categoria sin escribir nada en el buscador.
-  search: z.string().optional(),
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('20'),
+  search: z.string().max(100, { message: 'La búsqueda es demasiado larga' }).optional(),
+  page: z.coerce
+    .number()
+    .int('La página debe ser un número entero')
+    .min(1, 'La página mínima es 1')
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int('El límite debe ser un número entero')
+    .min(1, 'El límite mínimo es 1')
+    .max(50, 'El límite máximo por consulta es 50') 
+    .default(20),
   categoria: categoriaParam,
   etiquetas: etiquetasParam,
 });

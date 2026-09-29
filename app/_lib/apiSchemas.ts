@@ -24,12 +24,14 @@ export const sucursalesCercanasQuerySchema = z.object({
 // 2. ESQUEMAS DE PRODUCTOS (Supabase DB)
 // ==========================================
 // Slug de categoria o rubro. Minusculas, numeros y guiones: nada mas.
+// ==========================================
+// 2. ESQUEMAS DE PRODUCTOS (Supabase DB)
+// ==========================================
 const categoriaParam = z
   .string()
   .regex(/^[a-z0-9-]+$/, { message: 'Slug de categoria invalido' })
   .optional();
-// Etiquetas dietarias: llegan como "SIN_TACC,DIET" y se convierten a array.
-// Se validan contra mayusculas y guion bajo para que no entre texto arbitrario.
+
 const etiquetasParam = z
   .string()
   .optional()
@@ -40,22 +42,42 @@ const etiquetasParam = z
   .refine((arr) => arr.every((e) => /^[A-Z_]+$/.test(e)), {
     message: 'Etiqueta invalida',
   });
+
 export const productosQuerySchema = z.object({
-  search: z.string().optional(),
+  search: z.string().max(100, { message: 'La búsqueda es demasiado larga' }).optional(),
   sucursales_ids: z.string().transform((val) => val.split(',').filter(Boolean)),
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('20'),
+  page: z.coerce
+    .number()
+    .int('La página debe ser un número entero')
+    .min(1, 'La página mínima es 1')
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int('El límite debe ser un número entero')
+    .min(1, 'El límite mínimo es 1')
+    .max(50, 'El límite máximo por consulta es 50') 
+    .default(20),
   categoria: categoriaParam,
   etiquetas: etiquetasParam,
 });
+
 export const catalogoQuerySchema = z.object({
-  // Opcional: se puede navegar por categoria sin escribir nada en el buscador.
-  search: z.string().optional(),
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('20'),
+  search: z.string().max(100, { message: 'La búsqueda es demasiado larga' }).optional(),
+  page: z.coerce
+    .number()
+    .int('La página debe ser un número entero')
+    .min(1, 'La página mínima es 1')
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int('El límite debe ser un número entero')
+    .min(1, 'El límite mínimo es 1')
+    .max(50, 'El límite máximo por consulta es 50') 
+    .default(20),
   categoria: categoriaParam,
   etiquetas: etiquetasParam,
 });
+
 export const preciosPorIdsQuerySchema = z.object({
   ids: z.string().min(1, 'Se requiere al menos un ID de producto'),
   sucursales_ids: z.string().min(1, 'Se requiere al menos un ID de sucursal'),

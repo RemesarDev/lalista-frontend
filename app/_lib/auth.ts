@@ -6,9 +6,11 @@ const appUrl = (
   process.env.NEXT_PUBLIC_APP_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
 ).replace(/\/$/, "");
+const vercelDeployUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+const vercelBranchUrl = process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : null;
 const localOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
 const trustedOrigins = Array.from(
-  new Set([appUrl, ...localOrigins].filter(Boolean))
+  new Set([appUrl, vercelDeployUrl, vercelBranchUrl, ...localOrigins].filter(Boolean) as string[])
 );
 
 const databaseUrl = process.env.DATABASE_URL;

@@ -71,15 +71,14 @@ export const productosRouter = new Hono()
 
   .get('/productos', zValidator('query', productosQuerySchema), async (c) => {
     const { search, sucursales_ids, page, limit, categoria, etiquetas } = c.req.valid('query');
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 20;
-    const offset = (pageNum - 1) * limitNum;
+
+    const offset = (page - 1) * limit;
 
     // sucursales_ids ya viene como string[] gracias a Zod
     const { data, error } = await supabase.rpc('buscar_productos_por_sucursales', {
       p_sucursales_ids: sucursales_ids,
       search_term: search ?? null,
-      p_limit: limitNum,
+      p_limit: limit,
       p_offset: offset,
       p_categoria_slug: categoria ?? null,
       p_etiquetas: etiquetas.length > 0 ? etiquetas : null,
@@ -95,19 +94,17 @@ export const productosRouter = new Hono()
 
     return c.json({ 
       productos,
-      hasMore: rows.length === limitNum 
+      hasMore: rows.length === limit
     });
   })
 
   .get('/catalogo', zValidator('query', catalogoQuerySchema), async (c) => {
     const { search, page, limit, categoria, etiquetas } = c.req.valid('query');
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 20;
-    const offset = (pageNum - 1) * limitNum;
+    const offset = (page - 1) * limit;
 
     const { data, error } = await supabase.rpc('buscar_catalogo', {
       search_term: search ?? null,
-      p_limit: limitNum,
+      p_limit: limit,
       p_offset: offset,
       p_categoria_slug: categoria ?? null,
       p_etiquetas: etiquetas.length > 0 ? etiquetas : null,
@@ -123,7 +120,7 @@ export const productosRouter = new Hono()
 
     return c.json({ 
       productos,
-      hasMore: rows.length === limitNum
+      hasMore: rows.length === limit
     });
   })
 

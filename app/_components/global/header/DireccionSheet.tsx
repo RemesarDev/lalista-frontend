@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPinIcon, PlusIcon, XIcon, CheckCircleIcon, TrashIcon, CaretRightIcon } from '@phosphor-icons/react';
+import { MapPinIcon, PlusIcon, SwapIcon, XIcon, CheckCircleIcon, TrashIcon } from '@phosphor-icons/react';
 import { useListaStore } from '@/app/_store/store';
 import { useDirecciones } from '@/app/_hooks/useDirecciones';
 import type { DireccionGuardada } from '@/app/_types/direcciones';
@@ -26,115 +26,111 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm sm:p-4 md:pb-0 pb-14"
             onClick={onClose}
         >
             <div
-                className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+                className="animate-sheet-up sm:[animation:none] w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl max-h-[85svh] min-h-[38vh] sm:min-h-0 flex flex-col"
                 role="dialog"
                 aria-modal="true"
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Drag handle — solo visible en móvil */}
+                <div className="flex justify-center pt-3 pb-1 shrink-0 sm:hidden">
+                    <div className="w-10 h-1.5 rounded-full bg-slate-200" />
+                </div>
+
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between px-6 pt-4 sm:pt-6 pb-3 shrink-0">
                     <h2 className="text-lg font-bold text-slate-900">Elegí tu dirección</h2>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
                         <XIcon size={20} weight="bold" />
                     </button>
                 </div>
 
-                {/* Direcciones guardadas (logueado con direcciones) */}
-                {mostrarGuardadas && (
-                    <div className="mb-2 divide-y divide-slate-100">
-                        {direccionesGuardadas.map((dir: DireccionGuardada) => (
+                {/* Lista scrollable */}
+                <div className="flex-1 overflow-y-auto px-6">
+                    {/* Direcciones guardadas (logueado con direcciones) */}
+                    {mostrarGuardadas && (
+                        <div className="divide-y divide-slate-100">
+                            {direccionesGuardadas.map((dir: DireccionGuardada) => (
+                                <button
+                                    key={dir.id}
+                                    onClick={() => seleccionarDireccion(dir)}
+                                    className="flex items-center justify-between w-full py-3"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <MapPinIcon
+                                            size={20}
+                                            weight="fill"
+                                            className={dir.esActiva ? 'text-orange-500 shrink-0' : 'text-slate-400 shrink-0'}
+                                        />
+                                        <span className="text-sm font-semibold text-slate-900 truncate text-left">
+                                            {dir.nombreLugar}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                                        {dir.esActiva && (
+                                            <CheckCircleIcon size={22} className="text-emerald-600" weight="fill" />
+                                        )}
+                                        <span
+                                            role="button"
+                                            onClick={(e) => eliminarDireccion(e, dir.id)}
+                                            className="p-1 rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                                        >
+                                            <TrashIcon size={16} weight="bold" />
+                                        </span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Dirección anónima — solo para no logueados */}
+                    {!user && !mostrarGuardadas && ubicacion.nombreLugar && (
+                        <div className="flex items-center justify-between w-full py-3 border-b border-slate-100">
                             <button
-                                key={dir.id}
-                                onClick={() => seleccionarDireccion(dir)}
-                                className="flex items-center justify-between w-full py-3"
+                                onClick={irAgregarDireccion}
+                                className="flex items-center gap-3 min-w-0 flex-1 group"
                             >
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <MapPinIcon
-                                        size={20}
-                                        weight="fill"
-                                        className={dir.esActiva ? 'text-orange-500 shrink-0' : 'text-slate-400 shrink-0'}
-                                    />
-                                    <span className="text-sm font-semibold text-slate-900 truncate text-left">
-                                        {dir.nombreLugar}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0 ml-2">
-                                    {dir.esActiva && (
-                                        <CheckCircleIcon size={22} className="text-emerald-600" weight="fill" />
-                                    )}
-                                    <span
-                                        role="button"
-                                        onClick={(e) => eliminarDireccion(e, dir.id)}
-                                        className="p-1 rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors"
-                                    >
-                                        <TrashIcon size={16} weight="bold" />
-                                    </span>
-                                </div>
+                                <MapPinIcon size={20} className="text-orange-500 shrink-0" weight="fill" />
+                                <span className="text-sm font-semibold text-slate-900 truncate">{ubicacion.nombreLugar}</span>
                             </button>
-                        ))}
-                    </div>
-                )}
+                            <button
+                                onClick={limpiarUbicacion}
+                                className="p-1.5 rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors ml-2 shrink-0"
+                            >
+                                <TrashIcon size={16} weight="bold" />
+                            </button>
+                        </div>
+                    )}
 
-                {/* Dirección anónima — solo para no logueados */}
-                {!user && !mostrarGuardadas && ubicacion.nombreLugar && (
-                    <div className="flex items-center justify-between w-full py-3 border-b border-slate-100 mb-2">
-                        <button
-                            onClick={irAgregarDireccion}
-                            className="flex items-center gap-3 min-w-0 flex-1 group"
-                        >
-                            <MapPinIcon size={20} className="text-orange-500 shrink-0" weight="fill" />
-                            <span className="text-sm font-semibold text-slate-900 truncate">{ubicacion.nombreLugar}</span>
-                            <CaretRightIcon size={16} className="text-slate-400 shrink-0 ml-1" weight="bold" />
-                        </button>
-                        <button
-                            onClick={limpiarUbicacion}
-                            className="p-1.5 rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors ml-2 shrink-0"
-                        >
-                            <TrashIcon size={16} weight="bold" />
-                        </button>
-                    </div>
-                )}
+                    {/* Sin direcciones aún */}
+                    {!mostrarGuardadas && !ubicacion.nombreLugar && (
+                        <p className="text-sm text-slate-400 py-4">Todavía no tenés ninguna dirección guardada.</p>
+                    )}
+                </div>
 
-                {/* Sin direcciones aún */}
-                {!mostrarGuardadas && !ubicacion.nombreLugar && (
+                {/* Botón fijo en el piso */}
+                <div
+                    className="shrink-0 px-6 pt-3 border-t border-slate-100"
+                    style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+                >
                     <button
                         onClick={irAgregarDireccion}
-                        className="flex items-center gap-3 w-full py-3 group"
+                        className="flex items-center gap-3 w-full py-2.5 group"
                     >
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 group-hover:bg-orange-100 transition-colors shrink-0">
-                            <PlusIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
+                            {!user && ubicacion.nombreLugar
+                                ? <SwapIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
+                                : <PlusIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
+                            }
                         </div>
-                        <div className="text-left">
-                            <p className="text-sm font-semibold text-slate-900">Añadir dirección</p>
-                            <p className="text-xs text-slate-400">Ingresá una dirección para ver precios cercanos.</p>
-                        </div>
+                        <span className="text-sm font-semibold text-slate-900">
+                            {!user && ubicacion.nombreLugar ? 'Cambiar dirección' : 'Agregar dirección'}
+                        </span>
                     </button>
-                )}
-
-                {/* Más opciones — solo logueados */}
-                {!!user && (
-                    <div className="border-t border-slate-100 mt-4 pt-4">
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
-                            Más opciones
-                        </p>
-                        <button
-                            onClick={irAgregarDireccion}
-                            className="flex items-center gap-3 w-full py-3 group"
-                        >
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 group-hover:bg-orange-100 transition-colors shrink-0">
-                                <PlusIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
-                            </div>
-                            <div className="text-left">
-                                <p className="text-sm font-semibold text-slate-900">Agregar dirección</p>
-                            </div>
-                        </button>
-                    </div>
-                )}
-
+                </div>
             </div>
         </div>
     );

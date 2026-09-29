@@ -6,7 +6,6 @@ import { Button } from '@/app/_components/global/Button';
 import { useListaStore } from '@/app/_store/store';
 import { analytics } from '@/app/_lib/services/analyticsService';
 
-const currentUser = useListaStore((state) => state.user);
 interface ModalBorrarCuentaProps {
     isOpen: boolean;
     onClose: () => void;
@@ -15,6 +14,8 @@ interface ModalBorrarCuentaProps {
 }
 
 export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: ModalBorrarCuentaProps) {
+    const currentUser = useListaStore((state) => state.user); //para las metricas
+
     const [password, setPassword] = useState('');
     const [mostrarPass, setMostrarPass] = useState(false);
     const [error, setError] = useState('');

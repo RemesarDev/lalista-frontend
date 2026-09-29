@@ -6,6 +6,7 @@ import { XIcon, ShareNetworkIcon, TrashIcon, UsersThreeIcon } from '@phosphor-ic
 import type { UsuarioPublico } from '@/app/_types/usuarios';
 import ConfirmModal from '@/app/_components/global/ConfirmModal';
 import { Button } from '@/app/_components/global/Button';
+import { analytics } from '@/app/_lib/services/analyticsService';
 
 interface MiembroLista extends UsuarioPublico {
     rol: 'owner' | 'viewer' | 'editor';
@@ -114,6 +115,14 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             const json = await res.json();
             if (!res.ok) throw new Error(json.error ?? 'Error al compartir');
 
+            // Métricas
+            analytics.listaSharing(
+                listaId,
+                rol,
+                usuarioSeleccionado.id,
+            ).catch(console.error);
+            // Fin métricas
+
             const miembroRes = await fetch(`/api/listas/${listaId}/miembros`, { credentials: 'include' });
             if (miembroRes.ok) {
                 const miembrosJson = await miembroRes.json();
@@ -142,6 +151,15 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             });
             const json = await res.json();
             if (!res.ok) throw new Error(json.error ?? 'Error al cambiar el rol');
+
+            // Métricas
+            analytics.listaSharing(
+                listaId,
+                rol,
+                miembro.id, 
+            ).catch(console.error);
+            // Fin métricas
+
             setMiembros((prev) => prev.map((item) => item.id === miembro.id ? { ...item, rol } : item));
         } catch (err: any) {
             setError(err.message);

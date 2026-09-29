@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { insertAnalyticsEvent } from '@/app/_lib/utils/analytics';
-import { analyticsEventSchema } from '@/app/_lib/apiSchemas'; // <--- Importamos tu esquema
+import { analyticsEventSchema } from '@/app/_lib/apiSchemas';
 
 export const analyticsRouter = new Hono();
 
@@ -16,16 +16,28 @@ analyticsRouter.post('/analytics', async (c) => {
 
     const { eventName, userId, metadata } = result.data;
 
-    // 2. Extraer región de los headers
-    const vercelRegion = c.req.header('x-vercel-ip-city') || 'Argentina';
-    const region = decodeURIComponent(vercelRegion);
+    // 2. Extraer país, provincia y ciudad de los headers de Vercel con decodificación segura
+    const country = c.req.header('x-vercel-ip-country') || 'AR';
+    const rawProvince = c.req.header('x-vercel-ip-country-region');
+    const rawCity = c.req.header('x-vercel-ip-city');
 
-    // 3. Insertar mediante la librería segura
+    const province = rawProvince ? decodeURIComponent(rawProvince) : null;
+    const city = rawCity ? decodeURIComponent(rawCity) : null;
+
+    // Campo general de región heredado por compatibilidad (prioriza ciudad, luego provincia, luego país)
+    const fallbackRegion = city || province || country;
+
+    // 3. Insertar enriqueciendo el metadata con la ubicación detallada
     await insertAnalyticsEvent({
       eventName,
-      region,
+      region: fallbackRegion,
       userId: userId || null,
-      metadata
+      metadata: {
+        ...metadata,
+        country,
+        province,
+        city,
+      }
     });
 
     return c.json({ success: true }, 200);

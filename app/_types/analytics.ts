@@ -5,7 +5,8 @@ export type AnalyticsEventName =
   | 'user_deleted'
   | 'product_searched'
   | 'prices_compared'
-  | 'lista_sharing';
+  | 'lista_sharing'
+  | 'app_error';
 
 export interface AnalyticsEventPayload {
   eventName: AnalyticsEventName;

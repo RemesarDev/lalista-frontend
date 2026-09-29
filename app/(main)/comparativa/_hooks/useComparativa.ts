@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { client } from '@/app/_lib/hono-client';
 import { useListaStore, type SucursalBusqueda } from '@/app/_store/store';
+import { analytics } from '@/app/_lib/services/analyticsService';
 
 export interface ProductoComparativa {
   id: string;
@@ -78,6 +79,15 @@ export const useComparativa = (ids: string[]) => {
 
         if (data?.productos && Array.isArray(data.productos)) {
           setProductos(data.productos);
+
+          //metricas
+          analytics.pricesCompared(
+            ids, 
+            sucursalesIds.length, 
+            ubicacion?.latitud, 
+            ubicacion?.longitud
+          ).catch(console.error);
+          // Fin métricas
         } else {
           setProductos([]);
         }

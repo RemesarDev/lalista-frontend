@@ -3,7 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { TrashIcon, XIcon, EyeIcon, EyeSlashIcon, WarningIcon } from '@phosphor-icons/react';
 import { Button } from '@/app/_components/global/Button';
+import { useListaStore } from '@/app/_store/store';
+import { analytics } from '@/app/_lib/services/analyticsService';
 
+const currentUser = useListaStore((state) => state.user);
 interface ModalBorrarCuentaProps {
     isOpen: boolean;
     onClose: () => void;
@@ -34,6 +37,13 @@ export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: Modal
             return;
         }
         setError('');
+
+        //metricas
+        if (currentUser?.id) {
+        analytics.userDeleted(currentUser.id).catch(console.error);
+        }
+        //metricas
+
         await onConfirm(password);
     };
 

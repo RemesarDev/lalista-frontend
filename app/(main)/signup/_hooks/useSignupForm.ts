@@ -3,7 +3,7 @@ import { usePrefetch } from "./usePrefetch";
 
 export function useSignupForm() {
     // 1. Estados Locales de React
-    const [form, setForm] = useState({ nombre: "", email: "", password: "", confirmPassword: "" });
+    const [form, setForm] = useState({ nombre: "", email: "", password: "" });
     const [erroresTexto, setErroresTexto] = useState<Record<string, string[]>>({});
     const [reglasPass, setReglasPass] = useState({ length: false, upper: false, number: false });
 
@@ -27,7 +27,7 @@ export function useSignupForm() {
         limpiarCampo(campo);
 
         // Solo necesitamos evaluar Zod en tiempo real para las contraseñas
-        if (campo === "password" || campo === "confirmPassword") {
+        if (campo === "password") {
             const modulo = await obtenerValidador();
             const resultado = modulo.validarFormulario(nuevoForm);
             setReglasPass(resultado.reglasPassword);

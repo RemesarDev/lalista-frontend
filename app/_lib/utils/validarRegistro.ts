@@ -1,19 +1,13 @@
 import { z } from "zod";
 
-const registroSchema = z
-    .object({
-        nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
-        email: z.email({ message: "El formato del correo es inválido" }),
-        password: z.string()
-            .min(8, { message: "length" })
-            .regex(/[A-Z]/, { message: "upper" })
-            .regex(/[0-9]/, { message: "number" }),
-        confirmPassword: z.string(),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-        message: "Las contraseñas no coinciden",
-        path: ["confirmPassword"],
-    });
+const registroSchema = z.object({
+    nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
+    email: z.email({ message: "El formato del correo es inválido" }),
+    password: z.string()
+        .min(8, { message: "length" })
+        .regex(/[A-Z]/, { message: "upper" })
+        .regex(/[0-9]/, { message: "number" }),
+});
 
 export type DatosRegistro = z.infer<typeof registroSchema>;
 
@@ -46,7 +40,6 @@ export function validarFormulario(datos: Record<string, string>) {
 
     if (fieldErrors.nombre) erroresCampos.nombre = fieldErrors.nombre;
     if (fieldErrors.email) erroresCampos.email = fieldErrors.email;
-    if (fieldErrors.confirmPassword) erroresCampos.confirmPassword = fieldErrors.confirmPassword;
 
     return {
         exito: false,

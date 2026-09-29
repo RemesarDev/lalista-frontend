@@ -8,7 +8,6 @@ import { useSignupForm } from './_hooks/useSignupForm';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
 import { Button } from '@/app/_components/global/Button';
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
-import { analytics } from '@/app/_lib/services/analyticsService';
 
 export default function SignupPage() {
     const router = useRouter();
@@ -35,13 +34,6 @@ export default function SignupPage() {
         const result = await registro(form.email, form.password, form.nombre);
 
         if (result.success) {
-
-            //metricas
-            const currentUser = useListaStore.getState().user;
-            if (currentUser?.id) {
-                analytics.userSignup(currentUser.id).catch(console.error);
-            }
-            //metricas
 
             router.push('/');
         } else {

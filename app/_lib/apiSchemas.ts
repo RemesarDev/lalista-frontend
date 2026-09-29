@@ -146,7 +146,7 @@ export const analyticsEventSchema = z.object({
     'api_error',          
     'rate_limit_exceeded'
   ]),
-  userId: z.string().uuid().nullable().optional(),
+  userId: z.string().nullable().optional(),
   metadata: z.record(z.string(), z.any()).optional().default({})
 });
 

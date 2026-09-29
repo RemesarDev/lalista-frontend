@@ -1,6 +1,8 @@
 import { StateCreator } from 'zustand';
 import type { StoreState } from '../store';
 import { authClient, type User } from '../../_lib/auth-client';
+import { analytics } from '@/app/_lib/services/analyticsService';
+
 
 export interface AuthSlice {
   user: User | null;
@@ -45,8 +47,12 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
     set({ loadingAuth: true });
     try {
       const { data, error } = await authClient.signIn.email({ email, password });
-      if (data) {
+      if (data?.user) {
         set({ user: data.user, loadingAuth: false });
+        
+        // 🚀 Registramos analíticamente el inicio de sesión exitoso
+        analytics.userLogin(data.user.id).catch(console.error);
+
         await get().cargarDirecciones();
         return { success: true };
       }
@@ -62,8 +68,12 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
     set({ loadingAuth: true });
     try {
       const { data, error } = await authClient.signUp.email({ email, password, name });
-      if (data) {
+      if (data?.user) {
         set({ user: data.user, loadingAuth: false });
+        
+        // 🚀 Registramos analíticamente el nuevo registro de usuario
+        analytics.userSignup(data.user.id).catch(console.error);
+
         return { success: true };
       }
       set({ loadingAuth: false });
@@ -88,11 +98,15 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
   borrarCuenta: async (password) => {
     set({ loadingAuth: true });
     try {
+      // Necesitamos capturar el ID antes de limpiar la sesión para reportar la baja
+      const currentUser = get().user;
       const { error } = await authClient.deleteUser({ password });
 
       if (error) {
-        // DELETION_SCHEDULED es el resultado esperado del soft-delete
         if (error.message === 'DELETION_SCHEDULED') {
+          if (currentUser?.id) {
+            analytics.userDeleted(currentUser.id).catch(console.error);
+          }
           await authClient.signOut();
           set({ user: null, loadingAuth: false });
           get().limpiarLista();
@@ -101,6 +115,10 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
         }
         set({ loadingAuth: false });
         return { success: false, error };
+      }
+
+      if (currentUser?.id) {
+        analytics.userDeleted(currentUser.id).catch(console.error);
       }
 
       await authClient.signOut();

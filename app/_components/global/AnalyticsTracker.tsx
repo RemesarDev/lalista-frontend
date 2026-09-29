@@ -1,7 +1,7 @@
 // app/_components/global/AnalyticsTracker.tsx
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { analytics } from '@/app/_lib/services/analyticsService';
 import { useListaStore } from '@/app/_store/store';
@@ -9,18 +9,26 @@ import { useListaStore } from '@/app/_store/store';
 export function AnalyticsTracker() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
+
     const user = useListaStore((state) => state.user);
+    const loadingAuth = useListaStore((state) => (state as any).loadingAuth);
+
+    const lastTrackedPath = useRef<string | null>(null);
 
     // 1. Rastreo de visitas a páginas (Page Views)
     useEffect(() => {
+        if (loadingAuth) return;
         if (!pathname) return;
+
         const queryStr = searchParams?.toString();
         const fullPath = queryStr ? `${pathname}?${queryStr}` : pathname;
 
-        analytics.pageView(fullPath, user?.id).catch(console.error);
-    }, [pathname, searchParams, user?.id]);
+        if (lastTrackedPath.current === fullPath) return;
+        lastTrackedPath.current = fullPath;
 
-    // 2. Escucha global de errores de cliente y promesas no manejadas
+        analytics.pageView(fullPath, user?.id).catch(console.error);
+    }, [pathname, searchParams, user?.id, loadingAuth]);
+
     useEffect(() => {
         const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
             const reason = event.reason;

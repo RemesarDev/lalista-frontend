@@ -7,7 +7,6 @@ import { useListaStore } from '@/app/_store/store';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react'; // Importamos los íconos
 import { Button } from '@/app/_components/global/Button';
-import { analytics } from '@/app/_lib/services/analyticsService';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -31,14 +30,6 @@ export default function LoginPage() {
         const result = await login(email, password);
 
         if (result.success) {
-
-            // metrica
-            const currentUser = useListaStore.getState().user;
-            
-            if (currentUser?.id) {
-                analytics.userLogin(currentUser.id).catch(console.error);
-            }
-            // metrica
 
             router.push('/');
         } else {

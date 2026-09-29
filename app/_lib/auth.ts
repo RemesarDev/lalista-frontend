@@ -2,7 +2,10 @@ import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { Pool } from "pg";
 
-const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+const appUrl = (
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+).replace(/\/$/, "");
 const localOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
 const trustedOrigins = Array.from(
   new Set([appUrl, ...localOrigins].filter(Boolean))

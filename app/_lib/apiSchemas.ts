@@ -1,31 +1,25 @@
 import { z } from 'zod';
-
 // ==========================================
 // 1. ESQUEMAS DE MAPS (Ubicación)
 // ==========================================
 export const autocompleteQuerySchema = z.object({
   input: z.string().min(3, { message: 'El input debe tener al menos 3 caracteres' })
 });
-
 export const geocodeQuerySchema = z.object({
   address: z.string().min(1, { message: 'La dirección es obligatoria' })
 });
-
 export const placeDetailsQuerySchema = z.object({
   placeId: z.string().min(1, { message: 'El placeId es obligatorio' })
 });
-
 export const reverseGeocodeQuerySchema = z.object({
   lat: z.coerce.number({ message: 'Latitud inválida' }),
   lng: z.coerce.number({ message: 'Longitud inválida' })
 });
-
 export const sucursalesCercanasQuerySchema = z.object({
   lat: z.coerce.number({ message: 'La latitud es requerida y debe ser numérica' }),
   lng: z.coerce.number({ message: 'La longitud es requerida y debe ser numérica' }),
   radio: z.coerce.number().optional().default(5),
 });
-
 // ==========================================
 // 2. ESQUEMAS DE PRODUCTOS (Supabase DB)
 // ==========================================
@@ -34,7 +28,6 @@ const categoriaParam = z
   .string()
   .regex(/^[a-z0-9-]+$/, { message: 'Slug de categoria invalido' })
   .optional();
-
 // Etiquetas dietarias: llegan como "SIN_TACC,DIET" y se convierten a array.
 // Se validan contra mayusculas y guion bajo para que no entre texto arbitrario.
 const etiquetasParam = z
@@ -47,49 +40,28 @@ const etiquetasParam = z
   .refine((arr) => arr.every((e) => /^[A-Z_]+$/.test(e)), {
     message: 'Etiqueta invalida',
   });
-
 export const productosQuerySchema = z.object({
-  search: z.string().max(100, { message: 'La búsqueda es demasiado larga' }).optional(),
+  search: z.string().optional(),
   sucursales_ids: z.string().transform((val) => val.split(',').filter(Boolean)),
-  page: z.coerce
-    .number()
-    .int('La página debe ser un número entero')
-    .min(1, 'La página mínima es 1')
-    .default(1),
-  limit: z.coerce
-    .number()
-    .int('El límite debe ser un número entero')
-    .min(1, 'El límite mínimo es 1')
-    .max(50, 'El límite máximo por consulta es 50') 
-    .default(20),
+  page: z.string().optional().default('1'),
+  limit: z.string().optional().default('20'),
   categoria: categoriaParam,
   etiquetas: etiquetasParam,
 });
-
 export const catalogoQuerySchema = z.object({
-  search: z.string().max(100, { message: 'La búsqueda es demasiado larga' }).optional(),
-  page: z.coerce
-    .number()
-    .int('La página debe ser un número entero')
-    .min(1, 'La página mínima es 1')
-    .default(1),
-  limit: z.coerce
-    .number()
-    .int('El límite debe ser un número entero')
-    .min(1, 'El límite mínimo es 1')
-    .max(50, 'El límite máximo por consulta es 50') 
-    .default(20),
+  // Opcional: se puede navegar por categoria sin escribir nada en el buscador.
+  search: z.string().optional(),
+  page: z.string().optional().default('1'),
+  limit: z.string().optional().default('20'),
   categoria: categoriaParam,
   etiquetas: etiquetasParam,
 });
-
 export const preciosPorIdsQuerySchema = z.object({
   ids: z.string().min(1, 'Se requiere al menos un ID de producto'),
   sucursales_ids: z.string().min(1, 'Se requiere al menos un ID de sucursal'),
   lat: z.string().optional(),
   lng: z.string().optional(),
 });
-
 // ==========================================
 // 3. ESQUEMAS DE LISTAS (Supabase DB)
 // ==========================================
@@ -100,7 +72,6 @@ export const opcionProductoSchema = z.object({
   es_principal: z.boolean().default(false),
   cantidad_opcion: z.number().int().positive().optional().default(1),
 });
-
 export const guardarListaSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio').max(100),
   items: z.array(
@@ -122,19 +93,16 @@ export const sincronizarListaSchema = z.object({
     })
   ).min(1),
 });
-
 // ==========================================
 // 4. ESQUEMAS DE USUARIOS
 // ==========================================
 export const buscarUsuariosSchema = z.object({
   email: z.string().min(5, 'Ingresá al menos 5 caracteres'),
 });
-
 export const compartirListaSchema = z.object({
   userId: z.string(),
   rol: z.enum(['viewer', 'editor']).default('viewer'),
 });
-
 export const actualizarRolMiembroSchema = z.object({
   rol: z.enum(['viewer', 'editor']),
 });
@@ -147,7 +115,6 @@ export const agregarDireccionSchema = z.object({
   longitud:       z.number({ message: 'Longitud inválida' }),
   radio_busqueda: z.number().int().min(1).max(50).optional().default(3),
 });
-
 // ==========================================
 // 5. ESQUEMAS DE Analytics
 // ==========================================
@@ -166,7 +133,6 @@ export const analyticsEventSchema = z.object({
   userId: z.string().nullable().optional(),
   metadata: z.record(z.string(), z.any()).optional().default({})
 });
-
 // ==========================================
 // 7. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================
@@ -182,4 +148,4 @@ export type BuscarUsuariosQuery = z.infer<typeof buscarUsuariosSchema>;
 export type CompartirListaBody = z.infer<typeof compartirListaSchema>;
 export type ActualizarRolMiembroBody = z.infer<typeof actualizarRolMiembroSchema>;
 export type AgregarDireccionBody = z.infer<typeof agregarDireccionSchema>;
-export type AnalyticsEventInput = z.infer<typeof analyticsEventSchema>;
+export type AnalyticsEventInput = z.infer<typeof analyticsEventSchema>; 

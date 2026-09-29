@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // ==========================================
-// 1. ESQUEMAS DE GOOGLE MAPS (Ubicación)
+// 1. ESQUEMAS DE MAPS (Ubicación)
 // ==========================================
 export const autocompleteQuerySchema = z.object({
   input: z.string().min(3, { message: 'El input debe tener al menos 3 caracteres' })
@@ -132,7 +132,26 @@ export const agregarDireccionSchema = z.object({
 });
 
 // ==========================================
-// 6. INFERENCIA DE TIPOS PARA EL FRONTEND
+// 5. ESQUEMAS DE Analytics
+// ==========================================
+export const analyticsEventSchema = z.object({
+  eventName: z.enum([
+    'page_view',
+    'user_signup',
+    'user_login',
+    'user_deleted',
+    'product_searched',
+    'prices_compared',
+    'lista_sharing',
+    'api_error',          
+    'rate_limit_exceeded'
+  ]),
+  userId: z.string().nullable().optional(),
+  metadata: z.record(z.string(), z.any()).optional().default({})
+});
+
+// ==========================================
+// 7. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================
 export type AutocompleteQuery = z.infer<typeof autocompleteQuerySchema>;
 export type GeocodeQuery = z.infer<typeof geocodeQuerySchema>;
@@ -146,3 +165,4 @@ export type BuscarUsuariosQuery = z.infer<typeof buscarUsuariosSchema>;
 export type CompartirListaBody = z.infer<typeof compartirListaSchema>;
 export type ActualizarRolMiembroBody = z.infer<typeof actualizarRolMiembroSchema>;
 export type AgregarDireccionBody = z.infer<typeof agregarDireccionSchema>;
+export type AnalyticsEventInput = z.infer<typeof analyticsEventSchema>;

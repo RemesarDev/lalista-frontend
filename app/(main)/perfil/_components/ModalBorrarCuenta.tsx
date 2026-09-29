@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { TrashIcon, XIcon, EyeIcon, EyeSlashIcon, WarningIcon } from '@phosphor-icons/react';
 import { Button } from '@/app/_components/global/Button';
+import { useListaStore } from '@/app/_store/store';
 
 interface ModalBorrarCuentaProps {
     isOpen: boolean;
@@ -12,6 +13,7 @@ interface ModalBorrarCuentaProps {
 }
 
 export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: ModalBorrarCuentaProps) {
+
     const [password, setPassword] = useState('');
     const [mostrarPass, setMostrarPass] = useState(false);
     const [error, setError] = useState('');
@@ -34,6 +36,7 @@ export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: Modal
             return;
         }
         setError('');
+
         await onConfirm(password);
     };
 

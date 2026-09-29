@@ -34,6 +34,7 @@ export default function SignupPage() {
         const result = await registro(form.email, form.password, form.nombre);
 
         if (result.success) {
+
             router.push('/');
         } else {
             setMensajeError(traducirErrorAuth(result.error));

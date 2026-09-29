@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import CategoriaChips from './CategoriaChips';
 import { useRouter } from 'next/navigation';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr';
+import { analytics } from '@/app/_lib/services/analyticsService';
 
 export default function HeroInfo() {
   const [query, setQuery] = useState("");
@@ -12,6 +13,7 @@ export default function HeroInfo() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim().length >= 3) {
+      analytics.productSearched(query.trim(), true).catch(console.error);
       inputRef.current?.blur();
       router.push(`/buscar?q=${encodeURIComponent(query)}`);
     }

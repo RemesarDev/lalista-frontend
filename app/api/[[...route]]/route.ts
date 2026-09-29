@@ -9,6 +9,8 @@ import { listasRouter } from './listas';
 import { usuariosRouter } from './usuarios';
 import { historicoRouter } from './historico';
 import { direccionesRouter } from './direcciones';
+import { analyticsRouter } from './analytics';
+import { insertAnalyticsEvent } from '@/app/_lib/utils/analytics';
 
 export const runtime = 'nodejs'; 
 
@@ -22,6 +24,17 @@ app.onError((err, c) => {
     status: 500,
     error: err.message,
   });
+
+  insertAnalyticsEvent({
+    eventName: 'api_error',
+    region: c.req.header('x-vercel-ip-city') || 'Argentina',
+    metadata: {
+      path: c.req.path,
+      method: c.req.method,
+      error: err.message,
+    }
+    }).catch(console.error);
+
 
   return c.json(
     { error: 'Error interno del servidor' },
@@ -46,6 +59,11 @@ app.use('*', async (c, next) => {
   } else {
     userRecord.count++;
     if (userRecord.count > MAX_REQUESTS) {
+        insertAnalyticsEvent({
+          eventName: 'rate_limit_exceeded',
+          region: ip, // o la IP / región detectada
+          metadata: { ip, path: c.req.path }
+        }).catch(console.error);
       return c.json({ 
         error: 'Too Many Requests', 
         message: 'Has superado el límite de peticiones. Intenta de nuevo en un minuto.' 
@@ -94,7 +112,8 @@ const routes = app
   .route('/', usuariosRouter)
   .route('/', direccionesRouter)
   .route('/maps', mapsRouter)
-  .route('/', historicoRouter);
+  .route('/', historicoRouter)
+  .route('/', analyticsRouter);
 
 // ==========================================
 // 5. EXPORTACIONES PARA NEXT.JS

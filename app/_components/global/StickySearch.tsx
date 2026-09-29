@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { DesktopActionButton } from './DesktopActionButton';
 import { ShoppingCartIcon } from '@phosphor-icons/react';
+import { analytics } from '@/app/_lib/services/analyticsService';
 
 export default function StickySearch() {
   const searchParams = useSearchParams();
@@ -23,10 +24,16 @@ export default function StickySearch() {
     e.preventDefault();
     const terminoLimpio = query.trim();
     
-    // LA SOLUCIÓN: Solo avanzamos si tiene 3+ caracteres, O si está completamente vacío
-    if (terminoLimpio.length >= 3 || terminoLimpio.length === 0) {
+    // LA SOLUCIÓN: Solo avanzamos si tiene 2+ caracteres, O si está completamente vacío
+    if (terminoLimpio.length >= 2 || terminoLimpio.length === 0) {
       inputRef.current?.blur();
       setTerminoBusqueda(terminoLimpio);
+    
+    //metricas
+    if (terminoLimpio.length > 0) {
+        analytics.productSearched(terminoLimpio, true).catch(console.error);
+      }
+    // Fin métricas
 
       const modo = searchParams.get('modo');
       const grupoId = searchParams.get('grupoId');

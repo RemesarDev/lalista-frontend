@@ -23,12 +23,18 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });
 
+const isPreview = process.env.VERCEL_ENV === "preview";
+
 export const auth = betterAuth({
   baseURL: appUrl,
   secret: authSecret,
   trustedOrigins,
   database: pool,
   trustedProxyHeaders: true,
+  logger: {
+    disabled: false,
+    level: isPreview ? "debug" : "error",
+  },
   user: {
     additionalFields: {
       role: {

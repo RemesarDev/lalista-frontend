@@ -7,10 +7,12 @@ import { useListaStore } from '@/app/_store/store';
 import { useSignupForm } from './_hooks/useSignupForm';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
 import { Button } from '@/app/_components/global/Button';
+import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
 
 export default function SignupPage() {
     const router = useRouter();
     const [mensajeError, setMensajeError] = useState('');
+    const [mostrarPass, setMostrarPass] = useState(false);
 
     // 1. Extraemos todo de nuestro custom hook
     const { form, erroresTexto, reglasPass, manejarInput, validarSubmit } = useSignupForm();
@@ -80,12 +82,25 @@ export default function SignupPage() {
                     {/* Campo: Contraseña */}
                     <div>
                         <label className="mb-1 block text-sm font-medium text-slate-700">Contraseña</label>
-                        <input
-                            type="password"
-                            value={form.password}
-                            onChange={(e) => manejarInput('password', e.target.value)}
-                            className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
-                        />
+                        <div className="relative">
+                            <input
+                                type={mostrarPass ? 'text' : 'password'}
+                                value={form.password}
+                                onChange={(e) => manejarInput('password', e.target.value)}
+                                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 pr-12 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setMostrarPass(!mostrarPass)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 focus:outline-none transition-colors"
+                            >
+                                {mostrarPass ? (
+                                    <EyeSlashIcon size={22} weight="regular" />
+                                ) : (
+                                    <EyeIcon size={22} weight="regular" />
+                                )}
+                            </button>
+                        </div>
 
                         {/* Checklist de requisitos en tiempo real */}
                         <div className="mt-3 flex flex-col gap-1.5">
@@ -99,21 +114,6 @@ export default function SignupPage() {
                                 {reglasPass.number ? '✓' : '•'} Un número
                             </span>
                         </div>
-                    </div>
-
-                    {/* Campo: Confirmar Contraseña */}
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-700">Confirmar Contraseña</label>
-                        <input
-                            type="password"
-                            value={form.confirmPassword}
-                            onChange={(e) => manejarInput('confirmPassword', e.target.value)}
-                            className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:bg-white ${erroresTexto.confirmPassword ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-slate-900'
-                                }`}
-                        />
-                        {erroresTexto.confirmPassword && (
-                            <p className="mt-1.5 text-xs text-red-500">{erroresTexto.confirmPassword[0]}</p>
-                        )}
                     </div>
 
                     {/* Botón Submit */}

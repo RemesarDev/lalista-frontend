@@ -43,55 +43,29 @@ app.onError((err, c) => {
 });
 
 // ==========================================
-// 1. ESCUDO ANTI-DDOS (Rate Limiter)
-// ==========================================
-const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const MAX_REQUESTS = 50; 
-const WINDOW_MS = 60 * 1000; 
-
-app.use('*', async (c, next) => {
-  const ip = c.req.header('x-forwarded-for') || 'ip-desconocida';
-  const now = Date.now();
-  const userRecord = rateLimitMap.get(ip);
-
-  if (!userRecord || now - userRecord.lastReset > WINDOW_MS) {
-    rateLimitMap.set(ip, { count: 1, lastReset: now });
-  } else {
-    userRecord.count++;
-    if (userRecord.count > MAX_REQUESTS) {
-        insertAnalyticsEvent({
-          eventName: 'rate_limit_exceeded',
-          region: ip, // o la IP / región detectada
-          metadata: { ip, path: c.req.path }
-        }).catch(console.error);
-      return c.json({ 
-        error: 'Too Many Requests', 
-        message: 'Has superado el límite de peticiones. Intenta de nuevo en un minuto.' 
-      }, 429);
-    }
-  }
-  await next();
-});
-
-// ==========================================
-// 2. CAPAS GLOBALES DE SEGURIDAD (Actualizado)
+// 1. CAPAS GLOBALES DE SEGURIDAD
 // ==========================================
 app.use('*', secureHeaders());
 
 app.use('*', cors({
   origin: (origin) => {
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+    const vercelBranchUrl = process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : null;
+
     const allowedOrigins = new Set([
       appUrl,
       'http://localhost:3000',
       'http://127.0.0.1:3000',
+      ...(vercelUrl ? [vercelUrl] : []),
+      ...(vercelBranchUrl ? [vercelBranchUrl] : []),
     ]);
 
-    if (!origin || allowedOrigins.has(origin) || /\.vercel\.app$/.test(origin)) {
+    if (!origin || allowedOrigins.has(origin)) {
       return origin || appUrl;
     }
 
-    return appUrl;
+    return null;
   },
   credentials: true,
 }));

@@ -80,6 +80,7 @@ export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: Modal
                             alt="Lali triste"
                             width={120}
                             height={120}
+                            style={{ height: 'auto' }}
                             className="drop-shadow-md"
                             priority
                         />
@@ -130,6 +131,7 @@ export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: Modal
                                     alt="Lali triste"
                                     width={36}
                                     height={36}
+                                    style={{ height: 'auto' }}
                                 />
                                 <div>
                                     <h2 className="text-base font-bold text-slate-900">Confirmá tu identidad</h2>

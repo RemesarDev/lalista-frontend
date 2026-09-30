@@ -155,8 +155,21 @@ export const analyticsEventSchema = z.object({
   userId: z.string().nullable().optional(),
   metadata: z.record(z.string(), z.any()).optional().default({})
 });
+
 // ==========================================
-// 7. INFERENCIA DE TIPOS PARA EL FRONTEND
+// 7. ESQUEMAS DE ADMINISTRACIÓN (Admin Panel)
+// ==========================================
+export const adminMetricsQuerySchema = z.object({
+    metricName: z.string().min(1, 'El nombre de la métrica es obligatorio'),
+    search: z.string().max(100).optional(),
+    field: z.string().optional(),
+    startDate: z.string().optional(), 
+    endDate: z.string().optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+// ==========================================
+// 8. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================
 export type AutocompleteQuery = z.infer<typeof autocompleteQuerySchema>;
 export type GeocodeQuery = z.infer<typeof geocodeQuerySchema>;
@@ -171,3 +184,4 @@ export type CompartirListaBody = z.infer<typeof compartirListaSchema>;
 export type ActualizarRolMiembroBody = z.infer<typeof actualizarRolMiembroSchema>;
 export type AgregarDireccionBody = z.infer<typeof agregarDireccionSchema>;
 export type AnalyticsEventInput = z.infer<typeof analyticsEventSchema>; 
+export type AdminMetricsQuery = z.infer<typeof adminMetricsQuerySchema>;

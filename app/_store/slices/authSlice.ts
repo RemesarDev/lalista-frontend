@@ -18,7 +18,7 @@ export interface AuthSlice {
 
 export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set, get) => ({
   user: null,
-  loadingAuth: false,
+  loadingAuth: true,
   
   setUser: (user) => set({ user }),
 

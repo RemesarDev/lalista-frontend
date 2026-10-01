@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ChartBar, Trophy, ListMagnifyingGlass, MagnifyingGlass } from '@phosphor-icons/react/dist/ssr';
 import { MetricsFilters } from './components/MetricsFilters';
 import { MetricsChart } from './components/MetricsChart';
@@ -17,6 +17,11 @@ interface MetricEvent {
     created_at: string;
 }
 
+interface TimelineItem {
+    metric_date: string;
+    event_count: number;
+}
+
 export default function AdminMetricsPage() {
     const [activeTab, setActiveTab] = useState<'audit' | 'ranking' | 'search'>('audit');
 
@@ -27,12 +32,18 @@ export default function AdminMetricsPage() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     
+    // Estados específicos de la tabla paginada
     const [data, setData] = useState<MetricEvent[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
 
+    // Estados específicos para el gráfico optimizado (timeline histórico completo filtrado)
+    const [chartData, setChartData] = useState<TimelineItem[]>([]);
+    const [chartLoading, setChartLoading] = useState(false);
+
+    // 1. Petición paginada para la Tabla
     const fetchMetrics = async (targetPage = 1) => {
         setLoading(true);
         try {
@@ -64,15 +75,45 @@ export default function AdminMetricsPage() {
         }
     };
 
+    // 2. Petición optimizada vía RPC para el Gráfico (agrupado por fecha con filtros)
+    const fetchChartSummary = useCallback(async () => {
+        setChartLoading(true);
+        try {
+            const params = new URLSearchParams({
+                metricName,
+                ...(search && { search }),
+                ...(field && { field }),
+                ...(startDate && { startDate }),
+                ...(endDate && { endDate }),
+            });
+
+            const res = await fetch(`/api/admin/metrics/chart-summary?${params.toString()}`);
+            const json = await res.json();
+
+            if (json.success) {
+                setChartData(json.timeline);
+            } else {
+                console.error('Error al cargar resumen para el gráfico:', json.error);
+            }
+        } catch (err) {
+            console.error('Error de red al consultar el resumen del gráfico:', err);
+        } finally {
+            setChartLoading(false);
+        }
+    }, [metricName, search, field, startDate, endDate]);
+
+    // Disparar ambas cargas cuando cambia la métrica principal o se activa la pestaña
     useEffect(() => {
         if (activeTab === 'audit') {
             fetchMetrics(1);
+            fetchChartSummary();
         }
-    }, [metricName, activeTab]);
+    }, [metricName, activeTab, fetchChartSummary]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         fetchMetrics(1);
+        fetchChartSummary();
     };
 
     const metadataKeys = useMemo(() => {
@@ -153,12 +194,12 @@ export default function AdminMetricsPage() {
                         setStartDate={setStartDate}
                         endDate={endDate}
                         setEndDate={setEndDate}
-                        loading={loading}
+                        loading={loading || chartLoading}
                         onSubmit={handleSearchSubmit}
                     />
                     <MetricsChart 
-                        data={data}
-                        loading={loading}
+                        data={chartData}
+                        loading={chartLoading}
                         totalItems={totalItems}
                     />
                     <MetricsTable 

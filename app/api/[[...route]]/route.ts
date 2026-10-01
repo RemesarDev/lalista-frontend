@@ -12,6 +12,7 @@ import { direccionesRouter } from './direcciones';
 import { analyticsRouter } from './analytics';
 import { insertAnalyticsEvent } from '@/app/_lib/utils/analytics';
 import { adminRouter } from './admin';
+import { supportRouter } from './support';
 
 export const runtime = 'nodejs'; 
 
@@ -101,7 +102,8 @@ const routes = app
     .route('/maps', mapsRouter)
     .route('/', historicoRouter)
     .route('/', analyticsRouter)
-    .route('/', adminRouter);
+    .route('/', adminRouter)
+    .route('/', supportRouter);
 
 // ==========================================
 // 5. EXPORTACIONES PARA NEXT.JS

@@ -149,7 +149,7 @@ export const adminRouter = new Hono()
                 const { data: productosData, error: prodError } = await supabase
                     .from('productos')
                     .select('id_producto, productos_descripcion, productos_marca')
-                    .in('id_producto', eans); // AQUÍ ESTABA EL ERROR: La columna se llama id_producto
+                    .in('id_producto', eans);
 
                 if (prodError) {
                     console.error('[PRODUCTS FETCH ERROR - DETALLE]:', prodError);
@@ -257,7 +257,7 @@ export const adminRouter = new Hono()
                     p_province: province || null,
                     p_city: city || null,
                     p_day_of_week: dayOfWeek !== undefined && dayOfWeek !== '' ? parseInt(dayOfWeek, 10) : null,
-                    p_limit: 100, // Traemos un conjunto amplio para filtrar los de la keyword
+                    p_limit: 100,
                 });
 
                 if (rpcError) {
@@ -265,7 +265,6 @@ export const adminRouter = new Hono()
                     return c.json({ success: false, error: 'Error al consultar métricas en la Base 2' }, 500);
                 }
 
-                // Filtrar exclusivamente los EANs que pertenecen a la búsqueda por palabra clave
                 const filteredRanking = (rankingData || []).filter((item: any) => targetEans.includes(item.ean));
 
                 // 3. Unir resultados con los datos comerciales de la Base 1
@@ -296,14 +295,12 @@ export const adminRouter = new Hono()
         '/admin/metrics/chart-summary',
         async (c) => {
             try {
-                // 1. Extraer los parámetros de filtro de la URL (idénticos a los de la tabla)
                 const metricName = c.req.query('metricName');
                 const search = c.req.query('search');
                 const field = c.req.query('field');
                 const startDate = c.req.query('startDate');
                 const endDate = c.req.query('endDate');
 
-                // 2. Ejecutar la función RPC en la Base de Datos 2 (Analíticas)
                 const { data, error } = await supabaseAnalytics.rpc('get_analytics_timeline_summary', {
                     p_metric_name: metricName || null,
                     p_search: search || null,
@@ -325,6 +322,98 @@ export const adminRouter = new Hono()
             } catch (err) {
                 console.error('[ADMIN CHART SUMMARY EXCEPTION]', err);
                 return c.json({ success: false, error: 'Error interno al procesar el resumen del gráfico' }, 500);
+            }
+        }
+    )
+    // --- NUEVAS RUTAS DE SOPORTE PARA ADMINISTRADOR ---
+    .get(
+        '/admin/support-messages',
+        async (c) => {
+            try {
+                const search = c.req.query('search');
+                const category = c.req.query('category');
+                const status = c.req.query('status');
+                const email = c.req.query('email');
+                const region = c.req.query('region');
+                const startDate = c.req.query('startDate');
+                const endDate = c.req.query('endDate');
+
+                let query = supabaseAnalytics
+                    .from('support_messages')
+                    .select('*', { count: 'exact' })
+                    .order('created_at', { ascending: false });
+
+                if (search && search.trim() !== '') {
+                    query = query.ilike('message', `%${search.trim()}%`);
+                }
+                if (category && category !== 'all') {
+                    query = query.eq('subject_category', category);
+                }
+                if (status && status !== 'all') {
+                    query = query.eq('status', status);
+                }
+                if (email && email.trim() !== '') {
+                    query = query.ilike('user_email', `%${email.trim()}%`);
+                }
+                if (region && region !== 'all') {
+                    query = query.eq('region', region);
+                }
+                if (startDate) {
+                    query = query.gte('created_at', `${startDate}T00:00:00Z`);
+                }
+                if (endDate) {
+                    query = query.lte('created_at', `${endDate}T23:59:59Z`);
+                }
+
+                const { data, error, count } = await query;
+
+                if (error) {
+                    console.error('[ADMIN SUPPORT MESSAGES ERROR]:', error);
+                    return c.json({ success: false, error: error.message }, 500);
+                }
+
+                return c.json({
+                    success: true,
+                    messages: data || [],
+                    total: count || 0,
+                });
+            } catch (err) {
+                console.error('[ADMIN SUPPORT MESSAGES EXCEPTION]', err);
+                return c.json({ success: false, error: 'Error interno al listar mensajes de soporte' }, 500);
+            }
+        }
+    )
+    .patch(
+        '/admin/support-messages/:id/status',
+        async (c) => {
+            try {
+                const id = c.req.param('id');
+                const body = await c.req.json();
+                const { status } = body;
+
+                if (!['pending', 'read', 'resolved'].includes(status)) {
+                    return c.json({ success: false, error: 'Estado inválido' }, 400);
+                }
+
+                const { data, error } = await supabaseAnalytics
+                    .from('support_messages')
+                    .update({ status })
+                    .eq('id', id)
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.error('[ADMIN SUPPORT STATUS ERROR]:', error);
+                    return c.json({ success: false, error: error.message }, 500);
+                }
+
+                return c.json({
+                    success: true,
+                    message: data,
+                });
+            } catch (err) {
+                console.error('[ADMIN SUPPORT STATUS EXCEPTION]', err);
+                return c.json({ success: false, error: 'Error interno al actualizar estado del mensaje' }, 500);
             }
         }
     );

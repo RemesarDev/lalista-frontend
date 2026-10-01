@@ -291,4 +291,40 @@ export const adminRouter = new Hono()
                 return c.json({ success: false, error: 'Error interno al procesar la búsqueda analítica' }, 500);
             }
         }
+    )
+    .get(
+        '/admin/metrics/chart-summary',
+        async (c) => {
+            try {
+                // 1. Extraer los parámetros de filtro de la URL (idénticos a los de la tabla)
+                const metricName = c.req.query('metricName');
+                const search = c.req.query('search');
+                const field = c.req.query('field');
+                const startDate = c.req.query('startDate');
+                const endDate = c.req.query('endDate');
+
+                // 2. Ejecutar la función RPC en la Base de Datos 2 (Analíticas)
+                const { data, error } = await supabaseAnalytics.rpc('get_analytics_timeline_summary', {
+                    p_metric_name: metricName || null,
+                    p_search: search || null,
+                    p_field: field || null,
+                    p_start_date: startDate ? `${startDate}T00:00:00Z` : null,
+                    p_end_date: endDate ? `${endDate}T23:59:59Z` : null,
+                });
+
+                if (error) {
+                    console.error('[CHART SUMMARY RPC ERROR]:', error);
+                    return c.json({ success: false, error: 'Error al obtener resumen temporal para el gráfico' }, 500);
+                }
+
+                return c.json({
+                    success: true,
+                    timeline: data || [],
+                });
+
+            } catch (err) {
+                console.error('[ADMIN CHART SUMMARY EXCEPTION]', err);
+                return c.json({ success: false, error: 'Error interno al procesar el resumen del gráfico' }, 500);
+            }
+        }
     );

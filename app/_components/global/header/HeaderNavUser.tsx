@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { SignOutIcon, ListIcon, UserIcon, QuestionIcon } from '@phosphor-icons/react/dist/ssr';
+import { SignOutIcon, ListIcon, UserIcon, QuestionIcon, ChatTextIcon } from '@phosphor-icons/react/dist/ssr';
 import { useListaStore } from '@/app/_store/store';
+import { SupportModal } from './SupportModal'; // <-- Importamos el modal modular
 
 function FaqLink() {
   return (
@@ -24,6 +25,10 @@ export default function HeaderUser() {
   const loadingAuth = useListaStore((state) => state.loadingAuth);
   const logout = useListaStore((state) => state.logout);
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  // Estado para controlar el Popup de Soporte
+  const [supportOpen, setSupportOpen] = useState(false);
+  
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -84,7 +89,7 @@ export default function HeaderUser() {
         {menuOpen && (
           <div
             role="menu"
-            className="absolute right-0 top-full z-50 mt-2 w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
+            className="absolute right-0 top-full z-50 mt-2 w-48 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
           >
             <Link
               href="/perfil"
@@ -106,12 +111,26 @@ export default function HeaderUser() {
 
             <button
               type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setSupportOpen(true);
+              }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              <ChatTextIcon className="text-base" />
+              Soporte
+            </button>
+
+            <div className="my-1 border-t border-slate-100" />
+
+            <button
+              type="button"
               onClick={async () => {
                 await logout();
                 setMenuOpen(false);
                 router.replace('/');
               }}
-              className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
             >
               <SignOutIcon className="text-base" />
               Cerrar sesión
@@ -119,6 +138,12 @@ export default function HeaderUser() {
           </div>
         )}
       </div>
+
+      {/* Renderizamos el modal modular pasando el estado y la función de cierre */}
+      <SupportModal
+        isOpen={supportOpen}
+        onClose={() => setSupportOpen(false)}
+      />
     </div>
   );
 }

@@ -168,8 +168,21 @@ export const adminMetricsQuerySchema = z.object({
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
 });
+
 // ==========================================
-// 8. INFERENCIA DE TIPOS PARA EL FRONTEND
+// 8. ESQUEMAS DE MENSAJES DE SOPORTE (Admin Panel)
+// ==========================================
+export const supportMessageSchema = z.object({
+  subjectCategory: z.enum(['precios', 'cuenta', 'sugerencia', 'error', 'otro'], {
+    message: 'Categoría de soporte inválida' 
+  }),
+  message: z
+    .string()
+    .min(5, { message: 'El mensaje debe tener al menos 5 caracteres' })
+    .max(1000, { message: 'El mensaje no puede superar los 1000 caracteres' }),
+});
+// ==========================================
+// 9. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================
 export type AutocompleteQuery = z.infer<typeof autocompleteQuerySchema>;
 export type GeocodeQuery = z.infer<typeof geocodeQuerySchema>;
@@ -185,3 +198,4 @@ export type ActualizarRolMiembroBody = z.infer<typeof actualizarRolMiembroSchema
 export type AgregarDireccionBody = z.infer<typeof agregarDireccionSchema>;
 export type AnalyticsEventInput = z.infer<typeof analyticsEventSchema>; 
 export type AdminMetricsQuery = z.infer<typeof adminMetricsQuerySchema>;
+export type SupportMessageBody = z.infer<typeof supportMessageSchema>;

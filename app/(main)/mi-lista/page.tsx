@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import {
   MagnifyingGlassIcon,
   ScalesIcon,
@@ -24,10 +24,23 @@ function ListaProductos() {
   const lista = useListaStore((state) => state.lista);
   const actualizarCantidadGrupo = useListaStore((state) => state.actualizarCantidadGrupo);
   const actualizarCantidadOpcion = useListaStore((state) => state.actualizarCantidadOpcion);
-  const actualizarNombreGrupo = useListaStore((state) => state.actualizarNombreGrupo); // <-- Extraído del store
+  const actualizarNombreGrupo = useListaStore((state) => state.actualizarNombreGrupo);
   const eliminarOpcion = useListaStore((state) => state.eliminarOpcion);
   const eliminarGrupo = useListaStore((state) => state.eliminarGrupo);
   const toggleCompradoGrupo = useListaStore((state) => state.toggleCompradoGrupo);
+
+  const [modoSimplificado, setModoSimplificado] = useState(false);
+  const [grupoAbiertoId, setGrupoAbiertoId] = useState<string | null>(null);
+
+  const toggleModo = () => {
+    setModoSimplificado((prev) => !prev);
+    setGrupoAbiertoId(null); // al cambiar de modo, arrancamos con todo cerrado
+  };
+
+  // Solo un ítem abierto a la vez: si tocás el abierto lo cierra, si tocás otro cambia
+  const toggleAbierto = (grupoId: string) => {
+    setGrupoAbiertoId((prev) => (prev === grupoId ? null : grupoId));
+  };
 
   if (!lista.length) {
     return (
@@ -49,10 +62,23 @@ function ListaProductos() {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Botón para alternar entre lista simplificada y desplegada */}
+      <div className="flex justify-end">
+        <button
+          onClick={toggleModo}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] sm:text-xs font-bold text-slate-600 shadow-sm transition-all hover:border-orange-300 hover:text-orange-600"
+        >
+          {modoSimplificado ? 'Mostrar lista desplegada' : 'Simplificar lista'}
+        </button>
+      </div>
+
       {lista.map((grupo) => (
         <GrupoListItem
           key={grupo.grupoId}
           grupo={grupo}
+          simplificado={modoSimplificado}
+          abierto={grupoAbiertoId === grupo.grupoId}
+          onToggleAbierto={toggleAbierto}
           onIncrementar={(grupoId) => {
             const actual = lista.find((g) => g.grupoId === grupoId);
             if (actual) actualizarCantidadGrupo(grupoId, actual.cantidad + 1);
@@ -83,7 +109,7 @@ function ListaProductos() {
           onEliminarOpcion={eliminarOpcion}
           onEliminarGrupo={eliminarGrupo}
           onToggleComprado={toggleCompradoGrupo}
-          onActualizarNombre={actualizarNombreGrupo} 
+          onActualizarNombre={actualizarNombreGrupo}
         />
       ))}
 

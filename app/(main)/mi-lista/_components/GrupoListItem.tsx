@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -17,6 +18,7 @@ interface GrupoListItemProps {
   onEliminarOpcion: (grupoId: string, productoId: string) => void;
   onEliminarGrupo: (grupoId: string) => void;
   onToggleComprado: (grupoId: string) => void;
+  onActualizarNombre: (grupoId: string, nuevoNombre: string) => void;
 }
 
 export function GrupoListItem({
@@ -27,12 +29,19 @@ export function GrupoListItem({
   onDecrementarOpcion,
   onEliminarOpcion,
   onToggleComprado,
+  onActualizarNombre,
 }: GrupoListItemProps) {
   const principal = grupo.opciones[0];
 
   if (!principal) return null;
 
-  const nombreGrupo = obtenerNombreComunGrupo(grupo.opciones);
+  // Si el usuario ya estableció un nombre personalizado, lo usamos; sino, aplicamos el automático
+  const nombreAutomatico = obtenerNombreComunGrupo(grupo.opciones);
+  const nombreMostrado = grupo.nombrePersonalizado || nombreAutomatico;
+
+  // Estados locales para el modo edición del título
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempNombre, setTempNombre] = useState(nombreMostrado);
 
   const terminoSugerido = encodeURIComponent(principal.nombre.split(' ').slice(0, 2).join(' '));
 
@@ -45,6 +54,16 @@ export function GrupoListItem({
     router.replace(`?${params.toString()}`, { scroll: false });
   };
 
+  const handleGuardarNombre = () => {
+    onActualizarNombre(grupo.grupoId, tempNombre);
+    setIsEditing(false);
+  };
+
+  const handleCancelarEdicion = () => {
+    setTempNombre(nombreMostrado);
+    setIsEditing(false);
+  };
+
   return (
     <div
       className={`flex flex-col gap-2 rounded-xl border p-2 sm:p-3 transition-all bg-white ${
@@ -53,21 +72,67 @@ export function GrupoListItem({
     >
       {/* Cabecera del grupo Ultra-Compacta */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <input
             type="checkbox"
             checked={grupo.comprado ?? false}
             onChange={() => onToggleComprado(grupo.grupoId)}
             className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-400 cursor-pointer shrink-0"
           />
-          <span
-            className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all truncate ${
-              grupo.comprado ? 'line-through text-slate-300' : 'text-slate-400'
-            }`}
-            title={nombreGrupo}
-          >
-            {nombreGrupo} {grupo.opciones.length > 1 ? `(${grupo.opciones.length} alternativas)` : ''}
-          </span>
+
+          {isEditing ? (
+            <div className="flex items-center gap-1.5 flex-1">
+              <input
+                type="text"
+                value={tempNombre}
+                onChange={(e) => setTempNombre(e.target.value)}
+                className="w-full text-xs font-bold px-2 py-0.5 border border-orange-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white"
+                autoFocus
+                maxLength={40}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleGuardarNombre();
+                  if (e.key === 'Escape') handleCancelarEdicion();
+                }}
+              />
+              <button
+                onClick={handleGuardarNombre}
+                className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded font-medium hover:bg-orange-600 transition shrink-0"
+              >
+                OK
+              </button>
+              <button
+                onClick={handleCancelarEdicion}
+                className="text-xs text-slate-400 hover:text-slate-600 px-1 shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 min-w-0 group/edit">
+              <span
+                className={`text-[10px] sm:text-xs font-bold tracking-wider transition-all truncate cursor-pointer ${
+                  grupo.comprado ? 'line-through text-slate-300' : 'text-slate-500 hover:text-slate-800'
+                }`}
+                onClick={() => {
+                  setTempNombre(nombreMostrado);
+                  setIsEditing(true);
+                }}
+                title="Hacé clic para renombrar este ítem"
+              >
+                {nombreMostrado} {grupo.opciones.length > 1 ? `(${grupo.opciones.length} alternativas)` : ''}
+              </span>
+              <button
+                onClick={() => {
+                  setTempNombre(nombreMostrado);
+                  setIsEditing(true);
+                }}
+                className="opacity-0 group-hover/edit:opacity-100 text-slate-400 hover:text-orange-500 transition-opacity p-0.5 shrink-0"
+                title="Renombrar ítem"
+              >
+                ✎
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Control de Cantidad del Grupo */}

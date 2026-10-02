@@ -1,7 +1,7 @@
 import { StateCreator } from 'zustand';
 import type { StoreState } from '../store';
 
-export interface SucursalBusqueda { //se recomienda a futuro importar esto de types
+export interface SucursalBusqueda { 
   cadena: string;
   direccion: string;
   precio: number;
@@ -12,7 +12,7 @@ export interface SucursalBusqueda { //se recomienda a futuro importar esto de ty
   longitud?: number | null;
 }
 
-export interface ProductoBusqueda {//se recomienda a futuro importar esto de types
+export interface ProductoBusqueda {
   id: string;
   nombre: string;
   precioMinimo: number | null;
@@ -32,10 +32,11 @@ export interface ProductoOpcion {
 
 // Representa un Grupo Disyuntivo en la lista (Canasta)
 export interface GrupoLista {
-  grupoId: string;           // ID único del grupo (ej: crypto.randomUUID())
-  cantidad: number;          // Cantidad solicitada para el grupo
-  comprado?: boolean;        // Estado de chequeo general
-  opciones: ProductoOpcion[];// opciones[0] es la principal, 1..N son alternativas
+  grupoId: string;           
+  cantidad: number;          
+  comprado?: boolean;        
+  nombrePersonalizado?: string | null; // <-- Campo para el nombre manual del usuario
+  opciones: ProductoOpcion[];
 }
 
 export interface CacheBusquedaPrecios {
@@ -57,8 +58,8 @@ const esCacheValido = (timestamp: number): boolean => {
 
 export interface ListaSlice {
   lista: GrupoLista[];
-  listaId: string | null;       // null = lista local sin guardar, UUID = lista sincronizada con la nube
-  listaRol: RolLista | null;    // null = lista local, rol = permisos dentro de la lista en la nube
+  listaId: string | null;       
+  listaRol: RolLista | null;    
   listaNombre: string | null;
   listaModificada: boolean;
   cacheBusquedaPrecios: CacheBusquedaPrecios | null;
@@ -74,6 +75,7 @@ export interface ListaSlice {
   eliminarGrupo: (grupoId: string) => void;
   actualizarCantidadGrupo: (grupoId: string, cantidad: number) => void;
   actualizarCantidadOpcion: (grupoId: string, productoId: string, cantidadOpcion: number) => void;
+  actualizarNombreGrupo: (grupoId: string, nuevoNombre: string) => void; // <-- Nueva acción
   toggleCompradoGrupo: (grupoId: string) => void;
   limpiarLista: () => void;
   setListaActiva: (id: string | null, rol: RolLista | null, nombre: string | null) => void;
@@ -99,9 +101,9 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
   agregarProducto: (nuevoProd, targetGrupoId) => set((state) => {
     const ahora = Date.now();
     const prodOpcion: ProductoOpcion = { 
-    ...nuevoProd, 
-    cantidadOpcion: nuevoProd.cantidadOpcion ?? 1,
-    actualizadoEn: ahora 
+      ...nuevoProd, 
+      cantidadOpcion: nuevoProd.cantidadOpcion ?? 1,
+      actualizadoEn: ahora 
     };
 
     if (targetGrupoId) {
@@ -133,6 +135,7 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
       grupoId: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `grupo-${Date.now()}-${Math.random()}`,
       cantidad: 1,
       comprado: false,
+      nombrePersonalizado: null, // Inicia vacío para que la función automática actúe por defecto
       opciones: [prodOpcion],
     };
 
@@ -162,19 +165,29 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
   })),
 
   actualizarCantidadOpcion: (grupoId, productoId, cantidadOpcion) => set((state) => ({
-  listaModificada: true,
-  lista: state.lista.map((grupo) => {
-    if (grupo.grupoId !== grupoId) return grupo;
-    return {
-      ...grupo,
-      opciones: grupo.opciones.map((opcion) =>
-        opcion.id === productoId
-          ? { ...opcion, cantidadOpcion: Math.max(1, cantidadOpcion) }
-          : opcion
-      ),
-    };
-  }),
-})),
+    listaModificada: true,
+    lista: state.lista.map((grupo) => {
+      if (grupo.grupoId !== grupoId) return grupo;
+      return {
+        ...grupo,
+        opciones: grupo.opciones.map((opcion) =>
+          opcion.id === productoId
+            ? { ...opcion, cantidadOpcion: Math.max(1, cantidadOpcion) }
+            : opcion
+        ),
+      };
+    }),
+  })),
+
+  // --- IMPLEMENTACIÓN DE LA NUEVA ACCIÓN DE RENOMBRADO ---
+  actualizarNombreGrupo: (grupoId, nuevoNombre) => set((state) => ({
+    listaModificada: true,
+    lista: state.lista.map((grupo) =>
+      grupo.grupoId === grupoId
+        ? { ...grupo, nombrePersonalizado: nuevoNombre.trim() ? nuevoNombre.trim() : null }
+        : grupo
+    ),
+  })),
 
   toggleCompradoGrupo: (grupoId) => set((state) => ({
     listaModificada: true,

@@ -84,9 +84,11 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                 const grupoEnStore = lista.find((g) => g.grupoId === grupoId);
                 const cantidadGrupo = grupoEnStore?.cantidad ?? 1;
 
-                const nombreMostrar = grupoEnStore?.opciones
+                // <-- AQUÍ ESTABA EL DETALLE: Priorizamos el nombre personalizado del store
+                const nombreAutomatico = grupoEnStore?.opciones
                   ? obtenerNombreComunGrupo(grupoEnStore.opciones)
                   : 'Producto';
+                const nombreMostrar = grupoEnStore?.nombrePersonalizado || nombreAutomatico;
 
                 return (
                   <tr key={grupoId} className="transition-colors hover:bg-slate-50">

@@ -24,6 +24,7 @@ function ListaProductos() {
   const lista = useListaStore((state) => state.lista);
   const actualizarCantidadGrupo = useListaStore((state) => state.actualizarCantidadGrupo);
   const actualizarCantidadOpcion = useListaStore((state) => state.actualizarCantidadOpcion);
+  const actualizarNombreGrupo = useListaStore((state) => state.actualizarNombreGrupo); // <-- Extraído del store
   const eliminarOpcion = useListaStore((state) => state.eliminarOpcion);
   const eliminarGrupo = useListaStore((state) => state.eliminarGrupo);
   const toggleCompradoGrupo = useListaStore((state) => state.toggleCompradoGrupo);
@@ -82,6 +83,7 @@ function ListaProductos() {
           onEliminarOpcion={eliminarOpcion}
           onEliminarGrupo={eliminarGrupo}
           onToggleComprado={toggleCompradoGrupo}
+          onActualizarNombre={actualizarNombreGrupo} 
         />
       ))}
 

@@ -416,4 +416,61 @@ export const adminRouter = new Hono()
                 return c.json({ success: false, error: 'Error interno al actualizar estado del mensaje' }, 500);
             }
         }
+    )
+    // --- NUEVAS RUTAS DE GESTIÓN DE BACKUPS ---
+    .get(
+        '/admin/backups',
+        async (c) => {
+            try {
+                // Listamos los archivos del bucket 'backups' en la Base 2 (Analíticas)
+                const { data, error } = await supabaseAnalytics.storage
+                    .from('backups')
+                    .list('', {
+                        limit: 100,
+                        sortBy: { column: 'created_at', order: 'desc' }
+                    });
+
+                if (error) {
+                    console.error('[ADMIN BACKUPS LIST ERROR]:', error);
+                    return c.json({ success: false, error: error.message }, 400);
+                }
+
+                return c.json({
+                    success: true,
+                    backups: data || [],
+                });
+            } catch (err) {
+                console.error('[ADMIN BACKUPS LIST EXCEPTION]', err);
+                return c.json({ success: false, error: 'Error interno al listar los respaldos' }, 500);
+            }
+        }
+    )
+    .get(
+        '/admin/backups/download',
+        async (c) => {
+            const filename = c.req.query('filename');
+            if (!filename) {
+                return c.json({ success: false, error: 'Falta el nombre del archivo' }, 400);
+            }
+
+            try {
+                // Generar un link firmado válido por 60 segundos para descargar de forma segura
+                const { data, error } = await supabaseAnalytics.storage
+                    .from('backups')
+                    .createSignedUrl(filename, 60);
+
+                if (error) {
+                    console.error('[ADMIN BACKUPS SIGN URL ERROR]:', error);
+                    return c.json({ success: false, error: error.message }, 400);
+                }
+
+                return c.json({
+                    success: true,
+                    downloadUrl: data.signedUrl,
+                });
+            } catch (err) {
+                console.error('[ADMIN BACKUPS SIGN URL EXCEPTION]', err);
+                return c.json({ success: false, error: 'Error interno al generar enlace de descarga' }, 500);
+            }
+        }
     );

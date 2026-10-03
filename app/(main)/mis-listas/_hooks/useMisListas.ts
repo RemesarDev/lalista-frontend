@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import type { ListaCompras } from '@/app/_types/listas';
+import { avisar } from '@/app/_lib/avisos';
 
 interface UseMisListasReturn {
   listas: ListaCompras[];
@@ -50,14 +51,25 @@ export function useMisListas(userId: string | null): UseMisListasReturn {
 
   const eliminarLista = (id: string) => {
     const backup = listas;
+    const lista = listas.find((l) => l.id === id);
+    // Si no es tuya, "eliminar" en realidad es salir de la lista compartida.
+    const esPropia = !lista || lista.rol === 'owner';
     setListas((prev) => prev.filter((l) => l.id !== id));
 
     fetch(`/api/listas/${id}`, { method: 'DELETE', credentials: 'include' })
       .then((res) => {
         if (!res.ok) throw new Error();
+        if (lista) {
+          avisar.exito(esPropia ? `Borraste la lista ${lista.nombre}` : `Saliste de la lista ${lista.nombre}`);
+        }
       })
       .catch(() => {
         setListas(backup);
+        avisar.error(
+          esPropia
+            ? 'No pudimos borrar la lista. Probá de nuevo.'
+            : 'No pudimos sacarte de la lista. Probá de nuevo.'
+        );
       });
   };
 

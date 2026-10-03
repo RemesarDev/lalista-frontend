@@ -7,6 +7,7 @@ import { useListaStore } from '@/app/_store/store';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react'; // Importamos los íconos
 import { Button } from '@/app/_components/global/Button';
+import { avisar } from '@/app/_lib/avisos';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -30,7 +31,8 @@ export default function LoginPage() {
         const result = await login(email, password);
 
         if (result.success) {
-
+            const nombre = useListaStore.getState().user?.name?.trim().split(/\s+/)[0];
+            avisar.exito(nombre ? `Hola de nuevo, ${nombre}` : 'Iniciaste sesión');
             router.push('/');
         } else {
             setMensajeError(traducirErrorAuth(result.error));

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useListaStore } from '@/app/_store/store';
 import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
+import { avisar, acortarNombre } from '@/app/_lib/avisos';
 
 // Tipo local para las sugerencias que devuelve nuestro endpoint
 type SugerenciaLugar = {
@@ -130,7 +131,10 @@ export function useUbicacion() {
           setCargandoGps(false);
         }
       },
-      () => setCargandoGps(false),
+      () => {
+        setCargandoGps(false);
+        avisar.error('No pudimos ubicarte. Escribí tu dirección o mové el mapa.');
+      },
       { enableHighAccuracy: true }
     );
   };
@@ -256,6 +260,7 @@ export function useUbicacion() {
         texto
       );
       setCoordenadasPendientes(null);
+      avisar.exito(texto ? `Buscamos precios cerca de ${acortarNombre(texto, 40)}` : 'Guardamos tu ubicación');
 
       // Persistir en DB si está logueado
       if (user) {
@@ -274,6 +279,7 @@ export function useUbicacion() {
 
     } catch (err) {
       console.error('Excepción al consultar sucursales:', err);
+      avisar.error('No pudimos buscar comercios en esa zona. Probá de nuevo.');
       throw err;
     } finally {
       setCargandoGps(false);

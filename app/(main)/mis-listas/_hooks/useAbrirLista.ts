@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import type { RolLista, GrupoLista, ProductoOpcion } from '@/app/_store/slices/listaSlice';
 import type { ItemLista } from '@/app/_types/listas';
+import { avisar } from '@/app/_lib/avisos';
 
 interface UseAbrirListaReturn {
   abrirLista: (id: string, rol: RolLista, nombre: string) => Promise<void>;
@@ -65,6 +66,7 @@ export function useAbrirLista(): UseAbrirListaReturn {
       router.push('/mi-lista');
     } catch (err: any) {
       setErrorAbrir(err.message ?? 'Error inesperado');
+      avisar.error(`No pudimos abrir la lista ${nombre}. Probá de nuevo.`);
     } finally {
       setCargandoAbrir(false);
     }

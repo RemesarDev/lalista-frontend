@@ -3,6 +3,7 @@ import type { StoreState } from '../store';
 import type { DireccionGuardada } from '@/app/_types/direcciones';
 import { mapearDireccion, type DbDireccion } from '@/app/_lib/mappers/direcciones';
 import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
+import { avisar } from '@/app/_lib/avisos';
 
 export interface UbicacionUsuario {
   latitud: number | null;
@@ -96,7 +97,7 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
     set((state) => ({ ubicacion: { ...state.ubicacion, cargandoUbicacion: true } }));
 
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      alert("Tu navegador no soporta geolocalización o estás en el servidor.");
+      avisar.error("Tu navegador no permite usar tu ubicación. Elegila a mano.");
       set((state) => ({ ubicacion: { ...state.ubicacion, cargandoUbicacion: false } }));
       return;
     }
@@ -120,7 +121,7 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
         set((state) => ({
           ubicacion: { ...state.ubicacion, cargandoUbicacion: false }
         }));
-        alert("No pudimos obtener tu ubicación. Por favor, seleccionala manualmente.");
+        avisar.error("No pudimos obtener tu ubicación. Elegila a mano.");
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );

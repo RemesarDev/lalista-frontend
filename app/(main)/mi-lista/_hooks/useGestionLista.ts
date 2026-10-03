@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useListaStore } from '@/app/_store/store';
+import { avisar } from '@/app/_lib/avisos';
 
 interface UseGestionListaReturn {
   // Estado de modales
@@ -21,14 +22,15 @@ interface UseGestionListaReturn {
 
   // Acciones principales
   handleGuardarLista: (nombre: string) => Promise<void>;
-  handleSincronizar: () => Promise<void>;
+  /** Devuelve true si se guardó. */
+  handleSincronizar: () => Promise<boolean>;
   handleCerrarLista: (sincronizar: boolean) => Promise<void>;
   handleLimpiarLista: () => void;
 }
 
 export function useGestionLista(): UseGestionListaReturn {
   const lista = useListaStore((state) => state.lista);
-  const listaId = useListaStore((state) => state.listaId);
+  const listaNombre = useListaStore((state) => state.listaNombre);
   const hayCambios = useListaStore((state) => state.listaModificada);
   const limpiarLista = useListaStore((state) => state.limpiarLista);
   const setListaActiva = useListaStore((state) => state.setListaActiva);
@@ -40,7 +42,9 @@ export function useGestionLista(): UseGestionListaReturn {
   const [loadingSincronizar, setLoadingSincronizar] = useState(false);
   const [sincronizadoOk, setSincronizadoOk] = useState(false);
 
-  const buildItems = () => lista.map((grupo) => ({
+  // Se lee del store al momento de guardar (no del render): así un
+  // "Reintentar" que se toca más tarde manda la lista actualizada.
+  const buildItems = () => useListaStore.getState().lista.map((grupo) => ({
     item_id: grupo.grupoId,
     cantidad: grupo.cantidad,
     comprado: grupo.comprado ?? false,
@@ -70,19 +74,23 @@ export function useGestionLista(): UseGestionListaReturn {
       marcarListaSincronizada();
       setListaActiva(id, 'owner', nombre);
       setModalGuardarOpen(false);
+      avisar.exito(`Guardaste la lista ${nombre}`);
     } catch (err) {
       console.error(err);
+      avisar.error('No pudimos guardar la lista. Probá de nuevo.');
     } finally {
       setLoadingGuardar(false);
     }
   };
 
   // PATCH — sincroniza lista existente
-  const handleSincronizar = async () => {
-    if (!listaId) return;
+  // El "Guardado" del botón ya confirma que salió bien: solo avisamos si falla.
+  const handleSincronizar = async (): Promise<boolean> => {
+    const idActual = useListaStore.getState().listaId;
+    if (!idActual) return false;
     setLoadingSincronizar(true);
     try {
-      const res = await fetch(`/api/listas/${listaId}`, {
+      const res = await fetch(`/api/listas/${idActual}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -96,8 +104,11 @@ export function useGestionLista(): UseGestionListaReturn {
       // Feedback temporal de éxito
       setSincronizadoOk(true);
       setTimeout(() => setSincronizadoOk(false), 2000);
+      return true;
     } catch (err) {
       console.error(err);
+      avisar.error('No se guardaron los cambios de tu lista.', () => void handleSincronizar());
+      return false;
     } finally {
       setLoadingSincronizar(false);
     }
@@ -105,15 +116,42 @@ export function useGestionLista(): UseGestionListaReturn {
 
   // Cerrar lista con opción de sincronizar antes
   const handleCerrarLista = async (sincronizar: boolean) => {
-    if (sincronizar) await handleSincronizar();
+    const nombre = listaNombre;
+    if (sincronizar) {
+      const guardado = await handleSincronizar();
+      // Si no se pudo guardar no cerramos: se perderían los cambios.
+      if (!guardado) return;
+    }
     limpiarLista();
     setModalCerrarOpen(false);
+    if (nombre) avisar.info(`Cerraste ${nombre}. La encontrás en Mis listas.`);
   };
 
-  // Limpiar lista local sin sincronizar
+  // Limpiar lista local sin sincronizar (se puede deshacer)
   const handleLimpiarLista = () => {
     if (!lista.length) return;
+
+    const estado = useListaStore.getState();
+    const antes = {
+      lista: estado.lista,
+      listaId: estado.listaId,
+      listaRol: estado.listaRol,
+      listaNombre: estado.listaNombre,
+      listaModificada: estado.listaModificada,
+    };
+
     limpiarLista();
+
+    avisar.deshacer('Vaciaste tu lista', () =>
+      useListaStore.setState((state) => ({
+        ...antes,
+        // Si en el medio agregó algo, no se pierde: queda al final.
+        lista: [
+          ...antes.lista,
+          ...state.lista.filter((g) => !antes.lista.some((a) => a.grupoId === g.grupoId)),
+        ],
+      }))
+    );
   };
 
   return {

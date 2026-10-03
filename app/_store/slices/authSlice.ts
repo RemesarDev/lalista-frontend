@@ -105,7 +105,7 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
       if (error) {
         if (error.message === 'DELETION_SCHEDULED') {
           if (currentUser?.id) {
-            analytics.userDeleted(currentUser.id).catch(console.error);
+            await analytics.userDeleted(currentUser.id).catch(console.error);
           }
           await authClient.signOut();
           set({ user: null, loadingAuth: false });

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useListaStore } from '@/app/_store/store';
+import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
 import { avisar, acortarNombre } from '@/app/_lib/avisos';
 
 // Tipo local para las sugerencias que devuelve nuestro endpoint
@@ -226,13 +227,8 @@ export function useUbicacion() {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/maps/sucursales-cercanas?lat=${lat}&lng=${lng}&radio=${radioActual}`);
-        if (!res.ok) return;
-        
-        const data = await res.json();
-        if (!cancelled && data.sucursales) {
-          setSucursalesCercanas(data.sucursales);
-        }
+        const sucursales = await fetchSucursalesCercanas(lat, lng, radioActual);
+        if (!cancelled && sucursales) setSucursalesCercanas(sucursales);
       } catch (err) {
         console.error('Error al actualizar sucursales en tiempo real:', err);
       }
@@ -254,18 +250,9 @@ export function useUbicacion() {
     try {
       setCargandoSucursales(true);
 
-      const res = await fetch(`/api/maps/sucursales-cercanas?lat=${lat}&lng=${lng}&radio=${radioActual}`);
-      
-      if (!res.ok) {
-        const errorDetail = await res.json().catch(() => null);
-        throw new Error(errorDetail?.error || `Error ${res.status} en el servidor`);
-      }
-
-      const data = await res.json();
-
-      if (data.sucursales) {
-        setSucursalesCercanas(data.sucursales);
-      }
+      const sucursales = await fetchSucursalesCercanas(lat, lng, radioActual);
+      if (!sucursales) throw new Error('Error al obtener sucursales cercanas');
+      setSucursalesCercanas(sucursales);
 
       guardarUbicacionFiltro(
         radioActual,

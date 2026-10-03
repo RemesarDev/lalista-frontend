@@ -3,6 +3,7 @@
 import { useListaStore } from '@/app/_store/store';
 import type { DireccionGuardada } from '@/app/_types/direcciones';
 import { useRouter } from 'next/navigation';
+import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
 import { avisar } from '@/app/_lib/avisos';
 
 export function useDirecciones(onClose: () => void) {
@@ -35,12 +36,9 @@ export function useDirecciones(onClose: () => void) {
     onClose();
 
     // Refresca sucursales para la nueva dirección activa (en paralelo con el PATCH)
-    fetch(`/api/maps/sucursales-cercanas?lat=${dir.latitud}&lng=${dir.longitud}&radio=${dir.radioBusqueda}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.sucursales) {
-          useListaStore.getState().setSucursalesCercanas(data.sucursales);
-        }
+    fetchSucursalesCercanas(dir.latitud, dir.longitud, dir.radioBusqueda)
+      .then((sucursales) => {
+        if (sucursales) useListaStore.getState().setSucursalesCercanas(sucursales);
       })
       .catch(console.error);
 

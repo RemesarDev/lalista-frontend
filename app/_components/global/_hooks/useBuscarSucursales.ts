@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { useListaStore } from '@/app/_store/store';
+import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
 
 export function useBuscarSucursales() {
   const { setCargandoSucursales, setSucursalesCercanas } = useListaStore();
@@ -14,16 +15,9 @@ export function useBuscarSucursales() {
     try {
       setCargandoSucursales(true);
 
-      const res = await fetch(
-        `/api/maps/sucursales-cercanas?lat=${latitud}&lng=${longitud}&radio=${radioBusqueda}`
-      );
-
-      if (!res.ok) throw new Error('Error al actualizar sucursales');
-
-      const data = await res.json();
-      if (data.sucursales) {
-        setSucursalesCercanas(data.sucursales);
-      }
+      const sucursales = await fetchSucursalesCercanas(latitud, longitud, radioBusqueda);
+      if (!sucursales) throw new Error('Error al actualizar sucursales');
+      setSucursalesCercanas(sucursales);
     } catch (err) {
       console.error('Error actualizando sucursales:', err);
     } finally {

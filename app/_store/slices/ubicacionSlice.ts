@@ -2,6 +2,7 @@ import { StateCreator } from 'zustand';
 import type { StoreState } from '../store';
 import type { DireccionGuardada } from '@/app/_types/direcciones';
 import { mapearDireccion, type DbDireccion } from '@/app/_lib/mappers/direcciones';
+import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
 
 export interface UbicacionUsuario {
   latitud: number | null;
@@ -78,15 +79,8 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
       }));
 
       // Sin esto, sucursalesCercanas queda stale del localStorage y la comparativa falla
-      const resSucursales = await fetch(
-        `/api/maps/sucursales-cercanas?lat=${activa.latitud}&lng=${activa.longitud}&radio=${activa.radioBusqueda}`
-      );
-      if (resSucursales.ok) {
-        const data = await resSucursales.json();
-        if (data.sucursales) {
-          get().setSucursalesCercanas(data.sucursales);
-        }
-      }
+      const sucursales = await fetchSucursalesCercanas(activa.latitud, activa.longitud, activa.radioBusqueda);
+      if (sucursales) get().setSucursalesCercanas(sucursales);
     }
   },
 

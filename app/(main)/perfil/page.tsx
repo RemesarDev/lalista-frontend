@@ -53,13 +53,8 @@ export default function PerfilPage() {
 
         if (result.success) {
             setModalOpen(false);
-            if (result.scheduled) {
-                avisar.info('Tu cuenta se elimina en 7 días. Si volvés a iniciar sesión antes, se cancela.', 8000);
-                router.replace('/?cuenta=eliminacion-programada');
-            } else {
-                avisar.exito('Eliminamos tu cuenta');
-                router.replace('/');
-            }
+            avisar.info('Tu cuenta se elimina en 7 días. Si volvés a iniciar sesión antes, se cancela.', 8000);
+            router.replace('/?cuenta=eliminacion-programada');
             return;
         }
 

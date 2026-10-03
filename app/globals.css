@@ -24,6 +24,19 @@ body {
   color: var(--color-slate-900);
 }
 
+/* Distancia desde abajo de los avisos flotantes (toasts). En mobile quedan
+   arriba de la navegacion inferior. Son los mismos valores que usa
+   AvisoComparar (bottom-20 / md:bottom-6). */
+:root {
+  --avisos-abajo: 5rem;
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --avisos-abajo: 1.5rem;
+  }
+}
+
 @keyframes sheet-up {
   from { transform: translateY(100%); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }

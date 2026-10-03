@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { SignOutIcon, ListIcon, UserIcon, QuestionIcon, ChatTextIcon } from '@phosphor-icons/react/dist/ssr';
 import { useListaStore } from '@/app/_store/store';
+import { avisar } from '@/app/_lib/avisos';
 import { SupportModal } from './SupportModal'; // <-- Importamos el modal modular
 
 function FaqLink() {
@@ -128,6 +129,7 @@ export default function HeaderUser() {
               onClick={async () => {
                 await logout();
                 setMenuOpen(false);
+                avisar.exito('Cerraste sesión');
                 router.replace('/');
               }}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"

@@ -8,6 +8,8 @@ import { FiltrosBusqueda } from './_components/FiltrosBusqueda';
 import { useListaStore } from '@/app/_store/store';
 import StickySearch from '@/app/_components/global/StickySearch';
 import BaseContainer from '@/app/_components/global/BaseContainer';
+import { avisar, acortarNombre } from '@/app/_lib/avisos';
+import { formatearNombre } from '@/app/_lib/utils/formatters';
 
 export const dynamic = 'force-dynamic';
 
@@ -114,6 +116,7 @@ function ResultadosBusqueda() {
           },
           grupoId as string
         );
+        avisar.exito(`Sumaste ${acortarNombre(formatearNombre(producto.nombre))} como alternativa`);
         router.push('/mi-lista');
       }
       return;
@@ -137,6 +140,8 @@ function ResultadosBusqueda() {
         sucursales: producto.sucursales || [],
         cantidadOpcion: 1,
       });
+      // Solo al sumar un producto nuevo: subir la cantidad ya se ve en la tarjeta.
+      avisar.productoAgregado(formatearNombre(producto.nombre), () => router.push('/mi-lista'));
     } else {
       actualizarCantidadGrupo(grupoAsociado.grupoId, cantidad);
     }

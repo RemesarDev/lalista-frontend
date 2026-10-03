@@ -19,15 +19,17 @@ import { ModalGuardarLista } from './_components/ModalGuardarLista';
 import { CerrarListaModal } from './_components/CerrarListaModal';
 import { GrupoListItem } from './_components/GrupoListItem';
 import { useGestionLista } from './_hooks/useGestionLista';
+import { useQuitarConDeshacer } from './_hooks/useQuitarConDeshacer';
 
 function ListaProductos() {
   const lista = useListaStore((state) => state.lista);
   const actualizarCantidadGrupo = useListaStore((state) => state.actualizarCantidadGrupo);
   const actualizarCantidadOpcion = useListaStore((state) => state.actualizarCantidadOpcion);
   const actualizarNombreGrupo = useListaStore((state) => state.actualizarNombreGrupo);
-  const eliminarOpcion = useListaStore((state) => state.eliminarOpcion);
-  const eliminarGrupo = useListaStore((state) => state.eliminarGrupo);
   const toggleCompradoGrupo = useListaStore((state) => state.toggleCompradoGrupo);
+
+  // Quitar muestra un aviso con "Deshacer"
+  const { quitarGrupo, quitarOpcion } = useQuitarConDeshacer();
 
   const [modoSimplificado, setModoSimplificado] = useState(false);
   const [grupoAbiertoId, setGrupoAbiertoId] = useState<string | null>(null);
@@ -87,7 +89,7 @@ function ListaProductos() {
             const actual = lista.find((g) => g.grupoId === grupoId);
             if (!actual) return;
             if (actual.cantidad <= 1) {
-              eliminarGrupo(grupoId);
+              quitarGrupo(grupoId);
               return;
             }
             actualizarCantidadGrupo(grupoId, actual.cantidad - 1);
@@ -106,8 +108,8 @@ function ListaProductos() {
               actualizarCantidadOpcion(grupoId, productoId, cantidadActual - 1);
             }
           }}
-          onEliminarOpcion={eliminarOpcion}
-          onEliminarGrupo={eliminarGrupo}
+          onEliminarOpcion={quitarOpcion}
+          onEliminarGrupo={quitarGrupo}
           onToggleComprado={toggleCompradoGrupo}
           onActualizarNombre={actualizarNombreGrupo}
         />

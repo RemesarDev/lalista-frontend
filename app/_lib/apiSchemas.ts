@@ -135,7 +135,7 @@ export const agregarDireccionSchema = z.object({
   nombre_lugar:   z.string().min(1, 'El nombre del lugar es obligatorio'),
   latitud:        z.number({ message: 'Latitud inválida' }),
   longitud:       z.number({ message: 'Longitud inválida' }),
-  radio_busqueda: z.number().int().min(1).max(50).optional().default(3),
+  radio_busqueda: z.number().min(1).max(10).optional().default(3),
 });
 // ==========================================
 // 5. ESQUEMAS DE Analytics

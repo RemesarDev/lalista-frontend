@@ -12,7 +12,7 @@ export interface AuthSlice {
   loginConEmail: (email: string, password: string) => Promise<{ success: boolean; error?: any }>;
   registroConEmail: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: any }>;
   logout: () => Promise<void>;
-  borrarCuenta: (password: string) => Promise<{ success: boolean; scheduled?: boolean; error?: any }>;
+  borrarCuenta: (password: string) => Promise<{ success: boolean; error?: any }>;
   checkAuth: () => Promise<User | null>;
 }
 
@@ -111,22 +111,15 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
           set({ user: null, loadingAuth: false });
           get().limpiarLista();
           get().limpiarDirecciones();
-          return { success: true, scheduled: true };
+          return { success: true };
         }
         set({ loadingAuth: false });
         return { success: false, error };
       }
 
-      if (currentUser?.id) {
-        analytics.userDeleted(currentUser.id).catch(console.error);
-      }
-
-      await authClient.signOut();
-      set({ user: null, loadingAuth: false });
-      get().limpiarLista();
-      get().limpiarDirecciones();
-
-      return { success: true };
+      // better-auth siempre retorna DELETION_SCHEDULED con el soft delete configurado
+      set({ loadingAuth: false });
+      return { success: false, error: new Error('Respuesta inesperada del servidor') };
     } catch (error) {
       set({ loadingAuth: false });
       return { success: false, error };

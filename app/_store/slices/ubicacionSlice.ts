@@ -64,7 +64,7 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
 
     set({ direccionesGuardadas: mapeadas });
 
-    // Si hay una activa, la ponemos como ubicación actual
+    // Si hay una activa, la ponemos como ubicación actual y refrescamos sucursales
     const activa = mapeadas.find((d) => d.esActiva);
     if (activa) {
       set((state) => ({
@@ -76,6 +76,17 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
           radioBusqueda: activa.radioBusqueda,
         },
       }));
+
+      // Sin esto, sucursalesCercanas queda stale del localStorage y la comparativa falla
+      const resSucursales = await fetch(
+        `/api/maps/sucursales-cercanas?lat=${activa.latitud}&lng=${activa.longitud}&radio=${activa.radioBusqueda}`
+      );
+      if (resSucursales.ok) {
+        const data = await resSucursales.json();
+        if (data.sucursales) {
+          get().setSucursalesCercanas(data.sucursales);
+        }
+      }
     }
   },
 

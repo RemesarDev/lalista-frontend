@@ -33,6 +33,16 @@ export function useDirecciones(onClose: () => void) {
 
     onClose();
 
+    // Refresca sucursales para la nueva dirección activa (en paralelo con el PATCH)
+    fetch(`/api/maps/sucursales-cercanas?lat=${dir.latitud}&lng=${dir.longitud}&radio=${dir.radioBusqueda}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.sucursales) {
+          useListaStore.getState().setSucursalesCercanas(data.sucursales);
+        }
+      })
+      .catch(console.error);
+
     // Persiste en DB en segundo plano
     const res = await fetch(`/api/direcciones/${dir.id}/activar`, { method: 'PATCH' });
     if (!res.ok) {

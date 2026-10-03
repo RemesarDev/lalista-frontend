@@ -3,6 +3,7 @@
 import { useListaStore } from '@/app/_store/store';
 import type { DireccionGuardada } from '@/app/_types/direcciones';
 import { useRouter } from 'next/navigation';
+import { avisar } from '@/app/_lib/avisos';
 
 export function useDirecciones(onClose: () => void) {
   const { user, direccionesGuardadas, setUbicacion, cargarDirecciones } = useListaStore();
@@ -69,6 +70,8 @@ export function useDirecciones(onClose: () => void) {
           },
         }));
       }
+    } else {
+      avisar.error('No pudimos borrar la dirección. Probá de nuevo.');
     }
   };
 

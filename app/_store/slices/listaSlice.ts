@@ -73,6 +73,7 @@ export interface ListaSlice {
   ) => void;
   eliminarOpcion: (grupoId: string, productoId: string) => void;
   eliminarGrupo: (grupoId: string) => void;
+  restaurarGrupo: (grupo: GrupoLista, indice: number) => void;
   actualizarCantidadGrupo: (grupoId: string, cantidad: number) => void;
   actualizarCantidadOpcion: (grupoId: string, productoId: string, cantidadOpcion: number) => void;
   actualizarNombreGrupo: (grupoId: string, nuevoNombre: string) => void; // <-- Nueva acción
@@ -156,6 +157,22 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
     listaModificada: true,
     lista: state.lista.filter((g) => g.grupoId !== grupoId),
   })),
+
+  // Para "Deshacer": vuelve a poner un grupo en su lugar. Si el grupo todavía
+  // está (se quitó solo una de sus opciones), lo reemplaza por la versión
+  // guardada; si no, lo inserta en la posición que tenía.
+  restaurarGrupo: (grupo, indice) => set((state) => {
+    const sigueEnLista = state.lista.some((g) => g.grupoId === grupo.grupoId);
+    if (sigueEnLista) {
+      return {
+        listaModificada: true,
+        lista: state.lista.map((g) => (g.grupoId === grupo.grupoId ? grupo : g)),
+      };
+    }
+    const lista = [...state.lista];
+    lista.splice(Math.min(indice, lista.length), 0, grupo);
+    return { lista, listaModificada: true };
+  }),
 
   actualizarCantidadGrupo: (grupoId, cantidad) => set((state) => ({
     listaModificada: true,

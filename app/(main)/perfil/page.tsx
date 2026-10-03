@@ -7,6 +7,8 @@ import BaseContainer from '@/app/_components/global/BaseContainer';
 import { UserIcon, EnvelopeIcon, TrashIcon, SignOutIcon } from '@phosphor-icons/react';
 import { ModalBorrarCuenta } from './_components/ModalBorrarCuenta';
 import { Button } from '@/app/_components/global/Button';
+import { avisar } from '@/app/_lib/avisos';
+import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
 
 export default function PerfilPage() {
     const router = useRouter();
@@ -40,6 +42,7 @@ export default function PerfilPage() {
 
     const handleLogout = async () => {
         await logout();
+        avisar.exito('Cerraste sesión');
         router.replace('/');
     };
 
@@ -51,14 +54,17 @@ export default function PerfilPage() {
         if (result.success) {
             setModalOpen(false);
             if (result.scheduled) {
+                avisar.info('Tu cuenta se elimina en 7 días. Si volvés a iniciar sesión antes, se cancela.', 8000);
                 router.replace('/?cuenta=eliminacion-programada');
             } else {
+                avisar.exito('Eliminamos tu cuenta');
                 router.replace('/');
             }
             return;
         }
 
         console.error('Error al borrar cuenta:', result.error);
+        avisar.error(traducirErrorAuth(result.error));
     };
 
     return (

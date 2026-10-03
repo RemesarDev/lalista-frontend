@@ -7,6 +7,7 @@ import type { UsuarioPublico } from '@/app/_types/usuarios';
 import ConfirmModal from '@/app/_components/global/ConfirmModal';
 import { Button } from '@/app/_components/global/Button';
 import { analytics } from '@/app/_lib/services/analyticsService';
+import { avisar } from '@/app/_lib/avisos';
 
 interface MiembroLista extends UsuarioPublico {
     rol: 'owner' | 'viewer' | 'editor';
@@ -123,6 +124,12 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             ).catch(console.error);
             // Fin métricas
 
+            avisar.exito(
+                rol === 'editor'
+                    ? `${usuarioSeleccionado.nombre} ya puede editar la lista`
+                    : `${usuarioSeleccionado.nombre} ya puede ver la lista`
+            );
+
             const miembroRes = await fetch(`/api/listas/${listaId}/miembros`, { credentials: 'include' });
             if (miembroRes.ok) {
                 const miembrosJson = await miembroRes.json();
@@ -161,6 +168,11 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             // Fin métricas
 
             setMiembros((prev) => prev.map((item) => item.id === miembro.id ? { ...item, rol } : item));
+            avisar.exito(
+                rol === 'editor'
+                    ? `${miembro.nombre} ahora puede editar la lista`
+                    : `${miembro.nombre} ahora solo puede ver la lista`
+            );
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -180,6 +192,7 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             const json = await res.json();
             if (!res.ok) throw new Error(json.error ?? 'Error al eliminar el miembro');
             setMiembros((prev) => prev.filter((item) => item.id !== miembro.id));
+            avisar.exito(`Quitaste a ${miembro.nombre} de la lista`);
         } catch (err: any) {
             setError(err.message);
         } finally {

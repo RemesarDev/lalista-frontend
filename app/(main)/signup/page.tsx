@@ -7,6 +7,7 @@ import { useListaStore } from '@/app/_store/store';
 import { useSignupForm } from './_hooks/useSignupForm';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
 import { Button } from '@/app/_components/global/Button';
+import { avisar } from '@/app/_lib/avisos';
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
 
 export default function SignupPage() {
@@ -34,7 +35,8 @@ export default function SignupPage() {
         const result = await registro(form.email, form.password, form.nombre);
 
         if (result.success) {
-
+            const nombre = form.nombre.trim().split(/\s+/)[0];
+            avisar.exito(nombre ? `Listo, ${nombre}: ya tenés tu cuenta` : 'Listo: ya tenés tu cuenta');
             router.push('/');
         } else {
             setMensajeError(traducirErrorAuth(result.error));

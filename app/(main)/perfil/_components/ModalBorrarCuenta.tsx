@@ -76,12 +76,11 @@ export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: Modal
                         </div>
 
                         <Image
-                            src="/img/Lali-triste.png"
+                            src="/img/lali-triste.png"
                             alt="Lali triste"
-                            width={120}
-                            height={120}
-                            style={{ height: 'auto' }}
-                            className="drop-shadow-md"
+                            width={96}
+                            height={155}
+                            className="w-[120px] h-auto drop-shadow-md"
                             priority
                         />
 
@@ -127,11 +126,11 @@ export function ModalBorrarCuenta({ isOpen, onClose, onConfirm, loading }: Modal
                         <div className="flex items-start justify-between p-6 pb-4">
                             <div className="flex items-center gap-3">
                                 <Image
-                                    src="/img/Lali-triste.png"
+                                    src="/img/lali-triste.png"
                                     alt="Lali triste"
-                                    width={36}
-                                    height={36}
-                                    style={{ height: 'auto' }}
+                                    width={96}
+                                    height={155}
+                                    className="w-9 h-auto"
                                 />
                                 <div>
                                     <h2 className="text-base font-bold text-slate-900">Confirmá tu identidad</h2>

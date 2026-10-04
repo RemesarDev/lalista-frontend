@@ -218,17 +218,18 @@ export function useUbicacion() {
     }
   };
 
-  // Efecto para buscar sucursales en tiempo real cada vez que el usuario mueve el pin o hace clic en el mapa
+  // Busca sucursales cada vez que cambia lo que el mapa muestra: el pin o el radio del círculo
   useEffect(() => {
-    if (!coordenadasPendientes) return;
+    // Mismas coordenadas que renderiza el mapa: el pin pendiente si lo hay, si no la ubicación guardada
+    const lat = coordenadasPendientes?.lat ?? ubicacion.latitud;
+    const lng = coordenadasPendientes?.lng ?? ubicacion.longitud;
+    if (lat === null || lng === null) return;
 
     let cancelled = false;
-    const { lat, lng } = coordenadasPendientes;
-    const radioActual = useListaStore.getState().ubicacion.radioBusqueda;
 
     const timer = setTimeout(async () => {
       try {
-        const sucursales = await fetchSucursalesCercanas(lat, lng, radioActual);
+        const sucursales = await fetchSucursalesCercanas(lat, lng, ubicacion.radioBusqueda);
         if (!cancelled && sucursales) setSucursalesCercanas(sucursales);
       } catch (err) {
         console.error('Error al actualizar sucursales en tiempo real:', err);
@@ -239,7 +240,7 @@ export function useUbicacion() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [coordenadasPendientes, setSucursalesCercanas]);
+  }, [coordenadasPendientes, ubicacion.latitud, ubicacion.longitud, ubicacion.radioBusqueda, setSucursalesCercanas]);
   
   // Guarda la ubicación en Zustand y consulta el backend
   const confirmarYBuscarSucursales = useCallback(async () => {

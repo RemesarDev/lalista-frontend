@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MagnifyingGlassIcon, ShoppingCartIcon, ScalesIcon, ChartLineUpIcon } from '@phosphor-icons/react/dist/ssr';
+import { MagnifyingGlassIcon, ShoppingCartIcon, ScalesIcon, ChartLineUpIcon, PercentIcon } from '@phosphor-icons/react/dist/ssr';
 
 export default function FeatureCards() {
   const steps = [
@@ -22,8 +22,14 @@ export default function FeatureCards() {
       href: "/comparativa",
     },
     {
+      Icon: PercentIcon,
+      title: "4. Ahorrá",
+      desc: "Mirá los descuentos con tarjetas y billeteras de cada supermercado, día por día.",
+      href: "/promociones",
+    },
+    {
       Icon: ChartLineUpIcon,
-      title: "4. Calculá",
+      title: "5. Calculá",
       desc: "Seguí la variación mensual de precios para entender los aumentos en el tiempo.",
       href: "/calculadora",
     },
@@ -34,7 +40,7 @@ export default function FeatureCards() {
       <h2 className="text-lg font-black font-display text-slate-800 mb-5 text-center md:text-left">
         ¿Cómo optimizar tu compra?
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {steps.map((step, index) => {
           const { Icon } = step;
           return (

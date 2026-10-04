@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useListaStore } from '@/app/_store/store';
 import { useComparativa } from './_hooks/useComparativa';
 import { 
@@ -12,10 +12,30 @@ import { CardComercioGanador } from './_components/CardComercioGanador';
 import { CardComercioAlternativo } from './_components/CardComercioAlternativo';
 import { TablaDetalleProductos } from './_components/TablaDetalleProductos';
 import { SelectorCriterio } from './_components/SelectorCriterio';
+import { FiltroPromociones, DetallePromo } from './_components/Promociones';
+import {
+  diaDeHoy,
+  leerMisMediosGuardados,
+  obtenerTopTresConPromos,
+  usePromocionesBancarias,
+  type SucursalConPromo,
+} from './_lib/promociones';
 
 export default function ComparativaPage() {
   const lista = useListaStore((state) => state.lista);
   const [criterio, setCriterio] = useState<CriterioComparacion>('mas_barata');
+
+  // Promociones bancarias (opcional)
+  const [aplicarPromos, setAplicarPromos] = useState(false);
+  const [diaCompra, setDiaCompra] = useState(diaDeHoy);
+  const [soloMisMedios, setSoloMisMedios] = useState(true);
+  const [misMedios, setMisMedios] = useState<string[]>([]);
+  const { promos, cargando: cargandoPromos } = usePromocionesBancarias(aplicarPromos);
+
+  // Medios de pago que el usuario eligió en /promociones
+  useEffect(() => {
+    setMisMedios(leerMisMediosGuardados());
+  }, []);
 
   // 1. Filtrar los grupos disyuntivos pendientes (checkbox "comprado" en false)
   const listaPendiente = useMemo(
@@ -51,10 +71,22 @@ export default function ComparativaPage() {
   }, [listaPendiente, precios]);
 
   // 4. Cálculo del Top 3 de cadenas aplicando la estrategia/criterio seleccionado
-  const topTresCadenas: SucursalCarritoComparada[] = useMemo(() => {
+  //    Si el usuario activó las promociones, los totales ya vienen con el descuento aplicado
+  const topTresCadenas: (SucursalCarritoComparada | SucursalConPromo)[] = useMemo(() => {
     if (listaConPreciosActualizados.length === 0) return [];
+    if (aplicarPromos) {
+      return obtenerTopTresConPromos(listaConPreciosActualizados, criterio, promos, {
+        dia: diaCompra,
+        misMedios: soloMisMedios && misMedios.length > 0 ? misMedios : null,
+      });
+    }
     return obtenerTopTresCadenasMasBaratas(listaConPreciosActualizados, criterio);
-  }, [listaConPreciosActualizados, criterio]);
+  }, [listaConPreciosActualizados, criterio, aplicarPromos, promos, diaCompra, soloMisMedios, misMedios]);
+
+  const detallePromo = (sucursal: SucursalCarritoComparada | SucursalConPromo) =>
+    aplicarPromos && !cargandoPromos && 'promoAplicada' in sucursal ? (
+      <DetallePromo sucursal={sucursal} />
+    ) : null;
 
   // --- ESTADOS DE SALIDA TEMPRANA (Early Returns) ---
 
@@ -123,11 +155,25 @@ export default function ComparativaPage() {
           <SelectorCriterio criterio={criterio} onChange={setCriterio} />
         </div>
 
+        <FiltroPromociones
+          activo={aplicarPromos}
+          onActivo={setAplicarPromos}
+          dia={diaCompra}
+          onDia={setDiaCompra}
+          soloMios={soloMisMedios}
+          onSoloMios={setSoloMisMedios}
+          cantidadMisMedios={misMedios.length}
+          cargando={cargandoPromos}
+        />
+
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)] lg:items-start">
           <section className="flex flex-col gap-4" aria-label="Comercio ganador y alternativas">
             <CardComercioGanador sucursal={ganador} />
+            {detallePromo(ganador)}
             {alternativa1 && <CardComercioAlternativo sucursal={alternativa1} posicion={2} />}
+            {alternativa1 && detallePromo(alternativa1)}
             {alternativa2 && <CardComercioAlternativo sucursal={alternativa2} posicion={3} />}
+            {alternativa2 && detallePromo(alternativa2)}
           </section>
 
           <aside className="self-start lg:sticky lg:top-4">

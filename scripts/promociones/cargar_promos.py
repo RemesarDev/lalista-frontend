@@ -403,8 +403,15 @@ def traducir_cencosud(p):
     else:
         tarjeta = "cualquiera"
 
-    desde = datetime.fromtimestamp(float(p["dateStart"]), timezone.utc).strftime("%Y-%m-%d")
-    hasta = datetime.fromtimestamp(float(p["dateEnd"]), timezone.utc).strftime("%Y-%m-%d")
+    # Las fechas vienen como segundos. Las pasamos a hora argentina (UTC-3).
+    # Si el fin cae justo a las 00:00, la promo en realidad termina el día anterior.
+    argentina = timezone(timedelta(hours=-3))
+    inicio = datetime.fromtimestamp(float(p["dateStart"]), argentina)
+    fin = datetime.fromtimestamp(float(p["dateEnd"]), argentina)
+    if (fin.hour, fin.minute) == (0, 0):
+        fin -= timedelta(days=1)
+    desde = inicio.strftime("%Y-%m-%d")
+    hasta = fin.strftime("%Y-%m-%d")
 
     # La API no trae un id por promo: armamos uno a partir de su contenido
     huella = json.dumps([

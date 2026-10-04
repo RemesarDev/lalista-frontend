@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useListaStore } from '@/app/_store/store';
 import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
+import { agregarDireccion } from '@/app/_lib/services/direccionesService';
 import { avisar, acortarNombre } from '@/app/_lib/avisos';
 
 // Tipo local para las sugerencias que devuelve nuestro endpoint
@@ -264,16 +265,7 @@ export function useUbicacion() {
 
       // Persistir en DB si está logueado
       if (user) {
-        await fetch('/api/direcciones', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nombre_lugar: texto,
-            latitud: lat,
-            longitud: lng,
-            radio_busqueda: radioActual,
-          }),
-        });
+        await agregarDireccion(texto, lat, lng, radioActual);
         await cargarDirecciones();
       }
 

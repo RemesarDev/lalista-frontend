@@ -4,6 +4,7 @@ import { useListaStore } from '@/app/_store/store';
 import type { DireccionGuardada } from '@/app/_types/direcciones';
 import { useRouter } from 'next/navigation';
 import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
+import { activarDireccion, eliminarDireccion as eliminarDireccionApi } from '@/app/_lib/services/direccionesService';
 import { avisar } from '@/app/_lib/avisos';
 
 export function useDirecciones(onClose: () => void) {
@@ -43,8 +44,8 @@ export function useDirecciones(onClose: () => void) {
       .catch(console.error);
 
     // Persiste en DB en segundo plano
-    const res = await fetch(`/api/direcciones/${dir.id}/activar`, { method: 'PATCH' });
-    if (!res.ok) {
+    const ok = await activarDireccion(dir.id);
+    if (!ok) {
       // Si falla, resincroniza desde DB
       await cargarDirecciones();
     }
@@ -52,8 +53,8 @@ export function useDirecciones(onClose: () => void) {
 
   const eliminarDireccion = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const res = await fetch(`/api/direcciones/${id}`, { method: 'DELETE' });
-    if (res.ok) {
+    const ok = await eliminarDireccionApi(id);
+    if (ok) {
       await cargarDirecciones();
       // Si no quedan direcciones, limpiar la ubicación del store
       const restantes = useListaStore.getState().direccionesGuardadas;

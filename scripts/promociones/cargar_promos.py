@@ -12,7 +12,7 @@ import hashlib
 import html
 import json
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
@@ -215,6 +215,18 @@ def fecha(texto):
     return texto[:10] if texto else None
 
 
+def fecha_fin(texto):
+    """Carrefour y Changomas marcan el fin como el día siguiente a las 00:00
+    (ej: "2026-11-01T00:00" para una promo que vale hasta el 31/10).
+    En ese caso restamos un día."""
+    if not texto:
+        return None
+    if texto[11:19] == "00:00:00":
+        dia = datetime.strptime(texto[:10], "%Y-%m-%d") - timedelta(days=1)
+        return dia.strftime("%Y-%m-%d")
+    return texto[:10]
+
+
 def bandera_y_canal(nombre, c):
     """Devuelve una lista de (id_comercio, id_bandera, canal) donde vale la promo."""
     online = bool(c.get("ecommerce"))
@@ -275,7 +287,7 @@ def traducir_valtech(nombre, cadena, campos):
             "tipo_tarjeta": tipo_tarjeta(texto_titulo),
             "canal": canal,
             "vigencia_desde": fecha(c.get("active_from")),
-            "vigencia_hasta": fecha(c.get("active_to")),
+            "vigencia_hasta": fecha_fin(c.get("active_to")),
             "condiciones": condiciones,
             "fuente": f"api_{nombre}",
             "id_origen": str(c.get("id")),
@@ -538,7 +550,7 @@ def traer_anonima():
             continue
         tipo = "descuento" if porcentaje else "cuotas"
 
-        # La Anónima: 1 = lunes ... 7 = domingo
+        # La Anónima: 1 = lunes ... 7 = domingo (igual que nuestro formato)
         dias = sorted({int(d) for d in dias_txt.strip("|").split("|") if d}) or [1, 2, 3, 4, 5, 6, 7]
 
         fechas = re.findall(r"(\d{2})/(\d{2})/(\d{4})", legal)
@@ -579,6 +591,7 @@ def traer_anonima():
 # ---------------------------------------------------------------------------
 
 def leer_env():
+    """Lee el archivo .env que está al lado de este programa."""
     ruta = Path(__file__).parent / ".env"
     config = {}
     for linea in ruta.read_text(encoding="utf-8").splitlines():

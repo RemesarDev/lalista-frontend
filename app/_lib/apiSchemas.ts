@@ -137,6 +137,9 @@ export const agregarDireccionSchema = z.object({
   longitud:       z.number({ message: 'Longitud inválida' }),
   radio_busqueda: z.number().min(1).max(10).optional().default(3),
 });
+export const actualizarRadioDireccionSchema = z.object({
+  radio_busqueda: z.number().min(1).max(10),
+});
 // ==========================================
 // 5. ESQUEMAS DE Analytics
 // ==========================================

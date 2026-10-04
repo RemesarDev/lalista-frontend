@@ -2,7 +2,7 @@
 
 import { MapPinIcon } from '@phosphor-icons/react/dist/ssr';
 import { useListaStore } from '@/app/_store/store';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import SliderHorizontal from '../Slider/SliderHorizontal';
 import { useBuscarSucursales } from '../_hooks/useBuscarSucursales';
 import DireccionSheet from './DireccionSheet';
@@ -11,10 +11,33 @@ export default function HeaderLocation() {
   const { ubicacion, cambiarRadioBusqueda } = useListaStore();
   const { buscarConDebounce } = useBuscarSucursales();
   const [sheetAbierto, setSheetAbierto] = useState(false);
+  const timerPersistir = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // A diferencia del slider del mapa, acá no hay botón de guardado: persistimos solos
+  const persistirRadioConDebounce = (nuevoRadio: number) => {
+    const activa = useListaStore.getState().direccionesGuardadas.find((d) => d.esActiva);
+    if (!activa) return;
+
+    useListaStore.setState((state) => ({
+      direccionesGuardadas: state.direccionesGuardadas.map((d) =>
+        d.esActiva ? { ...d, radioBusqueda: nuevoRadio } : d
+      ),
+    }));
+
+    clearTimeout(timerPersistir.current);
+    timerPersistir.current = setTimeout(() => {
+      fetch(`/api/direcciones/${activa.id}/radio`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ radio_busqueda: nuevoRadio }),
+      }).catch(console.error);
+    }, 800);
+  };
 
   const handleRadioChange = (nuevoRadio: number) => {
     cambiarRadioBusqueda(nuevoRadio);
     buscarConDebounce(600);
+    persistirRadioConDebounce(nuevoRadio);
   };
 
   return (

@@ -1,8 +1,8 @@
 import { StateCreator } from 'zustand';
 import type { StoreState } from '../store';
 import type { DireccionGuardada } from '@/app/_types/direcciones';
-import { mapearDireccion, type DbDireccion } from '@/app/_lib/mappers/direcciones';
 import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
+import { fetchDirecciones } from '@/app/_lib/services/direccionesService';
 import { avisar } from '@/app/_lib/avisos';
 
 export interface UbicacionUsuario {
@@ -58,11 +58,8 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
   direccionesGuardadas: [],
 
   cargarDirecciones: async () => {
-    const res = await fetch('/api/direcciones');
-    if (!res.ok) return;
-
-    const { direcciones } = await res.json() as { direcciones: DbDireccion[] };
-    const mapeadas = direcciones.map(mapearDireccion);
+    const mapeadas = await fetchDirecciones();
+    if (!mapeadas) return;
 
     set({ direccionesGuardadas: mapeadas });
 

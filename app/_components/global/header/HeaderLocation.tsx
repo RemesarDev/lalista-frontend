@@ -5,6 +5,7 @@ import { useListaStore } from '@/app/_store/store';
 import { useRef, useState } from 'react';
 import SliderHorizontal from '../Slider/SliderHorizontal';
 import { useBuscarSucursales } from '../_hooks/useBuscarSucursales';
+import { actualizarRadioDireccion } from '@/app/_lib/services/direccionesService';
 import DireccionSheet from './DireccionSheet';
 
 export default function HeaderLocation() {
@@ -26,11 +27,7 @@ export default function HeaderLocation() {
 
     clearTimeout(timerPersistir.current);
     timerPersistir.current = setTimeout(() => {
-      fetch(`/api/direcciones/${activa.id}/radio`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ radio_busqueda: nuevoRadio }),
-      }).catch(console.error);
+      actualizarRadioDireccion(activa.id, nuevoRadio).catch(console.error);
     }, 800);
   };
 

@@ -75,7 +75,7 @@ export const productosRouter = new Hono()
     const offset = (page - 1) * limit;
 
     // sucursales_ids ya viene como string[] gracias a Zod
-    const { data, error } = await supabase.rpc('buscar_productos_por_sucursales', {
+    const { data, error } = await supabase.rpc('buscar_productos_por_sucursales_v2', {
       p_sucursales_ids: sucursales_ids,
       search_term: search ?? null,
       p_limit: limit,
@@ -102,7 +102,7 @@ export const productosRouter = new Hono()
     const { search, page, limit, categoria, etiquetas } = c.req.valid('query');
     const offset = (page - 1) * limit;
 
-    const { data, error } = await supabase.rpc('buscar_catalogo', {
+    const { data, error } = await supabase.rpc('buscar_catalogo_v2', {
       search_term: search ?? null,
       p_limit: limit,
       p_offset: offset,

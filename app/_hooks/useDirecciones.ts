@@ -68,6 +68,7 @@ export function useDirecciones(onClose: () => void) {
             precision: null,
           },
         }));
+        useListaStore.getState().limpiarSucursales();
       }
     } else {
       avisar.error('No pudimos borrar la dirección. Probá de nuevo.');
@@ -84,6 +85,7 @@ export function useDirecciones(onClose: () => void) {
         precision: null,
       },
     }));
+    useListaStore.getState().limpiarSucursales();
     onClose();
   };
 

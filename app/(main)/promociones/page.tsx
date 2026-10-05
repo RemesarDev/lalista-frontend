@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { FilterPill } from '@/app/_components/global/FilterPill';
 import { BuscadorMediosPago } from '@/app/_components/global/BuscadorMediosPago';
 import { useMisMediosPago } from '@/app/_hooks/useMisMediosPago';
+import { identidadSupermercado } from '@/app/_lib/utils/identidadSupermercado';
 import type { PromocionBancaria } from '@/app/api/[[...route]]/promociones';
 
 // ---------------------------------------------------------------------------
@@ -45,9 +46,6 @@ const FORMATOS_CARREFOUR: Record<number, string> = {
   4: 'Maxi',
 };
 
-// Cuántos bancos mostramos como filtro rápido (los más frecuentes del día)
-const MAX_FILTROS_ENTIDAD = 8;
-
 // Promos que valen para cualquiera, sin importar qué tarjeta tenga
 const ENTIDADES_PARA_TODOS = ['Todos los medios de pago'];
 
@@ -73,13 +71,6 @@ const formatearPesos = (monto: number) =>
   monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
 
 const formatearFecha = (iso: string) => iso.split('-').reverse().join('/');
-
-const idSeccion = (cadena: string) =>
-  `cadena-${cadena
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')}`;
 
 /** Junta las promos repetidas por formato (ej: Carrefour Hiper, Express y Maxi). */
 function agrupar(promos: PromocionBancaria[]): PromoAgrupada[] {
@@ -183,6 +174,160 @@ function FilaPromo({ promo }: { promo: PromoAgrupada }) {
   );
 }
 
+function InsigniaSuper({ cadena, tamano = 'md' }: { cadena: string; tamano?: 'md' | 'lg' }) {
+  const { color, iniciales, colorTexto } = identidadSupermercado(cadena);
+  const medidas = tamano === 'lg' ? 'h-12 w-12 text-sm' : 'h-10 w-10 text-xs';
+  return (
+    <span
+      aria-hidden="true"
+      className={`flex shrink-0 items-center justify-center rounded-full font-bold ${medidas}`}
+      style={{ backgroundColor: color, color: colorTexto }}
+    >
+      {iniciales}
+    </span>
+  );
+}
+
+interface ResumenSuper {
+  cadena: string;
+  promos: PromoAgrupada[]; // toda la semana
+  delDia: PromoAgrupada[]; // solo el día elegido, de mejor a peor
+  diasConPromo: Set<number>;
+}
+
+function TarjetaSuper({
+  resumen,
+  dia,
+  tipo,
+  onAbrir,
+}: {
+  resumen: ResumenSuper;
+  dia: number;
+  tipo: Tipo;
+  onAbrir: () => void;
+}) {
+  const mejor = resumen.delDia[0];
+  const nombreDia = DIAS.find((d) => d.numero === dia)?.largo;
+
+  return (
+    <button
+      type="button"
+      onClick={onAbrir}
+      className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-primary-400 hover:shadow-md"
+    >
+      <div className="flex items-center gap-3">
+        <InsigniaSuper cadena={resumen.cadena} />
+        <p className="truncate font-semibold text-slate-800">{resumen.cadena}</p>
+      </div>
+
+      <div className="mt-3 flex-1">
+        {mejor ? (
+          <>
+            <p className="text-xs text-slate-500">Hasta</p>
+            <p className="text-3xl font-bold leading-tight text-primary-500">
+              {tipo === 'descuento' ? `${mejor.porcentaje}%` : `${mejor.cuotas} cuotas`}
+            </p>
+            <p className="truncate text-xs text-slate-600">
+              con {mejor.entidad}
+              {resumen.delDia.length > 1 && ` y ${resumen.delDia.length - 1} más`}
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-slate-500">Sin promos el {nombreDia}</p>
+        )}
+      </div>
+
+      {/* Mini semana: qué días tiene promos */}
+      <div className="mt-3 flex justify-between gap-1" aria-label="Días con promociones">
+        {DIAS.map((d) => {
+          const tiene = resumen.diasConPromo.has(d.numero);
+          const elegido = d.numero === dia;
+          return (
+            <span
+              key={d.numero}
+              title={`${d.largo}${tiene ? ': con promos' : ': sin promos'}`}
+              className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
+                tiene ? 'bg-primary-500 text-white' : 'bg-slate-100 text-slate-400'
+              } ${elegido ? 'ring-2 ring-slate-800 ring-offset-1' : ''}`}
+            >
+              {d.corto[0]}
+            </span>
+          );
+        })}
+      </div>
+    </button>
+  );
+}
+
+function PanelSuper({
+  resumen,
+  dia,
+  onCerrar,
+}: {
+  resumen: ResumenSuper;
+  dia: number;
+  onCerrar: () => void;
+}) {
+  // Cerrar con la tecla Esc
+  useEffect(() => {
+    const alApretar = (e: globalThis.KeyboardEvent) => e.key === 'Escape' && onCerrar();
+    window.addEventListener('keydown', alApretar);
+    return () => window.removeEventListener('keydown', alApretar);
+  }, [onCerrar]);
+
+  // La semana empezando por el día elegido
+  const semana = [...DIAS.slice(dia - 1), ...DIAS.slice(0, dia - 1)];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={`Promociones de ${resumen.cadena}`}>
+      <button type="button" aria-label="Cerrar" onClick={onCerrar} className="absolute inset-0 bg-slate-900/40" />
+
+      <div className="relative flex max-h-[85vh] w-full max-w-lg flex-col rounded-t-3xl bg-slate-50 sm:rounded-3xl">
+        <header className="flex items-center gap-3 border-b border-slate-200 p-4">
+          <InsigniaSuper cadena={resumen.cadena} tamano="lg" />
+          <div className="flex-1">
+            <p className="text-lg font-semibold text-slate-900">{resumen.cadena}</p>
+            <p className="text-xs text-slate-500">Promociones de la semana</p>
+          </div>
+          <button
+            type="button"
+            onClick={onCerrar}
+            aria-label="Cerrar"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-xl text-slate-500 hover:bg-slate-200"
+          >
+            ×
+          </button>
+        </header>
+
+        <div className="space-y-5 overflow-y-auto p-4">
+          {semana.map((d) => {
+            const delDia = resumen.promos
+              .filter((p) => p.dias.includes(d.numero))
+              .sort((a, b) => valorDe(b) - valorDe(a));
+            const esElegido = d.numero === dia;
+            return (
+              <section key={d.numero}>
+                <h3 className={`mb-2 text-sm font-semibold capitalize ${esElegido ? 'text-primary-500' : 'text-slate-700'}`}>
+                  {d.numero === diaDeHoy() ? `Hoy (${d.largo})` : d.largo}
+                </h3>
+                {delDia.length > 0 ? (
+                  <ul className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                    {delDia.map((p) => (
+                      <FilaPromo key={`${d.numero}-${p.fuente}-${p.id_origen}`} promo={p} />
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-slate-400">Sin promociones.</p>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Página
 // ---------------------------------------------------------------------------
@@ -191,7 +336,7 @@ export default function PromocionesPage() {
   const [dia, setDia] = useState(diaDeHoy);
   const [tipo, setTipo] = useState<Tipo>('descuento');
   const [canal, setCanal] = useState<Canal>('todos');
-  const [entidad, setEntidad] = useState<string | null>(null);
+  const [superAbierto, setSuperAbierto] = useState<string | null>(null);
 
   const { misMedios, cambiarMisMedios: guardarMisMedios } = useMisMediosPago();
   const [soloMios, setSoloMios] = useState(true);
@@ -206,12 +351,8 @@ export default function PromocionesPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Traemos todas las promos una sola vez: cambiar de día es instantáneo
-  // y podemos armar la lista completa de bancos para "¿Con qué pagás?"
   useEffect(() => {
     let cancelado = false;
-    setCargando(true);
-    setError(null);
-
     fetch('/api/promociones-bancarias')
       .then((r) => {
         if (!r.ok) throw new Error('No pudimos cargar las promociones. Probá de nuevo en un rato.');
@@ -226,7 +367,6 @@ export default function PromocionesPage() {
       .finally(() => {
         if (!cancelado) setCargando(false);
       });
-
     return () => {
       cancelado = true;
     };
@@ -234,7 +374,7 @@ export default function PromocionesPage() {
 
   const agrupadas = useMemo(() => agrupar(promos), [promos]);
 
-  // Todos los bancos y billeteras que tienen alguna promo en la semana
+  // Todos los bancos y billeteras con alguna promo (para el buscador)
   const todasLasEntidades = useMemo(
     () =>
       [...new Set(agrupadas.map((p) => p.entidad))]
@@ -245,57 +385,38 @@ export default function PromocionesPage() {
 
   const filtrarPorMios = soloMios && misMedios.length > 0;
 
-  // Promos del tipo y canal elegidos (antes de filtrar por banco)
-  const delTipo = useMemo(
+  // Promos de la semana que pasan los filtros (tipo, canal, medios de pago)
+  const filtradas = useMemo(
     () =>
       agrupadas.filter(
         (p) =>
-          p.dias.includes(dia) &&
           p.tipo_promo === tipo &&
           (canal === 'todos' || p.canal === canal || p.canal === 'ambos') &&
           (!filtrarPorMios || misMedios.includes(p.entidad) || ENTIDADES_PARA_TODOS.includes(p.entidad)),
       ),
-    [agrupadas, dia, tipo, canal, filtrarPorMios, misMedios],
+    [agrupadas, tipo, canal, filtrarPorMios, misMedios],
   );
 
-  // Bancos más frecuentes del día, para los filtros rápidos
-  const entidadesFrecuentes = useMemo(() => {
-    const cuenta = new Map<string, number>();
-    for (const p of delTipo) cuenta.set(p.entidad, (cuenta.get(p.entidad) ?? 0) + 1);
-    return [...cuenta.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, MAX_FILTROS_ENTIDAD)
-      .map(([nombre]) => nombre);
-  }, [delTipo]);
+  // Un resumen por supermercado, ordenados por la mejor promo del día elegido
+  const supers: ResumenSuper[] = useMemo(() => {
+    const porCadena = new Map<string, PromoAgrupada[]>();
+    for (const p of filtradas) porCadena.set(p.cadena, [...(porCadena.get(p.cadena) ?? []), p]);
 
-  // Si el banco elegido no tiene promos con los filtros nuevos, lo soltamos
-  useEffect(() => {
-    if (entidad && !delTipo.some((p) => p.entidad === entidad)) setEntidad(null);
-  }, [delTipo, entidad]);
+    return [...porCadena.entries()]
+      .map(([cadena, lista]) => ({
+        cadena,
+        promos: lista,
+        delDia: lista.filter((p) => p.dias.includes(dia)).sort((a, b) => valorDe(b) - valorDe(a)),
+        diasConPromo: new Set(lista.flatMap((p) => p.dias)),
+      }))
+      .sort((a, b) => (b.delDia[0] ? valorDe(b.delDia[0]) : -1) - (a.delDia[0] ? valorDe(a.delDia[0]) : -1));
+  }, [filtradas, dia]);
 
-  const visibles = useMemo(
-    () => delTipo.filter((p) => !entidad || p.entidad === entidad),
-    [delTipo, entidad],
-  );
-
-  // Agrupadas por cadena, de mayor a menor beneficio
-  const porCadena = useMemo(() => {
-    const grupos: Record<string, PromoAgrupada[]> = {};
-    for (const p of visibles) (grupos[p.cadena] ??= []).push(p);
-    for (const lista of Object.values(grupos)) lista.sort((a, b) => valorDe(b) - valorDe(a));
-    // Las cadenas con la mejor promo van primero
-    return Object.entries(grupos).sort((a, b) => valorDe(b[1][0]) - valorDe(a[1][0]));
-  }, [visibles]);
-
-  const nombreDia = DIAS.find((d) => d.numero === dia)?.largo;
-  const esHoy = dia === diaDeHoy();
-  const hayFiltros = canal !== 'todos' || entidad !== null || filtrarPorMios;
-
-  const irACadena = (cadena: string) =>
-    document.getElementById(idSeccion(cadena))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const abierto = supers.find((s) => s.cadena === superAbierto) ?? null;
+  const hayFiltros = canal !== 'todos' || filtrarPorMios;
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-8">
+    <div className="mx-auto w-full max-w-5xl py-8">
       <header className="mb-5">
         <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">Promociones</h1>
         <p className="mt-1 text-sm text-slate-600">
@@ -315,34 +436,41 @@ export default function PromocionesPage() {
         ))}
       </div>
 
-      {/* Descuentos / Cuotas */}
-      <div className="mb-4 inline-flex rounded-xl bg-slate-100 p-1" role="tablist">
-        {(['descuento', 'cuotas'] as Tipo[]).map((t) => (
-          <button
-            key={t}
-            type="button"
-            role="tab"
-            aria-selected={tipo === t}
-            onClick={() => setTipo(t)}
-            className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
-              tipo === t ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            {t === 'descuento' ? 'Descuentos' : 'Cuotas sin interés'}
-          </button>
-        ))}
+      {/* Descuentos / Cuotas  +  canal */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-xl bg-slate-100 p-1" role="tablist">
+          {(['descuento', 'cuotas'] as Tipo[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="tab"
+              aria-selected={tipo === t}
+              onClick={() => setTipo(t)}
+              className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
+                tipo === t ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {t === 'descuento' ? 'Descuentos' : 'Cuotas sin interés'}
+            </button>
+          ))}
+        </div>
+        <div className={FILA_DESLIZABLE}>
+          {(['todos', 'presencial', 'online'] as Canal[]).map((c) => (
+            <NoEncoger key={c}>
+              <FilterPill active={canal === c} onClick={() => setCanal(c)}>
+                {c === 'todos' ? 'Sucursal y online' : CANAL[c]}
+              </FilterPill>
+            </NoEncoger>
+          ))}
+        </div>
       </div>
 
-      {/* Mis medios de pago */}
+      {/* ¿Con qué pagás? */}
       {!cargando && !error && todasLasEntidades.length > 0 && (
-        <>
-          <BuscadorMediosPago
-            disponibles={todasLasEntidades}
-            elegidos={misMedios}
-            onCambiar={cambiarMisMedios}
-          />
+        <div className="mb-6 max-w-xl">
+          <BuscadorMediosPago disponibles={todasLasEntidades} elegidos={misMedios} onCambiar={cambiarMisMedios} />
           {misMedios.length > 0 && (
-            <label className="-mt-2 mb-4 flex items-center gap-2 text-xs text-slate-600">
+            <label className="-mt-2 flex items-center gap-2 text-xs text-slate-600">
               <input
                 type="checkbox"
                 checked={soloMios}
@@ -352,81 +480,24 @@ export default function PromocionesPage() {
               Ver solo las promos que puedo usar
             </label>
           )}
-        </>
-      )}
-
-      {/* Resumen: lo mejor de cada súper */}
-      {!cargando && !error && porCadena.length > 0 && (
-        <section className="mb-6" aria-label="Lo mejor de cada supermercado">
-          <h2 className="mb-2 text-sm font-semibold text-slate-700">
-            Lo mejor {esHoy ? 'de hoy' : `del ${nombreDia}`}
-          </h2>
-          <div className={`${FILA_DESLIZABLE} gap-3`}>
-            {porCadena.map(([cadena, lista]) => {
-              const mejor = lista[0];
-              return (
-                <button
-                  key={cadena}
-                  type="button"
-                  onClick={() => irACadena(cadena)}
-                  className="w-36 shrink-0 rounded-2xl border border-slate-200 bg-white p-3 text-left transition hover:border-primary-400"
-                >
-                  <p className="truncate text-xs font-semibold text-slate-500">{cadena}</p>
-                  <p className="text-2xl font-bold text-primary-500">
-                    {tipo === 'descuento' ? `${mejor.porcentaje}%` : `${mejor.cuotas} cuotas`}
-                  </p>
-                  <p className="truncate text-xs text-slate-600">{mejor.entidad}</p>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Filtros: canal y banco */}
-      {!cargando && !error && delTipo.length > 0 && (
-        <div className="mb-5 space-y-2">
-          <div className={FILA_DESLIZABLE}>
-            {(['todos', 'presencial', 'online'] as Canal[]).map((c) => (
-              <NoEncoger key={c}>
-                <FilterPill active={canal === c} onClick={() => setCanal(c)}>
-                  {c === 'todos' ? 'Sucursal y online' : CANAL[c]}
-                </FilterPill>
-              </NoEncoger>
-            ))}
-          </div>
-          <div className={`${FILA_DESLIZABLE} sm:flex-wrap`}>
-            <NoEncoger>
-              <FilterPill active={entidad === null} onClick={() => setEntidad(null)}>
-                Todos los bancos
-              </FilterPill>
-            </NoEncoger>
-            {entidadesFrecuentes.map((e) => (
-              <NoEncoger key={e}>
-                <FilterPill active={entidad === e} onClick={() => setEntidad(entidad === e ? null : e)}>
-                  {e}
-                </FilterPill>
-              </NoEncoger>
-            ))}
-          </div>
         </div>
       )}
 
       {/* Estados */}
       {cargando && (
-        <div className="space-y-3" aria-busy="true">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl bg-slate-100" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3" aria-busy="true">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-44 animate-pulse rounded-2xl bg-slate-100" />
           ))}
         </div>
       )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {!cargando && !error && visibles.length === 0 && (
+      {!cargando && !error && supers.length === 0 && (
         <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center">
           <p className="text-sm text-slate-600">
-            No hay {tipo === 'descuento' ? 'descuentos' : 'promos en cuotas'} para el {nombreDia}
+            No hay {tipo === 'descuento' ? 'descuentos' : 'promos en cuotas'}
             {hayFiltros ? ' con estos filtros' : ''}.
           </p>
           {hayFiltros && (
@@ -434,7 +505,6 @@ export default function PromocionesPage() {
               type="button"
               onClick={() => {
                 setCanal('todos');
-                setEntidad(null);
                 setSoloMios(false);
               }}
               className="mt-2 text-sm font-semibold text-primary-500 hover:underline"
@@ -445,23 +515,16 @@ export default function PromocionesPage() {
         </div>
       )}
 
-      {/* Listado por supermercado */}
-      {!cargando && !error && (
-        <div className="space-y-6">
-          {porCadena.map(([cadena, lista]) => (
-            <section key={cadena} id={idSeccion(cadena)} className="scroll-mt-24">
-              <h2 className="mb-2 text-lg font-semibold text-slate-800">
-                {cadena} <span className="text-sm font-normal text-slate-500">({lista.length})</span>
-              </h2>
-              <ul className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                {lista.map((p) => (
-                  <FilaPromo key={`${p.fuente}-${p.id_origen}`} promo={p} />
-                ))}
-              </ul>
-            </section>
+      {/* Grilla de supermercados */}
+      {!cargando && !error && supers.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          {supers.map((s) => (
+            <TarjetaSuper key={s.cadena} resumen={s} dia={dia} tipo={tipo} onAbrir={() => setSuperAbierto(s.cadena)} />
           ))}
         </div>
       )}
+
+      {abierto && <PanelSuper resumen={abierto} dia={dia} onCerrar={() => setSuperAbierto(null)} />}
     </div>
   );
 }

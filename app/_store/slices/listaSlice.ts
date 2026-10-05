@@ -35,7 +35,7 @@ export interface GrupoLista {
   grupoId: string;           
   cantidad: number;          
   comprado?: boolean;        
-  nombrePersonalizado?: string | null; // <-- Campo para el nombre manual del usuario
+  nombrePersonalizado?: string | null; 
   opciones: ProductoOpcion[];
 }
 

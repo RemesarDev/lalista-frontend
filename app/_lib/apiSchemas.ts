@@ -101,6 +101,7 @@ export const guardarListaSchema = z.object({
       item_id: z.uuid('El item_id debe ser un UUID válido'),
       cantidad: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
       comprado: z.boolean(),
+      nombre_personalizado: z.string().nullable().optional(),
       opciones: z.array(opcionProductoSchema).min(1, 'Cada grupo debe tener al menos una opción'),
     })
   ).min(1, 'La lista debe tener al menos un producto'),
@@ -111,6 +112,7 @@ export const sincronizarListaSchema = z.object({
       item_id: z.string(),
       cantidad: z.number().int().min(1),
       comprado: z.boolean(),
+      nombre_personalizado: z.string().nullable().optional(),
       opciones: z.array(opcionProductoSchema).min(1),
     })
   ).min(1),
@@ -141,7 +143,7 @@ export const actualizarRadioDireccionSchema = z.object({
   radio_busqueda: z.number().min(1).max(10),
 });
 // ==========================================
-// 5. ESQUEMAS DE Analytics
+// 6. ESQUEMAS DE Analytics
 // ==========================================
 export const analyticsEventSchema = z.object({
   eventName: z.enum([

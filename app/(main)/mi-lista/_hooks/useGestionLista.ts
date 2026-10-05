@@ -48,6 +48,7 @@ export function useGestionLista(): UseGestionListaReturn {
     item_id: grupo.grupoId,
     cantidad: grupo.cantidad,
     comprado: grupo.comprado ?? false,
+    nombre_personalizado: grupo.nombrePersonalizado ?? null,
     opciones: grupo.opciones.map((opcion, index) => ({
       id_producto: opcion.id,
       descripcion: opcion.nombre,

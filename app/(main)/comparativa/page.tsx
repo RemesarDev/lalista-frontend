@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useListaStore } from '@/app/_store/store';
 import { useComparativa } from './_hooks/useComparativa';
 import { 
@@ -15,11 +15,11 @@ import { SelectorCriterio } from './_components/SelectorCriterio';
 import { FiltroPromociones, DetallePromo } from './_components/Promociones';
 import {
   diaDeHoy,
-  leerMisMediosGuardados,
   obtenerTopTresConPromos,
   usePromocionesBancarias,
   type SucursalConPromo,
 } from './_lib/promociones';
+import { useMisMediosPago } from '@/app/_hooks/useMisMediosPago';
 
 export default function ComparativaPage() {
   const lista = useListaStore((state) => state.lista);
@@ -29,13 +29,14 @@ export default function ComparativaPage() {
   const [aplicarPromos, setAplicarPromos] = useState(false);
   const [diaCompra, setDiaCompra] = useState(diaDeHoy);
   const [soloMisMedios, setSoloMisMedios] = useState(true);
-  const [misMedios, setMisMedios] = useState<string[]>([]);
+  const { misMedios, cambiarMisMedios } = useMisMediosPago();
   const { promos, cargando: cargandoPromos } = usePromocionesBancarias(aplicarPromos);
 
-  // Medios de pago que el usuario eligió en /promociones
-  useEffect(() => {
-    setMisMedios(leerMisMediosGuardados());
-  }, []);
+  // Bancos y billeteras que tienen alguna promo (para el buscador)
+  const entidadesConPromo = useMemo(
+    () => [...new Set(promos.map((p) => p.entidad))].filter((e) => e !== 'Todos los medios de pago').sort((a, b) => a.localeCompare(b, 'es')),
+    [promos],
+  );
 
   // 1. Filtrar los grupos disyuntivos pendientes (checkbox "comprado" en false)
   const listaPendiente = useMemo(
@@ -162,7 +163,12 @@ export default function ComparativaPage() {
           onDia={setDiaCompra}
           soloMios={soloMisMedios}
           onSoloMios={setSoloMisMedios}
-          cantidadMisMedios={misMedios.length}
+          entidadesDisponibles={entidadesConPromo}
+          misMedios={misMedios}
+          onMisMedios={(lista) => {
+            cambiarMisMedios(lista);
+            setSoloMisMedios(true);
+          }}
           cargando={cargandoPromos}
         />
 

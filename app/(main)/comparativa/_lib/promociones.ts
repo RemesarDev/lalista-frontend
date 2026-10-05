@@ -12,9 +12,6 @@ import {
 // Promos que valen para cualquiera, sin importar qué tarjeta tenga
 export const ENTIDADES_PARA_TODOS = ['Todos los medios de pago'];
 
-// Misma clave que usa la sección /promociones para guardar "¿Con qué pagás?"
-const CLAVE_MIS_MEDIOS = 'lalista-mis-medios-pago';
-
 export interface PromoAplicada {
   entidad: string;
   porcentaje: number;
@@ -39,16 +36,6 @@ export interface OpcionesPromo {
 export const diaDeHoy = () => {
   const d = new Date().getDay(); // 0 = domingo
   return d === 0 ? 7 : d;
-};
-
-/** Lee los medios de pago que el usuario eligió en /promociones. */
-export const leerMisMediosGuardados = (): string[] => {
-  try {
-    const guardado = window.localStorage.getItem(CLAVE_MIS_MEDIOS);
-    return guardado ? JSON.parse(guardado) : [];
-  } catch {
-    return [];
-  }
 };
 
 /** Trae las promos bancarias vigentes (una sola vez, cuando se activan). */

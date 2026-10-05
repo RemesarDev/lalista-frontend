@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { BuscadorMediosPago } from '@/app/_components/global/BuscadorMediosPago';
 import { FilterPill } from '@/app/_components/global/FilterPill';
 import { formatearPrecio } from '@/app/_lib/utils/formatters';
 import { diaDeHoy, type SucursalConPromo } from '../_lib/promociones';
@@ -29,7 +30,10 @@ interface FiltroProps {
   onDia: (dia: number) => void;
   soloMios: boolean;
   onSoloMios: (valor: boolean) => void;
-  cantidadMisMedios: number;
+  /** Bancos y billeteras que tienen alguna promo */
+  entidadesDisponibles: string[];
+  misMedios: string[];
+  onMisMedios: (lista: string[]) => void;
   cargando: boolean;
 }
 
@@ -41,7 +45,9 @@ export function FiltroPromociones({
   onDia,
   soloMios,
   onSoloMios,
-  cantidadMisMedios,
+  entidadesDisponibles,
+  misMedios,
+  onMisMedios,
   cargando,
 }: FiltroProps) {
   return (
@@ -77,25 +83,34 @@ export function FiltroPromociones({
             </div>
           </div>
 
-          {cantidadMisMedios > 0 ? (
-            <label className="flex items-center gap-2 text-xs text-slate-600">
-              <input
-                type="checkbox"
-                checked={soloMios}
-                onChange={(e) => onSoloMios(e.target.checked)}
-                className="h-4 w-4 accent-primary-500"
+          {entidadesDisponibles.length > 0 && (
+            <div>
+              <BuscadorMediosPago
+                disponibles={entidadesDisponibles}
+                elegidos={misMedios}
+                onCambiar={onMisMedios}
               />
-              Solo con mis medios de pago ({cantidadMisMedios})
-            </label>
-          ) : (
-            <p className="text-xs text-slate-500">
-              Se usa la mejor promo con cualquier tarjeta.{' '}
-              <Link href="/promociones" className="font-semibold text-primary-500 hover:underline">
-                Elegí tus medios de pago
-              </Link>{' '}
-              para ver solo las que podés usar.
-            </p>
+              {misMedios.length > 0 ? (
+                <label className="-mt-2 flex items-center gap-2 text-xs text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={soloMios}
+                    onChange={(e) => onSoloMios(e.target.checked)}
+                    className="h-4 w-4 accent-primary-500"
+                  />
+                  Solo con mis medios de pago
+                </label>
+              ) : (
+                <p className="-mt-2 text-xs text-slate-500">
+                  Sin elegir, se usa la mejor promo con cualquier tarjeta.
+                </p>
+              )}
+            </div>
           )}
+
+          <Link href="/promociones" className="inline-block text-xs font-semibold text-primary-500 hover:underline">
+            Ver todas las promociones del día →
+          </Link>
 
           {cargando && <p className="text-xs text-slate-500">Buscando promociones…</p>}
         </div>

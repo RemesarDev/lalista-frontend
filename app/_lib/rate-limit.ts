@@ -15,6 +15,6 @@ const redis = new Redis({
 export const ratelimit = new Ratelimit({
     redis,
     limiter: Ratelimit.slidingWindow(50, '60 s'),
-    analytics: true,
+    analytics: false,
     prefix: 'lalista:ratelimit',
 });

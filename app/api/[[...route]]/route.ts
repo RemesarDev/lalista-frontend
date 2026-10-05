@@ -66,7 +66,14 @@ app.use('*', async (c, next) => {
         c.req.header('x-real-ip') ||
         'ip-desconocida';
 
-    const { success } = await ratelimit.limit(ip);
+    // Fail-open: si Redis no responde, dejamos pasar el request
+    // en lugar de tumbar toda la API con un 500.
+    let success = true;
+    try {
+        ({ success } = await ratelimit.limit(ip));
+    } catch (err) {
+        console.error('[RATE LIMIT] Redis no disponible, permitiendo request:', err);
+    }
 
     if (!success) {
         insertAnalyticsEvent({

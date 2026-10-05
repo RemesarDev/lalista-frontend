@@ -20,6 +20,7 @@ const transformarItemsAGrupos = (items: ItemLista[]): GrupoLista[] => {
     grupoId: item.grupoId,
     cantidad: item.cantidad,
     comprado: item.comprado,
+    nombrePersonalizado: item.nombrePersonalizado ?? null,
     opciones: item.opciones.map((opcion): Omit<ProductoOpcion, 'actualizadoEn'> & { actualizadoEn: number } => ({
       id: opcion.id,
       nombre: opcion.nombre,

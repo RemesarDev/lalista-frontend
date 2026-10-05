@@ -41,7 +41,7 @@ export const listasRouter = new Hono()
 
     const listId = c.req.param('id');
 
-    const { data, error } = await supabase.rpc('get_items_lista', {
+    const { data, error } = await supabase.rpc('get_items_lista_v2', {
       p_list_id: listId,
       p_user_id: session.user.id,
     });
@@ -72,7 +72,7 @@ export const listasRouter = new Hono()
 
     const { nombre, items } = c.req.valid('json');
 
-    const { data, error } = await supabase.rpc('guardar_lista_usuario', {
+    const { data, error } = await supabase.rpc('guardar_lista_usuario_v2', {
       p_user_id: session.user.id,
       p_nombre: nombre,
       p_items: items,
@@ -90,7 +90,7 @@ export const listasRouter = new Hono()
 
     const listId = c.req.param('id');
     const { items } = c.req.valid('json');
-    const { data, error } = await supabase.rpc('actualizar_lista', {
+    const { data, error } = await supabase.rpc('actualizar_lista_v2', {
       p_list_id: listId,
       p_user_id: session.user.id,
       p_items: items,

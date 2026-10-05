@@ -13,6 +13,7 @@ export interface ItemLista {
   cantidad: number;
   comprado: boolean;
   opciones: OpcionProducto[];
+  nombrePersonalizado?: string | null;
 }
 
 export interface ListaCompras {

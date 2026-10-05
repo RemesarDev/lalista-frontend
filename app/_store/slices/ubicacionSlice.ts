@@ -42,6 +42,7 @@ export interface UbicacionSlice {
   obtenerGpsNavegador: () => void;
 
   setSucursalesCercanas: (sucursales: SucursalCercana[]) => void;
+  limpiarSucursales: () => void;
   setCargandoSucursales: (cargando: boolean) => void;
 }
 
@@ -82,7 +83,11 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
     }
   },
 
-  limpiarDirecciones: () => set({ direccionesGuardadas: [] }),
+  limpiarDirecciones: () => set({
+    direccionesGuardadas: [],
+    sucursalesCercanas: [],
+    sucursalesIds: [],
+  }),
 
   cambiarRadioBusqueda: (nuevoRadio) => set((state) => ({
     ubicacion: { ...state.ubicacion, radioBusqueda: nuevoRadio }
@@ -133,6 +138,10 @@ export const createUbicacionSlice: StateCreator<StoreState, [], [], UbicacionSli
       sucursalesCercanas: sucursales,
       sucursalesIds: sucursales.map((s) => s.id_unico),
     }),
+
+  // Sin esto las sucursales sobreviven en localStorage y siguen filtrando precios
+  // de una ubicación que el usuario ya borró
+  limpiarSucursales: () => set({ sucursalesCercanas: [], sucursalesIds: [] }),
 
   setCargandoSucursales: (cargando) =>
     set({ cargandoSucursales: cargando }),

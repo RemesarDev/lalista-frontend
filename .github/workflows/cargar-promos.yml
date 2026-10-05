@@ -1,0 +1,29 @@
+# Carga diaria de promociones bancarias en la base de pruebas (LALIstaMensual).
+# Corre todos los días a las 6:00 (hora argentina) y también se puede
+# ejecutar a mano desde la pestaña "Actions" de GitHub.
+name: Cargar promociones bancarias
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # 9:00 UTC = 6:00 en Argentina
+  workflow_dispatch: # botón "Run workflow" para correrlo a mano
+
+jobs:
+  cargar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install requests
+
+      - name: Cargar promociones
+        run: python scripts/promociones/cargar_promos.py
+        env:
+          SUPABASE_URL: ${{ secrets.PROMOS_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.PROMOS_SUPABASE_KEY }}

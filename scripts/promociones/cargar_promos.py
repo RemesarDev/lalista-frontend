@@ -11,7 +11,9 @@ import base64
 import hashlib
 import html
 import json
+import os
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -598,7 +600,13 @@ def traer_anonima():
 # ---------------------------------------------------------------------------
 
 def leer_env():
-    """Lee el archivo .env que está al lado de este programa."""
+    """Lee la configuración.
+    - En GitHub Actions viene en variables de entorno (secrets).
+    - En tu compu, del archivo .env que está al lado de este programa.
+    """
+    if os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_KEY"):
+        return {"SUPABASE_URL": os.environ["SUPABASE_URL"], "SUPABASE_KEY": os.environ["SUPABASE_KEY"]}
+
     ruta = Path(__file__).parent / ".env"
     config = {}
     for linea in ruta.read_text(encoding="utf-8").splitlines():
@@ -652,6 +660,7 @@ FUENTES = [
 
 
 if __name__ == "__main__":
+    fallidas = []
     for cadena, fuente, traer in FUENTES:
         # Si una cadena falla, seguimos con las demás
         try:
@@ -660,3 +669,9 @@ if __name__ == "__main__":
             print(f"{cadena}: {len(promos)} promos guardadas")
         except Exception as error:
             print(f"{cadena}: ERROR -> {error}")
+            fallidas.append(cadena)
+
+    # Si alguna cadena falló, terminamos con error para que GitHub Actions lo marque en rojo
+    if fallidas:
+        print(f"Fallaron: {', '.join(fallidas)}")
+        sys.exit(1)

@@ -12,12 +12,20 @@ import {
 import Link from 'next/link';
 import { obtenerNombreComunGrupo } from '@/app/_lib/utils/obtenerNombreComunGrupo';
 
+// Cuando se aplican promociones bancarias, cada cadena trae además
+// el total sin descuento y la promo usada (ver _lib/promociones.ts)
+type CadenaComparada = SucursalCarritoComparada & {
+  totalSinPromo?: number;
+  promoAplicada?: { porcentaje: number; entidad: string } | null;
+};
+
 interface Props {
-  cadenas: SucursalCarritoComparada[];
+  cadenas: CadenaComparada[];
 }
 
 export const TablaDetalleProductos = ({ cadenas }: Props) => {
   const [expandida, setExpandida] = useState(true);
+  const hayPromos = cadenas.some((c) => c.totalSinPromo !== undefined);
   const lista = useListaStore((state) => state.lista);
 
   const router = useRouter();
@@ -200,11 +208,39 @@ export const TablaDetalleProductos = ({ cadenas }: Props) => {
                     className="px-1 py-3 text-center font-black text-slate-900 md:px-4"
                   >
                     <span className="text-xs md:text-lg">
-                      ${formatearPrecio(cadena.total)}
+                      {/* Con promociones activas, este es el total sin descuento */}
+                      ${formatearPrecio(cadena.totalSinPromo ?? cadena.total)}
                     </span>
                   </td>
                 ))}
               </tr>
+
+              {hayPromos && (
+                <tr className="bg-emerald-50">
+                  <td className="px-1 py-3 font-bold text-emerald-700 md:px-6">
+                    CON PROMO
+                  </td>
+                  {cadenas.map((cadena) => (
+                    <td
+                      key={`promo-${cadena.id_comercio}-${cadena.id_bandera}`}
+                      className="px-1 py-3 text-center md:px-4"
+                    >
+                      {cadena.promoAplicada ? (
+                        <>
+                          <span className="block text-xs font-black text-emerald-700 md:text-lg">
+                            ${formatearPrecio(cadena.total)}
+                          </span>
+                          <span className="block text-[10px] text-slate-500 md:text-xs">
+                            −{cadena.promoAplicada.porcentaje}% {cadena.promoAplicada.entidad}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 md:text-xs">Sin promo</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              )}
             </tbody>
           </table>
           <p className="text-[10px] md:text-[11px] font-medium leading-snug text-slate-600 p-4 md:px-6">

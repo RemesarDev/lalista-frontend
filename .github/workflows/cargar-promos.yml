@@ -7,6 +7,12 @@ on:
   schedule:
     - cron: "0 9 * * *" # 9:00 UTC = 6:00 en Argentina
   workflow_dispatch: # botón "Run workflow" para correrlo a mano
+  push:
+    # También corre cuando cambia el programa o este archivo,
+    # así se prueba cada cambio apenas se sube
+    paths:
+      - ".github/workflows/cargar-promos.yml"
+      - "scripts/promociones/**"
 
 jobs:
   cargar:

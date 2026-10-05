@@ -11,6 +11,7 @@ import { historicoRouter } from './historico';
 import { direccionesRouter } from './direcciones';
 import { analyticsRouter } from './analytics';
 import { insertAnalyticsEvent } from '@/app/_lib/utils/analytics';
+import { ratelimit } from '@/app/_lib/rate-limit';
 import { adminRouter } from './admin';
 import { supportRouter } from './support';
 
@@ -57,7 +58,37 @@ app.onError((err, c) => {
 });
 
 // ==========================================
-// 1. CAPAS GLOBALES DE SEGURIDAD
+// 1. ESCUDO ANTI-DDOS (Rate Limiter — Upstash Redis)
+// ==========================================
+app.use('*', async (c, next) => {
+    const ip =
+        c.req.header('x-forwarded-for')?.split(',')[0].trim() ||
+        c.req.header('x-real-ip') ||
+        'ip-desconocida';
+
+    const { success } = await ratelimit.limit(ip);
+
+    if (!success) {
+        insertAnalyticsEvent({
+            eventName: 'rate_limit_exceeded',
+            region: ip,
+            metadata: { ip, path: c.req.path },
+        }).catch(console.error);
+
+        return c.json(
+            {
+                error: 'Too Many Requests',
+                message: 'Has superado el límite de peticiones. Intenta de nuevo en un minuto.',
+            },
+            429
+        );
+    }
+
+    await next();
+});
+
+// ==========================================
+// 2. CAPAS GLOBALES DE SEGURIDAD
 // ==========================================
 app.use('*', secureHeaders());
 

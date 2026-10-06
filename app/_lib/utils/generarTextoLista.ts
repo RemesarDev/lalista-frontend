@@ -4,7 +4,7 @@ import { obtenerNombreComunGrupo } from './obtenerNombreComunGrupo';
 
 export function generarTextoLista(items: ItemLista[]): string {
   const lineas = items.flatMap((item) => {
-    const nombreComun = formatearNombreParaCompartir(obtenerNombreComunGrupo(item.opciones));
+    const nombreComun = formatearNombreParaCompartir(item.nombrePersonalizado ?? obtenerNombreComunGrupo(item.opciones));
     const encabezado = item.opciones.length > 1
       ? `${nombreComun} x${item.cantidad} opciones:`
       : `${nombreComun} x${item.cantidad}`;

@@ -218,28 +218,37 @@ export function useUbicacion() {
     }
   };
 
-  // Efecto para buscar sucursales en tiempo real cada vez que el usuario mueve el pin o hace clic en el mapa
+
+  // Efecto unificado para actualizar sucursales al mover el pin o al cambiar el radio de búsqueda
   useEffect(() => {
-    if (!coordenadasPendientes) return;
+    // Determinamos qué coordenadas usar (prioridad a las pendientes si está interactuando)
+    const lat = coordenadasPendientes?.lat ?? ubicacion.latitud;
+    const lng = coordenadasPendientes?.lng ?? ubicacion.longitud;
+    const radioActual = ubicacion.radioBusqueda;
+
+    if (!lat || !lng) return;
 
     let cancelled = false;
-    const { lat, lng } = coordenadasPendientes;
-    const radioActual = useListaStore.getState().ubicacion.radioBusqueda;
 
     const timer = setTimeout(async () => {
       try {
+        setCargandoSucursales(true);
         const sucursales = await fetchSucursalesCercanas(lat, lng, radioActual);
-        if (!cancelled && sucursales) setSucursalesCercanas(sucursales);
+        if (!cancelled && sucursales) {
+          setSucursalesCercanas(sucursales);
+        }
       } catch (err) {
-        console.error('Error al actualizar sucursales en tiempo real:', err);
+        console.error('Error al actualizar sucursales:', err);
+      } finally {
+        if (!cancelled) setCargandoSucursales(false);
       }
-    }, 400); // Debounce de 400ms para evitar saturar al mover el mapa rápidamente
+    }, 400); // Debounce para evitar llamadas excesivas al deslizar
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [coordenadasPendientes, setSucursalesCercanas]);
+  }, [coordenadasPendientes, ubicacion.latitud, ubicacion.longitud, ubicacion.radioBusqueda, setSucursalesCercanas, setCargandoSucursales]);
   
   // Guarda la ubicación en Zustand y consulta el backend
   const confirmarYBuscarSucursales = useCallback(async () => {

@@ -21,6 +21,7 @@ export interface DbItemLista {
   comprado: boolean;      // Estado de chequeo
   es_principal?: boolean; // Opción principal vs alternativa
   cantidad_opcion?: number;
+  nombre_personalizado?: string | null;
 }
 
 // ==========================================
@@ -63,6 +64,7 @@ export const mapearGrupoItemsLista = (rawItems: DbItemLista[]): ItemLista => {
     grupoId: base.grupo_id,
     cantidad: base.cantidad,
     comprado: base.comprado,
+    nombrePersonalizado: base.nombre_personalizado ?? null,
     opciones,
   };
 };
@@ -81,5 +83,6 @@ export const mapearItemListaADb = (item: ItemLista): DbItemLista[] => {
     comprado: item.comprado,
     es_principal: opcion.esPrincipal ?? false,
     cantidad_opcion: opcion.cantidadOpcion ?? 1,
+    nombre_personalizado: item.nombrePersonalizado ?? null,
   }));
 };

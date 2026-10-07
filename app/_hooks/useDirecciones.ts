@@ -8,12 +8,26 @@ import { activarDireccion, eliminarDireccion as eliminarDireccionApi } from '@/a
 import { avisar } from '@/app/_lib/avisos';
 
 export function useDirecciones(onClose: () => void) {
-  const { user, direccionesGuardadas, setUbicacion, cargarDirecciones } = useListaStore();
+  const { user, ubicacion, direccionesGuardadas, setUbicacion, cargarDirecciones } = useListaStore();
   const router = useRouter();
 
-  const irAgregarDireccion = () => {
+  const irACambiarDireccion = () => {
     onClose();
     router.push('/ubicacion');
+  };
+
+  // Los anónimos tienen una sola dirección: para sumar otra hay que tener
+  // cuenta. En vez de mandarlos al login de prepo, el aviso lo cuenta y deja el
+  // sheet abierto; si no tocan "Entrar", no se van a ningún lado.
+  const irAgregarDireccion = () => {
+    if (!user && ubicacion.nombreLugar) {
+      avisar.invitarAEntrar('Con una cuenta guardás todas tus direcciones.', () => {
+        onClose();
+        router.push('/login');
+      });
+      return;
+    }
+    irACambiarDireccion();
   };
 
   const seleccionarDireccion = async (dir: DireccionGuardada) => {
@@ -96,6 +110,7 @@ export function useDirecciones(onClose: () => void) {
     direccionesGuardadas,
     mostrarGuardadas,
     irAgregarDireccion,
+    irACambiarDireccion,
     seleccionarDireccion,
     eliminarDireccion,
     limpiarUbicacion,

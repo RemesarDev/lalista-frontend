@@ -86,17 +86,19 @@ export const listasRouter = new Hono()
     return c.json({ id: data }, 201);
   })
 
-  // PATCH /listas/:id — sincronizar lista existente
+  // PATCH /listas/:id — sincronizar lista existente (y renombrar si es owner)
   .patch('/listas/:id', zValidator('json', sincronizarListaSchema), async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) return c.json({ error: 'No autorizado' }, 401);
 
     const listId = c.req.param('id');
-    const { items } = c.req.valid('json');
+    const { items, nombre } = c.req.valid('json');
+
     const { data, error } = await supabase.rpc('actualizar_lista_v2', {
       p_list_id: listId,
       p_user_id: session.user.id,
       p_items: items,
+      p_nombre: nombre ?? null,
     });
 
     if (error) return c.json({ error: error.message }, 500);

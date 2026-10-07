@@ -119,49 +119,60 @@ export function useGestionLista(): UseGestionListaReturn {
   };
 
   // PATCH — sincroniza lista existente
-  const handleSincronizar = async (): Promise<boolean> => {
-    // Validamos el límite antes de sincronizar
-    if (lista.length > USER_LIMITS.MAX_ITEMS_POR_LISTA) {
-      abrirModalLimite(`Has alcanzado el límite máximo de ${USER_LIMITS.MAX_ITEMS_POR_LISTA} ítems permitidos en esta lista.`);
-      return false;
-    }
+  // PATCH — sincroniza lista existente
+const handleSincronizar = async (): Promise<boolean> => {
+  // Se lee del store al momento de guardar (no del render), así un
+  // "Reintentar" posterior usa los datos actuales.
+  const { listaId: idActual, listaRol, listaNombre: nombreActual, lista: listaActual } =
+    useListaStore.getState();
 
-    const idActual = useListaStore.getState().listaId;
-    if (!idActual) return false;
-    
-    setLoadingSincronizar(true);
-    try {
-      const res = await fetch(`/api/listas/${idActual}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: buildItems() }),
-      });
+  if (!idActual) return false;
 
-      const data = await res.json().catch(() => ({}));
+  // Validamos el límite antes de sincronizar
+  if (listaActual.length > USER_LIMITS.MAX_ITEMS_POR_LISTA) {
+    abrirModalLimite(`Has alcanzado el límite máximo de ${USER_LIMITS.MAX_ITEMS_POR_LISTA} ítems permitidos en esta lista.`);
+    return false;
+  }
 
-      // Manejo de límite por si acaso en sincronización o actualización
-      if (res.status === 403) {
-        abrirModalLimite(data.message || 'Has alcanzado el límite permitido.');
-        return false;
-      }
-
-      if (!res.ok) throw new Error('Error al sincronizar la lista');
-
-      marcarListaSincronizada();
-
-      // Feedback temporal de éxito
-      setSincronizadoOk(true);
-      setTimeout(() => setSincronizadoOk(false), 2000);
-      return true;
-    } catch (err) {
-      console.error(err);
-      avisar.error('No se guardaron los cambios de tu lista.', () => void handleSincronizar());
-      return false;
-    } finally {
-      setLoadingSincronizar(false);
-    }
+  // Solo el owner manda el nombre (el servidor lo valida igual)
+  const payload = {
+    items: buildItems(),
+    ...(listaRol === 'owner' && nombreActual ? { nombre: nombreActual } : {}),
   };
+
+  setLoadingSincronizar(true);
+  try {
+    const res = await fetch(`/api/listas/${idActual}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    // Manejo de límite por si acaso en sincronización o actualización
+    if (res.status === 403) {
+      abrirModalLimite(data.message || 'Has alcanzado el límite permitido.');
+      return false;
+    }
+
+    if (!res.ok) throw new Error(data.error || 'Error al sincronizar la lista');
+
+    marcarListaSincronizada();
+
+    // Feedback temporal de éxito
+    setSincronizadoOk(true);
+    setTimeout(() => setSincronizadoOk(false), 2000);
+    return true;
+  } catch (err) {
+    console.error(err);
+    avisar.error('No se guardaron los cambios de tu lista.', () => void handleSincronizar());
+    return false;
+  } finally {
+    setLoadingSincronizar(false);
+  }
+};
 
   // Cerrar lista con opción de sincronizar antes
   const handleCerrarLista = async (sincronizar: boolean) => {

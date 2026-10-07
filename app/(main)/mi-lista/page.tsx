@@ -1,6 +1,7 @@
+// app/(main)/mi-lista/page.tsx
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import {
   MagnifyingGlassIcon,
   ScalesIcon,
@@ -9,7 +10,8 @@ import {
   CircleNotchIcon,
   XCircleIcon,
   CheckCircleIcon,
-  PlusIcon
+  PlusIcon,
+  PencilSimpleIcon
 } from '@phosphor-icons/react/dist/ssr';
 import Link from 'next/link';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
@@ -28,7 +30,6 @@ function ListaProductos() {
   const actualizarNombreGrupo = useListaStore((state) => state.actualizarNombreGrupo);
   const toggleCompradoGrupo = useListaStore((state) => state.toggleCompradoGrupo);
 
-  // Quitar muestra un aviso con "Deshacer"
   const { quitarGrupo, quitarOpcion } = useQuitarConDeshacer();
 
   const [modoSimplificado, setModoSimplificado] = useState(false);
@@ -36,10 +37,9 @@ function ListaProductos() {
 
   const toggleModo = () => {
     setModoSimplificado((prev) => !prev);
-    setGrupoAbiertoId(null); // al cambiar de modo, arrancamos con todo cerrado
+    setGrupoAbiertoId(null);
   };
 
-  // Solo un ítem abierto a la vez: si tocás el abierto lo cierra, si tocás otro cambia
   const toggleAbierto = (grupoId: string) => {
     setGrupoAbiertoId((prev) => (prev === grupoId ? null : grupoId));
   };
@@ -64,7 +64,6 @@ function ListaProductos() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Botón para alternar entre lista simplificada y desplegada */}
       <div className="flex justify-end">
         <button
           onClick={toggleModo}
@@ -115,7 +114,6 @@ function ListaProductos() {
         />
       ))}
 
-      {/* Botón "Agregar producto" al final del listado */}
       <Link
         href="/buscar"
         className="flex items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50/40 p-3 sm:p-4 text-orange-600 transition-all hover:bg-orange-100/50 hover:border-orange-300 shadow-sm"
@@ -133,7 +131,18 @@ export default function MiListaPage() {
   const listaId = useListaStore((state) => state.listaId);
   const listaRol = useListaStore((state) => state.listaRol);
   const listaNombre = useListaStore((state) => state.listaNombre);
+  const setListaNombre = useListaStore((state) => state.setListaNombre);
+  
   const isListaVacia = totalEnLista === 0;
+
+  // Solo el owner o listas sin ID (locales) pueden editar el nombre
+  const esOwner = !listaId || listaRol === 'owner';
+  const puedeEditar = !listaId || listaRol === 'owner' || listaRol === 'editor';
+
+  // Estados locales para la edición en línea del título
+  const [editandoNombre, setEditandoNombre] = useState(false);
+  const [nombreTemporal, setNombreTemporal] = useState(listaNombre ?? 'Mi lista');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const {
     modalGuardarOpen,
@@ -156,15 +165,66 @@ export default function MiListaPage() {
     checkAuth();
   }, [checkAuth]);
 
-  const puedeEditar = !listaId || listaRol === 'owner' || listaRol === 'editor';
+  useEffect(() => {
+    if (listaNombre) {
+      setNombreTemporal(listaNombre);
+    }
+  }, [listaNombre]);
+
+  useEffect(() => {
+    if (editandoNombre && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editandoNombre]);
+
+  const guardarNuevoNombre = () => {
+    const nombreLimpio = nombreTemporal.trim();
+    if (nombreLimpio && esOwner) {
+      setListaNombre(nombreLimpio);
+    } else {
+      setNombreTemporal(listaNombre ?? 'Mi lista');
+    }
+    setEditandoNombre(false);
+  };
 
   return (
     <BaseContainer>
       <div className="mb-6 flex flex-row items-center justify-between gap-4 px-1 w-full border-b border-slate-50 pb-3">
-        <div className="flex flex-col">
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            {listaNombre ?? 'Mi lista'}
-          </h1>
+        <div className="flex flex-col flex-1 min-w-0">
+          {editandoNombre && esOwner ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={nombreTemporal}
+              onChange={(e) => setNombreTemporal(e.target.value)}
+              onBlur={guardarNuevoNombre}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') guardarNuevoNombre();
+                if (e.key === 'Escape') {
+                  setNombreTemporal(listaNombre ?? 'Mi lista');
+                  setEditandoNombre(false);
+                }
+              }}
+              className="text-xl sm:text-2xl font-black text-slate-900 bg-transparent border-b-2 border-orange-500 outline-none w-full tracking-tight"
+            />
+          ) : (
+            <div 
+              onClick={() => {
+                if (esOwner) setEditandoNombre(true);
+              }}
+              className={`group flex items-center gap-2 w-fit ${esOwner ? 'cursor-pointer' : ''}`}
+              title={esOwner ? 'Hacé clic para cambiar el nombre' : undefined}
+            >
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">
+                {listaNombre ?? 'Mi lista'}
+              </h1>
+              {esOwner && (
+                <PencilSimpleIcon size={18} weight="bold" className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              )}
+            </div>
+          )}
+
           <p className="text-[11px] sm:text-xs font-medium text-slate-400 mt-0.5">
             {totalEnLista === 0
               ? 'Sin productos guardados'

@@ -114,6 +114,7 @@ export const guardarListaSchema = z.object({
 });
 
 export const sincronizarListaSchema = z.object({
+  nombre: z.string().trim().min(1).max(60).optional(),
   items: z.array(
     z.object({
       item_id: z.string(),

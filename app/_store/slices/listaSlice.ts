@@ -76,12 +76,14 @@ export interface ListaSlice {
   restaurarGrupo: (grupo: GrupoLista, indice: number) => void;
   actualizarCantidadGrupo: (grupoId: string, cantidad: number) => void;
   actualizarCantidadOpcion: (grupoId: string, productoId: string, cantidadOpcion: number) => void;
-  actualizarNombreGrupo: (grupoId: string, nuevoNombre: string) => void; // <-- Nueva acción
+  actualizarNombreGrupo: (grupoId: string, nuevoNombre: string) => void; 
+  setListaNombre: (nombre: string) => void;
   toggleCompradoGrupo: (grupoId: string) => void;
   limpiarLista: () => void;
   setListaActiva: (id: string | null, rol: RolLista | null, nombre: string | null) => void;
   marcarListaSincronizada: () => void;
 
+  
   // Métodos de caché y búsqueda
   guardarCacheBusquedaPrecios: (cache: Omit<CacheBusquedaPrecios, 'actualizadoEn'>) => void;
   limpiarCacheBusquedaPrecios: () => void;
@@ -205,6 +207,15 @@ export const createListaSlice: StateCreator<StoreState, [], [], ListaSlice> = (s
         : grupo
     ),
   })),
+setListaNombre: (nuevoNombre) => set((state) => {
+  if (state.listaId && state.listaRol !== 'owner') return state;
+
+  const nombreLimpio = nuevoNombre.trim().slice(0, 60);
+  if (!nombreLimpio) return state;
+  if (nombreLimpio === state.listaNombre) return state; // sin cambios reales
+
+  return { listaNombre: nombreLimpio, listaModificada: true };
+}),
 
   toggleCompradoGrupo: (grupoId) => set((state) => ({
     listaModificada: true,

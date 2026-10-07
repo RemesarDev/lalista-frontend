@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 import { withSerwist } from "@serwist/turbopack";
 
 const nextConfig: NextConfig = {
+  // Nodemailer usa APIs nativas de Node y requires dinamicos: lo sacamos del
+  // bundle del servidor para que se resuelva con el require nativo.
+  serverExternalPackages: ['nodemailer'],
   images: {
     unoptimized: true,
     remotePatterns: [

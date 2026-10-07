@@ -20,9 +20,12 @@ import {
   type SucursalConPromo,
 } from './_lib/promociones';
 import { useMisMediosPago } from '@/app/_hooks/useMisMediosPago';
+import { MapPinIcon } from '@phosphor-icons/react/dist/ssr';
+import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
 
 export default function ComparativaPage() {
   const lista = useListaStore((state) => state.lista);
+  const ubicacion = useListaStore((state) => state.ubicacion);
   const [criterio, setCriterio] = useState<CriterioComparacion>('mas_barata');
 
   // Promociones bancarias (opcional)
@@ -120,6 +123,32 @@ export default function ComparativaPage() {
           <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent" />
             <p className="font-medium text-slate-600">Actualizando precios de tu zona...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Sin ubicación no hay sucursales, y sin sucursales no hay precios. Es otro
+  // problema que "no hay cobertura": decirle que su lista no tiene
+  // disponibilidad cuando lo que falta es la dirección lo manda a cambiar el
+  // radio al vacío.
+  if (ubicacion.latitud === null || ubicacion.longitud === null) {
+    return (
+      <main className="min-h-screen bg-slate-50 px-4 py-6">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+            <div className="text-5xl" role="img" aria-label="Mapa">🗺️</div>
+            <p className="font-medium text-slate-700">Elegí tu dirección para comparar</p>
+            <p className="text-sm text-slate-500">
+              Necesitamos saber dónde comprás para buscar los precios de los comercios de tu zona.
+            </p>
+            <DesktopActionButton
+              href="/ubicacion"
+              label="Elegir mi dirección"
+              icon={<MapPinIcon weight="bold" />}
+              color="lila"
+            />
           </div>
         </div>
       </main>

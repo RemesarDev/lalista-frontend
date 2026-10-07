@@ -101,6 +101,16 @@ export const avisar = {
       duracion: DURACION.conBoton,
     }),
 
+  /**
+   * Info con un boton propio. Para ofrecer algo que el usuario no pidio todavia
+   * y que decide el: si no toca el boton, no pasa nada.
+   */
+  conAccion: (mensaje: string, accion: AccionAviso) =>
+    mostrar('info', mensaje, {
+      accion,
+      duracion: DURACION.conBoton,
+    }),
+
   /** Algo fallo. Queda hasta que lo cierran; si se puede, ofrece reintentar. */
   error: (mensaje: string, reintentar?: () => void) =>
     mostrar('error', mensaje, {

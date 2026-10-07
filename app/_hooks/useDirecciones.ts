@@ -8,7 +8,7 @@ import { activarDireccion, eliminarDireccion as eliminarDireccionApi } from '@/a
 import { avisar } from '@/app/_lib/avisos';
 
 export function useDirecciones(onClose: () => void) {
-  const { user, ubicacion, direccionesGuardadas, setUbicacion, cargarDirecciones } = useListaStore();
+  const { user, ubicacion, direccionesGuardadas, setUbicacion, cargarDirecciones, limpiarUbicacion: limpiarUbicacionStore } = useListaStore();
   const router = useRouter();
 
   const irACambiarDireccion = () => {
@@ -73,16 +73,7 @@ export function useDirecciones(onClose: () => void) {
       // Si no quedan direcciones, limpiar la ubicación del store
       const restantes = useListaStore.getState().direccionesGuardadas;
       if (restantes.length === 0) {
-        useListaStore.setState((state) => ({
-          ubicacion: {
-            ...state.ubicacion,
-            latitud: null,
-            longitud: null,
-            nombreLugar: null,
-            precision: null,
-          },
-        }));
-        useListaStore.getState().limpiarSucursales();
+        limpiarUbicacionStore();
       }
     } else {
       avisar.error('No pudimos borrar la dirección. Probá de nuevo.');
@@ -90,16 +81,7 @@ export function useDirecciones(onClose: () => void) {
   };
 
   const limpiarUbicacion = () => {
-    useListaStore.setState((state) => ({
-      ubicacion: {
-        ...state.ubicacion,
-        latitud: null,
-        longitud: null,
-        nombreLugar: null,
-        precision: null,
-      },
-    }));
-    useListaStore.getState().limpiarSucursales();
+    limpiarUbicacionStore();
     onClose();
   };
 

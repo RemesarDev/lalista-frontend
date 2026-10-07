@@ -36,7 +36,7 @@ export default function HeroInfo() {
           Ahorrá.
         </h1>
         <p className="text-sm text-slate-500 font-sans leading-relaxed max-w-xs mx-auto">
-          Los precios de todos los supermercados argentinos en un solo lugar.
+          Los precios de las principales cadenas minoristas argentinas en un solo lugar.
         </p>
       </div>
 

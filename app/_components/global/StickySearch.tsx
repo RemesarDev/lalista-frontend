@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 import { DesktopActionButton } from './DesktopActionButton';
 import { ShoppingCartIcon } from '@phosphor-icons/react';
 import { analytics } from '@/app/_lib/services/analyticsService';
+import SearchHints from './avisos/SearchHintsProps';
 
 export default function StickySearch() {
   const searchParams = useSearchParams();
@@ -99,7 +100,9 @@ export default function StickySearch() {
             placeholder="¿Qué producto buscas hoy? (Ej: Leche, Arroz)"
             className="w-full rounded-xl border border-accent-300 bg-white py-2.5 pl-10 pr-4 text-sm font-sans text-slate-800 shadow-sm transition placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
+          <SearchHints searchTerm={query} />
         </form>
+
 
         <MenuCategorias />
         </div>

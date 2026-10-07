@@ -36,7 +36,7 @@ export default function HeroInfo() {
           Ahorrá.
         </h1>
         <p className="text-sm text-slate-500 font-sans leading-relaxed max-w-xs mx-auto">
-          Los precios de todos los supermercados argentinos en un solo lugar.
+          Los precios de las principales cadenas minoristas argentinas en un solo lugar.
         </p>
       </div>
 
@@ -67,11 +67,6 @@ export default function HeroInfo() {
       {/* Accesos rapidos por categoria */}
       <CategoriaChips />
 
-      {/* Scroll hint */}
-      <div className="flex flex-col items-center gap-1 text-slate-300 animate-bounce mt-2">
-        <span className="text-[10px] font-sans uppercase tracking-widest">¿Cómo funciona?</span>
-        <span className="text-lg">↓</span>
-      </div>
     </section>
   );
 }

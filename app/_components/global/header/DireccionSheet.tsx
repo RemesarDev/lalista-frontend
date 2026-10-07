@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPinIcon, PlusIcon, SwapIcon, XIcon, CheckCircleIcon, TrashIcon } from '@phosphor-icons/react';
+import { MapPinIcon, PlusIcon, XIcon, CheckCircleIcon, TrashIcon, CaretRightIcon } from '@phosphor-icons/react';
 import { useListaStore } from '@/app/_store/store';
 import { useDirecciones } from '@/app/_hooks/useDirecciones';
 import type { DireccionGuardada } from '@/app/_types/direcciones';
@@ -17,6 +17,7 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
         mostrarGuardadas,
         direccionesGuardadas,
         irAgregarDireccion,
+        irACambiarDireccion,
         seleccionarDireccion,
         eliminarDireccion,
         limpiarUbicacion,
@@ -90,11 +91,12 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                     {!user && !mostrarGuardadas && ubicacion.nombreLugar && (
                         <div className="flex items-center justify-between w-full py-3 border-b border-slate-100">
                             <button
-                                onClick={irAgregarDireccion}
+                                onClick={irACambiarDireccion}
                                 className="flex items-center gap-3 min-w-0 flex-1 group"
                             >
                                 <MapPinIcon size={20} className="text-orange-500 shrink-0" weight="fill" />
                                 <span className="text-sm font-semibold text-slate-900 truncate">{ubicacion.nombreLugar}</span>
+                                <CaretRightIcon size={16} className="text-slate-400 shrink-0 ml-1" weight="bold" />
                             </button>
                             <button
                                 onClick={limpiarUbicacion}
@@ -121,14 +123,9 @@ export default function DireccionSheet({ isOpen, onClose }: DireccionSheetProps)
                         className="flex items-center gap-3 w-full py-2.5 group"
                     >
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 group-hover:bg-orange-100 transition-colors shrink-0">
-                            {!user && ubicacion.nombreLugar
-                                ? <SwapIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
-                                : <PlusIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
-                            }
+                            <PlusIcon size={16} className="text-slate-600 group-hover:text-orange-500" weight="bold" />
                         </div>
-                        <span className="text-sm font-semibold text-slate-900">
-                            {!user && ubicacion.nombreLugar ? 'Cambiar dirección' : 'Agregar dirección'}
-                        </span>
+                        <span className="text-sm font-semibold text-slate-900">Agregar dirección</span>
                     </button>
                 </div>
             </div>

@@ -8,12 +8,26 @@ import { activarDireccion, eliminarDireccion as eliminarDireccionApi } from '@/a
 import { avisar } from '@/app/_lib/avisos';
 
 export function useDirecciones(onClose: () => void) {
-  const { user, direccionesGuardadas, setUbicacion, cargarDirecciones } = useListaStore();
+  const { user, ubicacion, direccionesGuardadas, setUbicacion, cargarDirecciones, limpiarUbicacion: limpiarUbicacionStore } = useListaStore();
   const router = useRouter();
 
-  const irAgregarDireccion = () => {
+  const irACambiarDireccion = () => {
     onClose();
     router.push('/ubicacion');
+  };
+
+  // Los anónimos tienen una sola dirección: para sumar otra hay que tener
+  // cuenta. En vez de mandarlos al login de prepo, el aviso lo cuenta y deja el
+  // sheet abierto; si no tocan "Entrar", no se van a ningún lado.
+  const irAgregarDireccion = () => {
+    if (!user && ubicacion.nombreLugar) {
+      avisar.invitarAEntrar('Con una cuenta guardás todas tus direcciones.', () => {
+        onClose();
+        router.push('/login');
+      });
+      return;
+    }
+    irACambiarDireccion();
   };
 
   const seleccionarDireccion = async (dir: DireccionGuardada) => {
@@ -59,16 +73,7 @@ export function useDirecciones(onClose: () => void) {
       // Si no quedan direcciones, limpiar la ubicación del store
       const restantes = useListaStore.getState().direccionesGuardadas;
       if (restantes.length === 0) {
-        useListaStore.setState((state) => ({
-          ubicacion: {
-            ...state.ubicacion,
-            latitud: null,
-            longitud: null,
-            nombreLugar: null,
-            precision: null,
-          },
-        }));
-        useListaStore.getState().limpiarSucursales();
+        limpiarUbicacionStore();
       }
     } else {
       avisar.error('No pudimos borrar la dirección. Probá de nuevo.');
@@ -76,16 +81,7 @@ export function useDirecciones(onClose: () => void) {
   };
 
   const limpiarUbicacion = () => {
-    useListaStore.setState((state) => ({
-      ubicacion: {
-        ...state.ubicacion,
-        latitud: null,
-        longitud: null,
-        nombreLugar: null,
-        precision: null,
-      },
-    }));
-    useListaStore.getState().limpiarSucursales();
+    limpiarUbicacionStore();
     onClose();
   };
 
@@ -96,6 +92,7 @@ export function useDirecciones(onClose: () => void) {
     direccionesGuardadas,
     mostrarGuardadas,
     irAgregarDireccion,
+    irACambiarDireccion,
     seleccionarDireccion,
     eliminarDireccion,
     limpiarUbicacion,

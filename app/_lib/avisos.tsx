@@ -23,6 +23,7 @@ const DURACION = {
   corta: 3000,
   media: 4000,
   conDeshacer: 6000,
+  conBoton: 6000,
   hastaCerrar: Infinity,
 } as const;
 
@@ -88,6 +89,26 @@ export const avisar = {
     mostrar('deshacer', mensaje, {
       accion: { etiqueta: 'Deshacer', onClick: alDeshacer },
       duracion: DURACION.conDeshacer,
+    }),
+
+  /**
+   * Algo que pide cuenta. No navega: ofrece el camino y el usuario decide. Si
+   * no toca "Entrar", se queda donde estaba.
+   */
+  invitarAEntrar: (mensaje: string, alEntrar: () => void) =>
+    mostrar('info', mensaje, {
+      accion: { etiqueta: 'Entrar', onClick: alEntrar },
+      duracion: DURACION.conBoton,
+    }),
+
+  /**
+   * Info con un boton propio. Para ofrecer algo que el usuario no pidio todavia
+   * y que decide el: si no toca el boton, no pasa nada.
+   */
+  conAccion: (mensaje: string, accion: AccionAviso) =>
+    mostrar('info', mensaje, {
+      accion,
+      duracion: DURACION.conBoton,
     }),
 
   /** Algo fallo. Queda hasta que lo cierran; si se puede, ofrece reintentar. */

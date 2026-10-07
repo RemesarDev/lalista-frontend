@@ -9,22 +9,36 @@ import { activarDireccion, eliminarDireccion as eliminarDireccionApi } from '@/a
 import { avisar } from '@/app/_lib/avisos';
 import { USER_LIMITS } from '../_lib/constants/limites';
 
-// Definí el límite o importalo de tus constantes compartidas (ej: USER_LIMITS.direcciones.max)
 const LIMITE_DIRECCIONES = USER_LIMITS.MAX_DIRECCIONES; // 7 direcciones guardadas
+
 export function useDirecciones(onClose: () => void) {
-  const { user, direccionesGuardadas, setUbicacion, cargarDirecciones, abrirModalLimite } = useListaStore();
+  const { user, ubicacion, direccionesGuardadas, setUbicacion, cargarDirecciones, abrirModalLimite, limpiarUbicacion: limpiarUbicacionStore } = useListaStore();
   const router = useRouter();
 
+  const irACambiarDireccion = () => {
+    onClose();
+    router.push('/ubicacion');
+  };
+
+  // Validación combinada: Límite de direcciones + Invitación a iniciar sesión para anónimos
   const irAgregarDireccion = () => {
-    // 🛑 VALIDACIÓN TEMPRANA: Si ya alcanzó o superó el límite, frenamos acá y abrimos el modal
+    // 🛑 1. Validación de límite de direcciones (Tu rama)
     if (user && direccionesGuardadas.length >= LIMITE_DIRECCIONES) {
       onClose();
       abrirModalLimite(`Has alcanzado el límite máximo de ${LIMITE_DIRECCIONES} direcciones guardadas. Eliminá una existente para poder agregar una nueva.`);
       return;
     }
 
-    onClose();
-    router.push('/ubicacion');
+    // 🛑 2. Validación de usuarios anónimos (Rama main)
+    if (!user && ubicacion.nombreLugar) {
+      avisar.invitarAEntrar('Con una cuenta guardás todas tus direcciones.', () => {
+        onClose();
+        router.push('/login');
+      });
+      return;
+    }
+
+    irACambiarDireccion();
   };
 
   const seleccionarDireccion = async (dir: DireccionGuardada) => {
@@ -70,16 +84,7 @@ export function useDirecciones(onClose: () => void) {
       // Si no quedan direcciones, limpiar la ubicación del store
       const restantes = useListaStore.getState().direccionesGuardadas;
       if (restantes.length === 0) {
-        useListaStore.setState((state) => ({
-          ubicacion: {
-            ...state.ubicacion,
-            latitud: null,
-            longitud: null,
-            nombreLugar: null,
-            precision: null,
-          },
-        }));
-        useListaStore.getState().limpiarSucursales();
+        limpiarUbicacionStore();
       }
     } else {
       avisar.error('No pudimos borrar la dirección. Probá de nuevo.');
@@ -87,16 +92,7 @@ export function useDirecciones(onClose: () => void) {
   };
 
   const limpiarUbicacion = () => {
-    useListaStore.setState((state) => ({
-      ubicacion: {
-        ...state.ubicacion,
-        latitud: null,
-        longitud: null,
-        nombreLugar: null,
-        precision: null,
-      },
-    }));
-    useListaStore.getState().limpiarSucursales();
+    limpiarUbicacionStore();
     onClose();
   };
 
@@ -107,6 +103,7 @@ export function useDirecciones(onClose: () => void) {
     direccionesGuardadas,
     mostrarGuardadas,
     irAgregarDireccion,
+    irACambiarDireccion,
     seleccionarDireccion,
     eliminarDireccion,
     limpiarUbicacion,

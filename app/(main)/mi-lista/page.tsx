@@ -129,7 +129,6 @@ function ListaProductos() {
 
 export default function MiListaPage() {
   const totalEnLista = useListaStore((state) => state.lista.length);
-  const user = useListaStore((state) => state.user);
   const checkAuth = useListaStore((state) => state.checkAuth);
   const listaId = useListaStore((state) => state.listaId);
   const listaRol = useListaStore((state) => state.listaRol);
@@ -192,7 +191,7 @@ export default function MiListaPage() {
             className="hidden md:inline-flex"
           />
 
-          {user && !isListaVacia && puedeEditar && (
+          {!isListaVacia && puedeEditar && (
             <DesktopActionButton
               onClick={listaId ? (hayCambios ? handleSincronizar : undefined) : abrirModalGuardar}
               disabled={loadingSincronizar || (!!listaId && !hayCambios)}

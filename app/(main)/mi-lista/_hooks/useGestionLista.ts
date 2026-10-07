@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import { USER_LIMITS } from '@/app/_lib/constants/limites';
 import { avisar } from '@/app/_lib/avisos';
@@ -30,6 +31,7 @@ interface UseGestionListaReturn {
 }
 
 export function useGestionLista(): UseGestionListaReturn {
+  const user = useListaStore((state) => state.user);
   const lista = useListaStore((state) => state.lista);
   const listaNombre = useListaStore((state) => state.listaNombre);
   const hayCambios = useListaStore((state) => state.listaModificada);
@@ -37,6 +39,7 @@ export function useGestionLista(): UseGestionListaReturn {
   const setListaActiva = useListaStore((state) => state.setListaActiva);
   const marcarListaSincronizada = useListaStore((state) => state.marcarListaSincronizada);
   const abrirModalLimite = useListaStore((state) => state.abrirModalLimite); 
+  const router = useRouter();
 
   const [modalGuardarOpen, setModalGuardarOpen] = useState(false);
   const [modalCerrarOpen, setModalCerrarOpen] = useState(false);
@@ -59,6 +62,19 @@ export function useGestionLista(): UseGestionListaReturn {
       cantidad_opcion: opcion.cantidadOpcion ?? 1,
     })),
   }));
+
+  // Guardar pide cuenta, pero el botón se le muestra igual al anónimo: en vez
+  // de esconderlo, el aviso cuenta por qué y deja el camino a mano. Si no tocan
+  // "Entrar", la lista local queda como estaba.
+  const abrirModalGuardar = () => {
+    if (!user) {
+      avisar.invitarAEntrar('Para guardar tu lista tenés que entrar.', () => {
+        router.push('/login');
+      });
+      return;
+    }
+    setModalGuardarOpen(true);
+  };
 
   // POST — crea una lista nueva
   const handleGuardarLista = async (nombre: string) => {
@@ -192,7 +208,7 @@ export function useGestionLista(): UseGestionListaReturn {
     loadingSincronizar,
     sincronizadoOk,
     hayCambios,
-    abrirModalGuardar: () => setModalGuardarOpen(true),
+    abrirModalGuardar,
     cerrarModalGuardar: () => setModalGuardarOpen(false),
     abrirModalCerrar: () => setModalCerrarOpen(true),
     cerrarModalCerrar: () => setModalCerrarOpen(false),

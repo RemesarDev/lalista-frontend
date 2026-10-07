@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useListaStore } from '@/app/_store/store';
 import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
-import { agregarDireccion } from '@/app/_lib/services/direccionesService';
+import { agregarDireccion, activarDireccion } from '@/app/_lib/services/direccionesService';
 import { avisar, acortarNombre } from '@/app/_lib/avisos';
 
 // Tipo local para las sugerencias que devuelve nuestro endpoint
@@ -270,13 +270,34 @@ export function useUbicacion() {
         texto
       );
       setCoordenadasPendientes(null);
-      avisar.exito(texto ? `Buscamos precios cerca de ${acortarNombre(texto, 40)}` : 'Guardamos tu ubicación');
 
-      // Persistir en DB si está logueado
-      if (user) {
-        await agregarDireccion(texto, lat, lng, radioActual);
-        await cargarDirecciones();
+      const nombreCorto = texto ? acortarNombre(texto, 30) : null;
+
+      // Los anónimos no tienen dónde guardarla: queda solo en este navegador.
+      if (!user) {
+        avisar.exito(nombreCorto ? `Buscamos precios cerca de ${nombreCorto}` : 'Guardamos tu ubicación');
+        return;
       }
+
+      const { ok, direccion } = await agregarDireccion(texto, lat, lng, radioActual);
+
+      if (!ok) {
+        // La búsqueda ya quedó apuntando al lugar nuevo: lo único que falló es
+        // guardarlo en la cuenta. Decir "no pudimos buscar comercios" sería
+        // mandarlo a reintentar algo que ya funcionó.
+        avisar.error('Buscamos precios acá, pero no pudimos guardar la dirección en tu cuenta.');
+        return;
+      }
+
+      // `agregar_direccion` solo marca activa la PRIMERA dirección de la cuenta.
+      // Sin activar la nueva, el cargarDirecciones de abajo encuentra la activa
+      // vieja y revierte el lugar que el usuario acaba de elegir en el mapa.
+      if (direccion && !direccion.esActiva) {
+        await activarDireccion(direccion.id);
+      }
+      await cargarDirecciones();
+
+      avisar.exito(nombreCorto ? `Guardaste ${nombreCorto} en tus direcciones` : 'Guardamos tu dirección');
 
     } catch (err) {
       console.error('Excepción al consultar sucursales:', err);

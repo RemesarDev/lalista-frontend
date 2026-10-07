@@ -53,7 +53,11 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
         // 🚀 Registramos analíticamente el inicio de sesión exitoso
         analytics.userLogin(data.user.id).catch(console.error);
 
+        // La foto va antes de cargarDirecciones, que es justo quien la pisa.
+        const ubicacionLocal = { ...get().ubicacion };
         await get().cargarDirecciones();
+        get().ofrecerConservarUbicacion(ubicacionLocal);
+
         return { success: true };
       }
       set({ loadingAuth: false });
@@ -74,6 +78,13 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
         // 🚀 Registramos analíticamente el nuevo registro de usuario
         analytics.userSignup(data.user.id).catch(console.error);
 
+        // El lugar que venía marcando como anónimo no está en ninguna cuenta.
+        // Mismo recorrido que el login aunque en una cuenta nueva
+        // cargarDirecciones vuelva vacío: un solo camino vale más que un GET.
+        const ubicacionLocal = { ...get().ubicacion };
+        await get().cargarDirecciones();
+        get().ofrecerConservarUbicacion(ubicacionLocal);
+
         return { success: true };
       }
       set({ loadingAuth: false });
@@ -92,6 +103,11 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
       set({ user: null, loadingAuth: false });
       get().limpiarLista();
       get().limpiarDirecciones();
+      // Sin esto queda el barrio visible en el header y cero sucursales, y la
+      // comparativa dice "no hay disponibilidad en tu zona", que es mentira.
+      // Además, en un dispositivo compartido la dirección del que se fue
+      // seguiría a la vista.
+      get().limpiarUbicacion();
     }
   },
 
@@ -111,6 +127,7 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
           set({ user: null, loadingAuth: false });
           get().limpiarLista();
           get().limpiarDirecciones();
+          get().limpiarUbicacion();
           return { success: true };
         }
         set({ loadingAuth: false });

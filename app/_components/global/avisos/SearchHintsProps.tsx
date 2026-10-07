@@ -14,7 +14,7 @@ export default function SearchHints({ searchTerm }: SearchHintsProps) {
   if (!needsMoreChars && !needsMoreWords) return null;
 
   return (
-    <div className="absolute left-0 -bottom-6 z-20 w-full px-1 text-xs transition-all">
+    <div className="absolute left-0 top-full mt-1.5 z-20 w-full px-1 text-xs transition-all">
       {needsMoreChars ? (
         /* Pop-up flotante con tono lila basado en tu --color-primary-400 */
         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-primary-400/15 border border-primary-400/45 text-black rounded-md shadow-sm font-medium animate-fadeIn dark:bg-primary-400/20 dark:border-primary-400/40 dark:text-black">

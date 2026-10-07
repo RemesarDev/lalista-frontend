@@ -7,6 +7,7 @@ import { DesktopActionButton } from './DesktopActionButton';
 import { ShoppingCartIcon } from '@phosphor-icons/react';
 import { analytics } from '@/app/_lib/services/analyticsService';
 import SearchHints from './avisos/SearchHintsProps';
+import { useFiltrosDiferidos } from '@/app/(main)/buscar/_hooks/useFiltrosDiferidos';
 
 export default function StickySearch() {
   const searchParams = useSearchParams();
@@ -15,6 +16,7 @@ export default function StickySearch() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const setTerminoBusqueda = useListaStore((state) => state.setTerminoBusqueda);
+  const { visibles: filtros, descartar: descartarPendientes } = useFiltrosDiferidos();
 
   // Mantenemos sincronizado el input por si la búsqueda se limpia desde otro lado
   useEffect(() => {
@@ -39,8 +41,12 @@ export default function StickySearch() {
       const modo = searchParams.get('modo');
       const grupoId = searchParams.get('grupoId');
       const comparar = searchParams.get('comparar');
-      const categoria = searchParams.get('categoria');
-      const etiquetas = searchParams.get('etiquetas');
+      // Se toman los filtros marcados, aunque esten esperando para aplicarse:
+      // asi viajan en esta misma busqueda en lugar de perderse o disparar
+      // otra peticion despues.
+      const categoria = filtros.categoria;
+      const etiquetas = filtros.etiquetas.join(',');
+      descartarPendientes();
 
       // Empezamos los parámetros desde cero para limpiar basuras previas (ej: paginación)
       const params = new URLSearchParams();

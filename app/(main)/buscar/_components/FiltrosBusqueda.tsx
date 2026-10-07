@@ -2,6 +2,7 @@
 
 import { XIcon } from '@phosphor-icons/react/dist/ssr';
 import { useCategorias } from '@/app/_hooks/useCategorias';
+import { useFiltrosDiferidos } from '../_hooks/useFiltrosDiferidos';
 
 // Debajo de este numero un filtro deja la pantalla casi vacia y frustra mas de
 // lo que ayuda. Con el catalogo actual quedan afuera Organico (31),
@@ -13,23 +14,16 @@ import { useCategorias } from '@/app/_hooks/useCategorias';
 // que informa.
 const MINIMO_PRODUCTOS = 50;
 
-interface FiltrosBusquedaProps {
-  categoria: string;
-  etiquetas: string[];
-  /** Hay chips elegidos que todavia no se aplicaron a la busqueda. */
-  aplicando?: boolean;
-  onQuitarCategoria: () => void;
-  onToggleEtiqueta: (codigo: string) => void;
-}
-
-export function FiltrosBusqueda({
-  categoria,
-  etiquetas,
-  aplicando = false,
-  onQuitarCategoria,
-  onToggleEtiqueta,
-}: FiltrosBusquedaProps) {
+export function FiltrosBusqueda() {
   const { rubros, etiquetas: disponibles } = useCategorias();
+  // Se muestran los filtros marcados, aunque todavia esten esperando para
+  // aplicarse: el usuario ve su toque al instante.
+  const {
+    visibles: { categoria, etiquetas },
+    aplicando,
+    quitarCategoria: onQuitarCategoria,
+    alternarEtiqueta: onToggleEtiqueta,
+  } = useFiltrosDiferidos();
 
   const todas = rubros.flatMap((rubro) => [rubro, ...rubro.categorias]);
   const nombreCategoria = todas.find((c) => c.slug === categoria)?.nombre ?? categoria;
@@ -42,6 +36,18 @@ export function FiltrosBusqueda({
 
   return (
     <div className="flex flex-col gap-2.5">
+      {/* Aviso discreto mientras corre la espera: lo elegido ya se ve marcado
+          pero los resultados todavia son los anteriores. */}
+      {aplicando && (
+        <span
+          role="status"
+          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400"
+        >
+          <span className="h-3 w-3 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />
+          Aplicando filtros…
+        </span>
+      )}
+
       {categoria && (
         <div className="flex items-center gap-2">
           <span className="font-display text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -83,18 +89,6 @@ export function FiltrosBusqueda({
                 </button>
               );
             })}
-
-            {/* Aviso discreto mientras corre la espera: el chip ya cambio de
-                color pero los resultados todavia son los anteriores. */}
-            {aplicando && (
-              <span
-                role="status"
-                className="ml-1 inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400"
-              >
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />
-                Aplicando filtros…
-              </span>
-            )}
           </div>
 
           {etiquetas.length > 0 && (

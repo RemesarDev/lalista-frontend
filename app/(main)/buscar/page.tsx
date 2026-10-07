@@ -1,9 +1,9 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { useBusqueda } from './_hooks/useBusqueda';
-import { useEtiquetasDiferidas } from './_hooks/useEtiquetasDiferidas';
+import { FiltrosDiferidosProvider } from './_hooks/useFiltrosDiferidos';
 import { ProductCard } from './_components/ProductCard';
 import { FiltrosBusqueda } from './_components/FiltrosBusqueda';
 import { useListaStore } from '@/app/_store/store';
@@ -25,55 +25,15 @@ function ResultadosBusqueda() {
   const esModoAlternativa = modo === 'alternativa' && Boolean(grupoId);
 
   // Los filtros viven en la URL: se pueden compartir los links y el boton
-  // "atras" del navegador deshace cada filtro sin logica extra.
+  // "atras" del navegador deshace cada filtro sin logica extra. Lo que el
+  // usuario va tocando pasa primero por useFiltrosDiferidos, que espera a que
+  // termine de elegir antes de escribir la URL.
   const categoria = searchParams.get('categoria') || "";
   const etiquetasParam = searchParams.get('etiquetas') || "";
   const etiquetas = etiquetasParam ? etiquetasParam.split(',').filter(Boolean) : [];
 
-  const actualizarUrl = useCallback(
-    (cambios: { categoria?: string; etiquetas?: string[] }) => {
-      const params = new URLSearchParams(searchParams.toString());
-
-      if (cambios.categoria !== undefined) {
-        if (cambios.categoria) params.set('categoria', cambios.categoria);
-        else params.delete('categoria');
-      }
-
-      if (cambios.etiquetas !== undefined) {
-        if (cambios.etiquetas.length > 0) params.set('etiquetas', cambios.etiquetas.join(','));
-        else params.delete('etiquetas');
-      }
-
-      router.replace(`/buscar?${params.toString()}`, { scroll: false });
-    },
-    [router, searchParams]
-  );
-
-  const aplicarEtiquetas = useCallback(
-    (siguientes: string[]) => actualizarUrl({ etiquetas: siguientes }),
-    [actualizarUrl]
-  );
-
-  // Los chips responden al toque, pero la URL (y la busqueda) espera a que el
-  // usuario termine de elegir. Ver useEtiquetasDiferidas.
-  const {
-    seleccionadas: etiquetasVisibles,
-    aplicando: aplicandoEtiquetas,
-    pendientes: etiquetasPendientes,
-    alternar: handleToggleEtiqueta,
-  } = useEtiquetasDiferidas({ aplicadas: etiquetas, aplicar: aplicarEtiquetas });
-
-  // Quitar la categoria es una accion unica y se aplica en el momento. Si
-  // habia chips esperando, viajan en la misma escritura para no perderlos ni
-  // disparar una segunda busqueda.
-  const handleQuitarCategoria = () =>
-    actualizarUrl({
-      categoria: '',
-      ...(etiquetasPendientes ? { etiquetas: etiquetasPendientes } : {}),
-    });
-
-  // La busqueda usa las etiquetas de la URL, no las visibles: asi solo se
-  // pide al servidor lo que ya se aplico.
+  // La busqueda usa los filtros de la URL, no los marcados en pantalla: asi
+  // solo se pide al servidor lo que ya se aplico.
   const { productos, cargando, cargandoMas, hayMas, cargarMas } = useBusqueda(
     query,
     categoria,
@@ -174,13 +134,7 @@ function ResultadosBusqueda() {
   // condicion aca afuera.
   const barraFiltros = (
     <div className="pb-4">
-      <FiltrosBusqueda
-        categoria={categoria}
-        etiquetas={etiquetasVisibles}
-        aplicando={aplicandoEtiquetas}
-        onQuitarCategoria={handleQuitarCategoria}
-        onToggleEtiqueta={handleToggleEtiqueta}
-      />
+      <FiltrosBusqueda />
     </div>
   );
 
@@ -268,10 +222,14 @@ function ResultadosBusqueda() {
 export default function BuscarVista() {
   return (
     <Suspense fallback={<p className="text-center text-slate-400 py-10">Cargando...</p>}>
-      <StickySearch />
-      <BaseContainer>
-        <ResultadosBusqueda />
-      </BaseContainer>
+      {/* El menu de categorias (en StickySearch) y los chips (en los
+          resultados) comparten la misma espera antes de buscar. */}
+      <FiltrosDiferidosProvider>
+        <StickySearch />
+        <BaseContainer>
+          <ResultadosBusqueda />
+        </BaseContainer>
+      </FiltrosDiferidosProvider>
     </Suspense>
   );
 }

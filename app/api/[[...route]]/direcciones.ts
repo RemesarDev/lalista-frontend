@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
 import { auth } from '@/app/_lib/auth';
+import { checkUserLimit } from '@/app/api/_middlewares/checkLimits'; 
 import {
   agregarDireccionSchema,
   actualizarRadioDireccionSchema,
@@ -29,6 +30,10 @@ export const direccionesRouter = new Hono()
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) return c.json({ error: 'No autorizado' }, 401);
 
+    // Validar límite de direcciones del usuario antes de insertar
+    const limitError = await checkUserLimit(c, supabase, session.user.id, 'direcciones');
+    if (limitError) return limitError;
+
     const { nombre_lugar, latitud, longitud, radio_busqueda } = c.req.valid('json');
 
     const { data, error } = await supabase.rpc('agregar_direccion', {
@@ -36,11 +41,11 @@ export const direccionesRouter = new Hono()
       p_nombre_lugar: nombre_lugar,
       p_latitud:      latitud,
       p_longitud:     longitud,
-      p_radio:        radio_busqueda,
+      p_radio:        Math.round(radio_busqueda),
     });
 
     if (error) return c.json({ error: error.message }, 500);
-
+    
     return c.json({ direccion: data }, 201);
   })
 
@@ -50,7 +55,7 @@ export const direccionesRouter = new Hono()
     if (!session) return c.json({ error: 'No autorizado' }, 401);
 
     const { data, error } = await supabase.rpc('cambiar_direccion_activa', {
-      p_id:      c.req.param('id'),
+      p_id:       c.req.param('id'),
       p_user_id: session.user.id,
     });
 
@@ -67,7 +72,7 @@ export const direccionesRouter = new Hono()
     const { radio_busqueda } = c.req.valid('json');
 
     const { data, error } = await supabase.rpc('actualizar_radio_direccion', {
-      p_id:      c.req.param('id'),
+      p_id:       c.req.param('id'),
       p_user_id: session.user.id,
       p_radio:   radio_busqueda,
     });
@@ -83,7 +88,7 @@ export const direccionesRouter = new Hono()
     if (!session) return c.json({ error: 'No autorizado' }, 401);
 
     const { error } = await supabase.rpc('eliminar_direccion', {
-      p_id:      c.req.param('id'),
+      p_id:       c.req.param('id'),
       p_user_id: session.user.id,
     });
 

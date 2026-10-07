@@ -1,3 +1,4 @@
+// app/_hooks/useDirecciones.ts
 'use client';
 
 import { useListaStore } from '@/app/_store/store';
@@ -6,9 +7,12 @@ import { useRouter } from 'next/navigation';
 import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
 import { activarDireccion, eliminarDireccion as eliminarDireccionApi } from '@/app/_lib/services/direccionesService';
 import { avisar } from '@/app/_lib/avisos';
+import { USER_LIMITS } from '../_lib/constants/limites';
+
+const LIMITE_DIRECCIONES = USER_LIMITS.MAX_DIRECCIONES; // 7 direcciones guardadas
 
 export function useDirecciones(onClose: () => void) {
-  const { user, ubicacion, direccionesGuardadas, setUbicacion, cargarDirecciones, limpiarUbicacion: limpiarUbicacionStore } = useListaStore();
+  const { user, ubicacion, direccionesGuardadas, setUbicacion, cargarDirecciones, abrirModalLimite, limpiarUbicacion: limpiarUbicacionStore } = useListaStore();
   const router = useRouter();
 
   const irACambiarDireccion = () => {
@@ -16,10 +20,16 @@ export function useDirecciones(onClose: () => void) {
     router.push('/ubicacion');
   };
 
-  // Los anónimos tienen una sola dirección: para sumar otra hay que tener
-  // cuenta. En vez de mandarlos al login de prepo, el aviso lo cuenta y deja el
-  // sheet abierto; si no tocan "Entrar", no se van a ningún lado.
+  // Validación combinada: Límite de direcciones + Invitación a iniciar sesión para anónimos
   const irAgregarDireccion = () => {
+    // 🛑 1. Validación de límite de direcciones (Tu rama)
+    if (user && direccionesGuardadas.length >= LIMITE_DIRECCIONES) {
+      onClose();
+      abrirModalLimite(`Has alcanzado el límite máximo de ${LIMITE_DIRECCIONES} direcciones guardadas. Eliminá una existente para poder agregar una nueva.`);
+      return;
+    }
+
+    // 🛑 2. Validación de usuarios anónimos (Rama main)
     if (!user && ubicacion.nombreLugar) {
       avisar.invitarAEntrar('Con una cuenta guardás todas tus direcciones.', () => {
         onClose();
@@ -27,6 +37,7 @@ export function useDirecciones(onClose: () => void) {
       });
       return;
     }
+
     irACambiarDireccion();
   };
 

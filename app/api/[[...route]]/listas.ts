@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
 import { auth } from '@/app/_lib/auth';
+import { checkUserLimit } from '@/app/api/_middlewares/checkLimits'; 
 import {
   guardarListaSchema,
   sincronizarListaSchema,
@@ -50,7 +51,6 @@ export const listasRouter = new Hono()
 
     const rawRows = (data as DbItemLista[]) ?? [];
 
-    // 1. Agrupar filas de DB por su grupo_id
     const gruposMap = new Map<string, DbItemLista[]>();
     for (const row of rawRows) {
       if (!gruposMap.has(row.grupo_id)) {
@@ -59,7 +59,6 @@ export const listasRouter = new Hono()
       gruposMap.get(row.grupo_id)!.push(row);
     }
 
-    // 2. Mapear cada grupo a la estructura ItemLista con opciones disyuntivas
     const items = Array.from(gruposMap.values()).map(mapearGrupoItemsLista);
 
     return c.json({ items });
@@ -69,6 +68,10 @@ export const listasRouter = new Hono()
   .post('/listas', zValidator('json', guardarListaSchema), async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) return c.json({ error: 'No autorizado' }, 401);
+
+    // 1. Validar límite de listas del usuario antes de insertar
+    const limitError = await checkUserLimit(c, supabase, session.user.id, 'listas');
+    if (limitError) return limitError;
 
     const { nombre, items } = c.req.valid('json');
 
@@ -128,6 +131,12 @@ export const listasRouter = new Hono()
     const listId = c.req.param('id');
     const { userId, rol } = c.req.valid('json');
 
+    // 2. Si el rol que se asigna es 'editor' o 'viewer', validamos el límite de editores para esta lista
+    if (rol === 'editor' || rol === 'viewer') {
+      const limitError = await checkUserLimit(c, supabase, session.user.id, 'editores', listId);
+      if (limitError) return limitError;
+    }
+
     const { data, error } = await supabase.rpc('compartir_lista', {
       p_list_id: listId,
       p_owner_id: session.user.id,
@@ -169,9 +178,17 @@ export const listasRouter = new Hono()
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) return c.json({ error: 'No autorizado' }, 401);
 
+    const listId = c.req.param('id');
     const { rol } = c.req.valid('json');
+
+    // Si pasa a ser editor, validamos el límite
+    if (rol === 'editor') {
+      const limitError = await checkUserLimit(c, supabase, session.user.id, 'editores', listId);
+      if (limitError) return limitError;
+    }
+
     const { data, error } = await supabase.rpc('actualizar_rol_miembro', {
-      p_list_id: c.req.param('id'),
+      p_list_id: listId,
       p_owner_id: session.user.id,
       p_user_id: c.req.param('userId'),
       p_rol: rol,

@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware';
 import { createListaSlice } from './slices/listaSlice';
 import { createUbicacionSlice } from './slices/ubicacionSlice';
 import { createAuthSlice } from './slices/authSlice';
-
+import { createUiSlice } from './slices/uiSlice';
 // 2. Importaciones estrictas de Tipos/Interfaces
 import type { 
   CacheBusquedaPrecios, 
@@ -17,8 +17,10 @@ import type {
 } from './slices/listaSlice';
 import type { UbicacionSlice, UbicacionUsuario, SucursalCercana } from './slices/ubicacionSlice';
 import type { AuthSlice } from './slices/authSlice';
+import type { UiSlice } from './slices/uiSlice';
 
-export type StoreState = ListaSlice & UbicacionSlice & AuthSlice;
+
+export type StoreState = ListaSlice & UbicacionSlice & AuthSlice & UiSlice;
 export type { 
   CacheBusquedaPrecios, 
   GrupoLista,
@@ -35,6 +37,7 @@ export const useListaStore = create<StoreState>()(
       ...createListaSlice(...a),
       ...createUbicacionSlice(...a),
       ...createAuthSlice(...a),
+      ...createUiSlice(...a),
     }),
     {
       name: 'lalista-storage',

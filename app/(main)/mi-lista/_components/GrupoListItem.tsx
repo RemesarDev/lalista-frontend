@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import {
   PlusIcon,
   TrashIcon,
@@ -15,6 +14,9 @@ import {
 import type { GrupoLista } from '@/app/_store/slices/listaSlice';
 import { formatearNombre } from '@/app/_lib/utils/formatters';
 import { obtenerNombreComunGrupo } from '@/app/_lib/utils/obtenerNombreComunGrupo';
+import { useListaStore } from '@/app/_store/store';
+import { USER_LIMITS } from '@/app/_lib/constants/limites';
+import { Button } from '@/app/_components/global/Button';
 
 interface GrupoListItemProps {
   grupo: GrupoLista;
@@ -45,22 +47,42 @@ export function GrupoListItem({
   onActualizarNombre,
 }: GrupoListItemProps) {
   const principal = grupo.opciones[0];
-
+  
   // Si el usuario ya estableció un nombre personalizado, lo usamos; sino, aplicamos el automático
   const nombreAutomatico = principal ? obtenerNombreComunGrupo(grupo.opciones) : '';
   const nombreMostrado = grupo.nombrePersonalizado || nombreAutomatico;
+
+  const abrirModalLimite = useListaStore((state) => state.abrirModalLimite);
+  const LIMITE_ALTERNATIVA_POR_GRUPO = USER_LIMITS.MAX_ALTERNATIVAS_POR_ITEM;
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const terminoSugerido = principal ? encodeURIComponent(principal.nombre.split(' ').slice(0, 2).join(' ')) : '';
+
+  const handleAgregarAlternativa = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Validamos si el grupo ya alcanzó el tope de alternativas
+    if (grupo.opciones.length >= LIMITE_ALTERNATIVA_POR_GRUPO) {
+      abrirModalLimite(`Has alcanzado el límite máximo de ${LIMITE_ALTERNATIVA_POR_GRUPO} alternativas para este ítem.`);
+      return;
+    }
+
+    // Si pasa el filtro, navegamos normalmente a la pantalla de búsqueda de alternativas
+    router.push(`/buscar?modo=alternativa&grupoId=${grupo.grupoId}&q=${terminoSugerido}`);
+  };
 
   // Estados locales para el modo edición del título
   const [isEditing, setIsEditing] = useState(false);
   const [tempNombre, setTempNombre] = useState(nombreMostrado);
 
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  // Estados para permitir arrastrar con el mouse en pantallas de escritorio
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   // Los hooks van antes de este return para respetar las reglas de React
   if (!principal) return null;
-
-  const terminoSugerido = encodeURIComponent(principal.nombre.split(' ').slice(0, 2).join(' '));
 
   // En modo simplificado solo se ve el detalle del ítem abierto
   const mostrarDetalle = !simplificado || abierto;
@@ -200,7 +222,25 @@ export function GrupoListItem({
 
       {/* Tira Horizontal de Productos + Botón Agregar al final */}
       {mostrarDetalle && (
-        <div className="flex flex-row items-center gap-2 overflow-x-auto pb-1 scrollbar-none snap-x">
+        <div 
+          className={`flex flex-row items-center gap-2 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory scroll-smooth touch-pan-x select-none ${
+            isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          }`}
+          onMouseDown={(e) => {
+            setIsDragging(true);
+            setStartX(e.pageX - e.currentTarget.offsetLeft);
+            setScrollLeft(e.currentTarget.scrollLeft);
+          }}
+          onMouseLeave={() => setIsDragging(false)}
+          onMouseUp={() => setIsDragging(false)}
+          onMouseMove={(e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.pageX - e.currentTarget.offsetLeft;
+            const walk = (x - startX) * 1.5;
+            e.currentTarget.scrollLeft = scrollLeft - walk;
+          }}
+        >
           {grupo.opciones.map((producto, idx) => {
             const esPrincipal = idx === 0;
             const cantidadOpcion = producto.cantidadOpcion ?? 1;
@@ -291,15 +331,17 @@ export function GrupoListItem({
             );
           })}
 
-          {/* Tarjeta de Agregar Opción */}
-          <Link
-            href={`/buscar?modo=alternativa&grupoId=${grupo.grupoId}&q=${terminoSugerido}`}
-            className="flex items-center justify-center gap-2 p-1.5 rounded-lg border border-dashed border-orange-300 bg-orange-50/40 hover:bg-orange-100/50 text-orange-600 transition-all shrink-0 w-[185px] sm:w-[210px] h-[68px] snap-start"
+          {/* Tarjeta de Agregar Alternativa Protegida con el componente Button */}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleAgregarAlternativa}
+            className="flex items-center justify-center gap-2 p-1.5 rounded-lg border border-dashed border-orange-300 bg-orange-50/40 hover:bg-orange-100/50 text-orange-600 transition-all shrink-0 w-[185px] sm:w-[210px] h-[68px] snap-start text-left font-bold text-[11px]"
             title="Agregar alternativa a este grupo"
           >
-            <PlusIcon size={16} weight="bold" />
-            <span className="text-[11px] font-bold">Agregar alternativa</span>
-          </Link>
+            <PlusIcon size={16} weight="bold" className="shrink-0" />
+            <span>Agregar alternativa</span>
+          </Button>
         </div>
       )}
     </div>

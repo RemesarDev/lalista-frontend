@@ -16,8 +16,9 @@ if (!gmailUser || !gmailAppPass) {
   throw new Error('Faltan las variables de entorno de Gmail (GMAIL_USER / GMAIL_APP_PASS) en .env.local');
 }
 
-// El transporter se crea una sola vez por instancia (lambda) y se reusa entre
-// invocaciones. No abre conexion hasta el primer sendMail.
+// El transporter guarda solo configuracion: sin pool (el default), cada
+// sendMail abre una conexion nueva y la cierra al terminar, asi que no queda
+// ningun socket vivo entre invocaciones de la lambda.
 export const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -26,6 +27,9 @@ export const transporter = nodemailer.createTransport({
     user: gmailUser,
     pass: gmailAppPass,
   },
+  connectionTimeout: 5000,
+  greetingTimeout: 5000,
+  socketTimeout: 10000,
 });
 
 const REMITENTE = `LALIsta <${gmailUser}>`;

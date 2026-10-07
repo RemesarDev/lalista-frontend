@@ -1,30 +1,38 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { CaretDownIcon, ListIcon, XIcon } from '@phosphor-icons/react/dist/ssr';
 import { useCategorias } from '@/app/_hooks/useCategorias';
-
-interface MenuCategoriasProps {
-  /** Slug activo, para resaltarlo en el listado. */
-  activo?: string;
-}
+import { useFiltrosDiferidos } from '@/app/(main)/buscar/_hooks/useFiltrosDiferidos';
 
 /**
- * Menu de rubros y categorias. Se abre desde el buscador y lleva a
- * /buscar?categoria=slug.
+ * Menu de rubros y categorias. Se abre desde el buscador de /buscar.
+ *
+ * Elegir una categoria no busca en el momento: la marca y espera
+ * DEMORA_FILTROS_MS (ver useFiltrosDiferidos). Si en ese lapso el usuario
+ * elige otra, o suma etiquetas, todo sale en una sola peticion. El menu
+ * queda abierto mientras espera y se cierra solo cuando se aplica.
  *
  * Un rubro puede no tener hijas (Mascotas es el caso): entonces el rubro es
- * el destino directo y no se muestra flecha de desplegar.
+ * el destino directo y no se muestra flecha de desplegar. Desplegar un rubro
+ * no busca nada.
  */
-export function MenuCategorias({ activo }: MenuCategoriasProps) {
+export function MenuCategorias() {
   const { rubros, cargando } = useCategorias();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const { visibles, aplicando, elegirCategoria } = useFiltrosDiferidos();
+  const activo = visibles.categoria;
 
   const [abierto, setAbierto] = useState(false);
   const [expandido, setExpandido] = useState<string | null>(null);
   const contenedorRef = useRef<HTMLDivElement>(null);
+
+  // Despues de elegir, el menu se cierra recien cuando la espera termina (o
+  // enseguida, si se volvio a la categoria que ya estaba aplicada).
+  const [cerrarAlAplicar, setCerrarAlAplicar] = useState(false);
+  if (cerrarAlAplicar && !aplicando) {
+    setCerrarAlAplicar(false);
+    setAbierto(false);
+  }
 
   // Cerrar al hacer clic afuera o con Escape.
   useEffect(() => {
@@ -47,15 +55,11 @@ export function MenuCategorias({ activo }: MenuCategoriasProps) {
     };
   }, [abierto]);
 
+  // Se conservan los demas parametros: si el usuario escribio "aceite" y
+  // despues elige una categoria, espera que se crucen las dos condiciones.
   const irA = (slug: string) => {
-    setAbierto(false);
-
-    // Se conservan los parametros que ya estaban: si el usuario escribio
-    // "aceite" y despues elige una categoria, espera que se crucen las dos
-    // condiciones, no que se pierda lo que escribio.
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('categoria', slug);
-    router.push(`/buscar?${params.toString()}`);
+    elegirCategoria(slug);
+    setCerrarAlAplicar(true);
   };
 
   if (cargando || rubros.length === 0) return null;
@@ -76,6 +80,16 @@ export function MenuCategorias({ activo }: MenuCategoriasProps) {
 
       {abierto && (
         <div className="absolute right-0 z-50 mt-2 max-h-[70vh] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+          {aplicando && (
+            <p
+              role="status"
+              className="flex items-center gap-1.5 px-3 pb-2 pt-1 text-[11px] font-medium text-slate-400"
+            >
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+              Aplicando filtros…
+            </p>
+          )}
+
           {rubros.map((rubro) => {
             const tieneHijas = rubro.categorias.length > 0;
             const estaExpandido = expandido === rubro.slug;

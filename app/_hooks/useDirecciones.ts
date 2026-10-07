@@ -1,3 +1,4 @@
+// app/_hooks/useDirecciones.ts
 'use client';
 
 import { useListaStore } from '@/app/_store/store';
@@ -6,12 +7,22 @@ import { useRouter } from 'next/navigation';
 import { fetchSucursalesCercanas } from '@/app/_lib/services/sucursalesService';
 import { activarDireccion, eliminarDireccion as eliminarDireccionApi } from '@/app/_lib/services/direccionesService';
 import { avisar } from '@/app/_lib/avisos';
+import { USER_LIMITS } from '../_lib/constants/limites';
 
+// Definí el límite o importalo de tus constantes compartidas (ej: USER_LIMITS.direcciones.max)
+const LIMITE_DIRECCIONES = USER_LIMITS.MAX_DIRECCIONES; // 7 direcciones guardadas
 export function useDirecciones(onClose: () => void) {
-  const { user, direccionesGuardadas, setUbicacion, cargarDirecciones } = useListaStore();
+  const { user, direccionesGuardadas, setUbicacion, cargarDirecciones, abrirModalLimite } = useListaStore();
   const router = useRouter();
 
   const irAgregarDireccion = () => {
+    // 🛑 VALIDACIÓN TEMPRANA: Si ya alcanzó o superó el límite, frenamos acá y abrimos el modal
+    if (user && direccionesGuardadas.length >= LIMITE_DIRECCIONES) {
+      onClose();
+      abrirModalLimite(`Has alcanzado el límite máximo de ${LIMITE_DIRECCIONES} direcciones guardadas. Eliminá una existente para poder agregar una nueva.`);
+      return;
+    }
+
     onClose();
     router.push('/ubicacion');
   };

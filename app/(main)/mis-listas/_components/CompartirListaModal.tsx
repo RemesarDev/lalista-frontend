@@ -8,6 +8,7 @@ import ConfirmModal from '@/app/_components/global/ConfirmModal';
 import { Button } from '@/app/_components/global/Button';
 import { analytics } from '@/app/_lib/services/analyticsService';
 import { avisar } from '@/app/_lib/avisos';
+import { useListaStore } from '@/app/_store/store';
 
 interface MiembroLista extends UsuarioPublico {
     rol: 'owner' | 'viewer' | 'editor';
@@ -33,6 +34,7 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
     const [miembroPendienteEliminar, setMiembroPendienteEliminar] = useState<MiembroLista | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const abrirModalLimite = useListaStore((s) => s.abrirModalLimite);
 
     useEffect(() => {
         if (isOpen) {
@@ -101,10 +103,11 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
     };
 
     const handleCompartir = async () => {
+        
         if (!usuarioSeleccionado || !listaId) return;
         setLoading(true);
         setError(null);
-
+        
         try {
             const res = await fetch(`/api/listas/${listaId}/miembros`, {
                 method: 'POST',
@@ -114,7 +117,13 @@ export function CompartirListaModal({ isOpen, onClose, listaId }: CompartirLista
             });
 
             const json = await res.json();
-            if (!res.ok) throw new Error(json.error ?? 'Error al compartir');
+            if (!res.ok) {
+                if (res.status === 403) { 
+                    abrirModalLimite(json.error ?? 'Alcanzaste el límite de miembros', 'miembros');
+                    return; 
+                }
+                throw new Error(json.error ?? 'Error al compartir');
+            }
 
             // Métricas
             analytics.listaSharing(

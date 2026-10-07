@@ -6,6 +6,7 @@ import OfflineBanner from "./_components/OfflineBanner";
 import { ContenedorAvisos } from "./_components/global/avisos/ContenedorAvisos";
 import "./globals.css"; 
 import { Suspense } from "react";
+import ModalLimite from "./_components/global/avisos/ModalLimite";
 
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Suspense>
           <AuthProvider>
             {children}
+            <ModalLimite />
           </AuthProvider>
           {/* Avisos flotantes (toasts). En Suspense porque lee la URL. */}
           <Suspense fallback={null}>

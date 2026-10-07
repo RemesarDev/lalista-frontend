@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { USER_LIMITS } from './constants/limites';
+
+
 // ==========================================
 // 1. ESQUEMAS DE MAPS (Ubicación)
 // ==========================================
@@ -20,10 +23,7 @@ export const sucursalesCercanasQuerySchema = z.object({
   lng: z.coerce.number({ message: 'La longitud es requerida y debe ser numérica' }),
   radio: z.coerce.number().optional().default(5),
 });
-// ==========================================
-// 2. ESQUEMAS DE PRODUCTOS (Supabase DB)
-// ==========================================
-// Slug de categoria o rubro. Minusculas, numeros y guiones: nada mas.
+
 // ==========================================
 // 2. ESQUEMAS DE PRODUCTOS (Supabase DB)
 // ==========================================
@@ -84,6 +84,7 @@ export const preciosPorIdsQuerySchema = z.object({
   lat: z.string().optional(),
   lng: z.string().optional(),
 });
+
 // ==========================================
 // 3. ESQUEMAS DE LISTAS (Supabase DB)
 // ==========================================
@@ -94,18 +95,24 @@ export const opcionProductoSchema = z.object({
   es_principal: z.boolean().default(false),
   cantidad_opcion: z.number().int().positive().optional().default(1),
 });
+
 export const guardarListaSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio').max(100),
   items: z.array(
     z.object({
-      item_id: z.uuid('El item_id debe ser un UUID válido'),
+      item_id: z.string().uuid('El item_id debe ser un UUID válido'),
       cantidad: z.number().int().min(1, 'La cantidad debe ser al menos 1'),
       comprado: z.boolean(),
       nombre_personalizado: z.string().nullable().optional(),
-      opciones: z.array(opcionProductoSchema).min(1, 'Cada grupo debe tener al menos una opción'),
+      opciones: z.array(opcionProductoSchema)
+        .min(1, 'Cada grupo debe tener al menos una opción')
+        .max(USER_LIMITS.MAX_ALTERNATIVAS_POR_ITEM, `Máximo ${USER_LIMITS.MAX_ALTERNATIVAS_POR_ITEM} alternativas permitidas`),
     })
-  ).min(1, 'La lista debe tener al menos un producto'),
+  )
+    .min(1, 'La lista debe tener al menos un producto')
+    .max(USER_LIMITS.MAX_ITEMS_POR_LISTA, `La lista no puede superar los ${USER_LIMITS.MAX_ITEMS_POR_LISTA} productos`),
 });
+
 export const sincronizarListaSchema = z.object({
   items: z.array(
     z.object({
@@ -113,10 +120,15 @@ export const sincronizarListaSchema = z.object({
       cantidad: z.number().int().min(1),
       comprado: z.boolean(),
       nombre_personalizado: z.string().nullable().optional(),
-      opciones: z.array(opcionProductoSchema).min(1),
+      opciones: z.array(opcionProductoSchema)
+        .min(1)
+        .max(USER_LIMITS.MAX_ALTERNATIVAS_POR_ITEM, `Máximo ${USER_LIMITS.MAX_ALTERNATIVAS_POR_ITEM} alternativas permitidas`),
     })
-  ).min(1),
+  )
+    .min(1)
+    .max(USER_LIMITS.MAX_ITEMS_POR_LISTA, `La lista no puede superar los ${USER_LIMITS.MAX_ITEMS_POR_LISTA} productos`),
 });
+
 // ==========================================
 // 4. ESQUEMAS DE USUARIOS
 // ==========================================
@@ -130,18 +142,20 @@ export const compartirListaSchema = z.object({
 export const actualizarRolMiembroSchema = z.object({
   rol: z.enum(['viewer', 'editor']),
 });
+
 // ==========================================
 // 5. ESQUEMAS DE DIRECCIONES
 // ==========================================
 export const agregarDireccionSchema = z.object({
-  nombre_lugar:   z.string().min(1, 'El nombre del lugar es obligatorio'),
-  latitud:        z.number({ message: 'Latitud inválida' }),
-  longitud:       z.number({ message: 'Longitud inválida' }),
+  nombre_lugar:    z.string().min(1, 'El nombre del lugar es obligatorio'),
+  latitud:         z.number({ message: 'Latitud inválida' }),
+  longitud:        z.number({ message: 'Longitud inválida' }),
   radio_busqueda: z.number().min(1).max(10).optional().default(3),
 });
 export const actualizarRadioDireccionSchema = z.object({
   radio_busqueda: z.number().min(1).max(10),
 });
+
 // ==========================================
 // 6. ESQUEMAS DE Analytics
 // ==========================================
@@ -186,6 +200,7 @@ export const supportMessageSchema = z.object({
     .min(5, { message: 'El mensaje debe tener al menos 5 caracteres' })
     .max(1000, { message: 'El mensaje no puede superar los 1000 caracteres' }),
 });
+
 // ==========================================
 // 9. INFERENCIA DE TIPOS PARA EL FRONTEND
 // ==========================================

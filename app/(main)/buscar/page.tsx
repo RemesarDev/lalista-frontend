@@ -3,6 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef } from 'react';
 import { useBusqueda } from './_hooks/useBusqueda';
+import { useEtiquetasDiferidas } from './_hooks/useEtiquetasDiferidas';
 import { ProductCard } from './_components/ProductCard';
 import { FiltrosBusqueda } from './_components/FiltrosBusqueda';
 import { useListaStore } from '@/app/_store/store';
@@ -48,13 +49,31 @@ function ResultadosBusqueda() {
     [router, searchParams]
   );
 
-  const handleToggleEtiqueta = (codigo: string) => {
-    const siguientes = etiquetas.includes(codigo)
-      ? etiquetas.filter((e) => e !== codigo)
-      : [...etiquetas, codigo];
-    actualizarUrl({ etiquetas: siguientes });
-  };
+  const aplicarEtiquetas = useCallback(
+    (siguientes: string[]) => actualizarUrl({ etiquetas: siguientes }),
+    [actualizarUrl]
+  );
 
+  // Los chips responden al toque, pero la URL (y la busqueda) espera a que el
+  // usuario termine de elegir. Ver useEtiquetasDiferidas.
+  const {
+    seleccionadas: etiquetasVisibles,
+    aplicando: aplicandoEtiquetas,
+    pendientes: etiquetasPendientes,
+    alternar: handleToggleEtiqueta,
+  } = useEtiquetasDiferidas({ aplicadas: etiquetas, aplicar: aplicarEtiquetas });
+
+  // Quitar la categoria es una accion unica y se aplica en el momento. Si
+  // habia chips esperando, viajan en la misma escritura para no perderlos ni
+  // disparar una segunda busqueda.
+  const handleQuitarCategoria = () =>
+    actualizarUrl({
+      categoria: '',
+      ...(etiquetasPendientes ? { etiquetas: etiquetasPendientes } : {}),
+    });
+
+  // La busqueda usa las etiquetas de la URL, no las visibles: asi solo se
+  // pide al servidor lo que ya se aplico.
   const { productos, cargando, cargandoMas, hayMas, cargarMas } = useBusqueda(
     query,
     categoria,
@@ -157,8 +176,9 @@ function ResultadosBusqueda() {
     <div className="pb-4">
       <FiltrosBusqueda
         categoria={categoria}
-        etiquetas={etiquetas}
-        onQuitarCategoria={() => actualizarUrl({ categoria: '' })}
+        etiquetas={etiquetasVisibles}
+        aplicando={aplicandoEtiquetas}
+        onQuitarCategoria={handleQuitarCategoria}
         onToggleEtiqueta={handleToggleEtiqueta}
       />
     </div>

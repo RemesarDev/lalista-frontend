@@ -67,11 +67,6 @@ export default function HeroInfo() {
       {/* Accesos rapidos por categoria */}
       <CategoriaChips />
 
-      {/* Scroll hint */}
-      <div className="flex flex-col items-center gap-1 text-slate-300 animate-bounce mt-2">
-        <span className="text-[10px] font-sans uppercase tracking-widest">¿Cómo funciona?</span>
-        <span className="text-lg">↓</span>
-      </div>
     </section>
   );
 }

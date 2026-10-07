@@ -184,7 +184,7 @@ export function ModalProducto() {
 
               {producto.etiquetas.length > 0 && (
                 <p className="mt-4 text-[11px] leading-relaxed text-slate-400">
-                  Los datos vienen de la descripción del fabricante: verificá siempre el envase.
+                  Los datos vienen de la descripción del fabricante: verificá siempre la etiqueta.
                 </p>
               )}
 

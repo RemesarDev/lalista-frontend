@@ -16,6 +16,8 @@ const MINIMO_PRODUCTOS = 50;
 interface FiltrosBusquedaProps {
   categoria: string;
   etiquetas: string[];
+  /** Hay chips elegidos que todavia no se aplicaron a la busqueda. */
+  aplicando?: boolean;
   onQuitarCategoria: () => void;
   onToggleEtiqueta: (codigo: string) => void;
 }
@@ -23,6 +25,7 @@ interface FiltrosBusquedaProps {
 export function FiltrosBusqueda({
   categoria,
   etiquetas,
+  aplicando = false,
   onQuitarCategoria,
   onToggleEtiqueta,
 }: FiltrosBusquedaProps) {
@@ -59,7 +62,7 @@ export function FiltrosBusqueda({
         <>
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="mr-1 font-display text-[10px] font-bold uppercase tracking-widest text-slate-400">
-              Según el envase
+              Según la etiqueta
             </span>
 
             {visibles.map((etiqueta) => {
@@ -80,6 +83,18 @@ export function FiltrosBusqueda({
                 </button>
               );
             })}
+
+            {/* Aviso discreto mientras corre la espera: el chip ya cambio de
+                color pero los resultados todavia son los anteriores. */}
+            {aplicando && (
+              <span
+                role="status"
+                className="ml-1 inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400"
+              >
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />
+                Aplicando filtros…
+              </span>
+            )}
           </div>
 
           {etiquetas.length > 0 && (
@@ -91,7 +106,7 @@ export function FiltrosBusqueda({
                   combinar varios reduce mucho los resultados.{' '}
                 </>
               )}
-              Los datos vienen de la descripción del fabricante: verificá siempre el envase.
+              Los datos vienen de la descripción del fabricante: verificá siempre la etiqueta.
             </p>
           )}
         </>

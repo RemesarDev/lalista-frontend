@@ -1,5 +1,6 @@
 // app/_lib/mailer.ts
 import nodemailer from 'nodemailer';
+import { VerificacionCuenta, textoVerificacionCuenta } from '@/app/_lib/emails/VerificacionCuenta';
 
 // ==========================================
 // MAILER: Nodemailer sobre SMTP de Gmail
@@ -34,17 +35,6 @@ export const transporter = nodemailer.createTransport({
 
 const REMITENTE = `LALIsta <${gmailUser}>`;
 
-// El nombre lo elige el usuario en el registro: va escapado para que no
-// pueda inyectar HTML en el cuerpo del mail.
-function escaparHtml(texto: string): string {
-  return texto
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 // ==========================================
 // EMAIL DE VERIFICACION DE CUENTA
 // ==========================================
@@ -57,38 +47,20 @@ export async function enviarEmailVerificacion({
   url: string;
   nombre?: string;
 }): Promise<void> {
-  const saludo = nombre ? `Hola ${escaparHtml(nombre)},` : 'Hola,';
+  // El logo se referencia por URL absoluta (el cliente de mail lo descarga
+  // de nuestro propio dominio), tomando el origin del link de verificacion
+  // en vez de depender de otra variable de entorno.
+  const logoUrl = `${new URL(url).origin}/img/lalista-logo.png`;
+
+  // hono/jsx escapa "nombre" automaticamente al interpolarlo en el JSX, asi
+  // que no hace falta sanitizarlo a mano como antes.
+  const html = '<!DOCTYPE html>' + VerificacionCuenta({ nombre, url, logoUrl }).toString();
 
   await transporter.sendMail({
     from: REMITENTE,
     to,
     subject: 'Verificá tu cuenta en LALIsta',
-    text: `${nombre ? `Hola ${nombre},` : 'Hola,'}\n\nVerificá tu cuenta en LALIsta entrando a este link:\n${url}\n\nEl link vence en 1 hora. Si no te registraste, ignorá este mensaje.`,
-    html: `<!DOCTYPE html>
-<html lang="es">
-  <body style="margin:0;padding:24px;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;">
-    <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:8px;padding:32px;">
-      <h1 style="margin:0 0 16px;font-size:20px;">Verificá tu cuenta</h1>
-      <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">${saludo}</p>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.5;">
-        Confirmá tu dirección de email para terminar de activar tu cuenta en LALIsta.
-      </p>
-      <p style="margin:0 0 24px;">
-        <a href="${url}" style="display:inline-block;background:#1a1a1a;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;font-size:15px;">
-          Verificar mi cuenta
-        </a>
-      </p>
-      <p style="margin:0 0 8px;font-size:13px;color:#666666;line-height:1.5;">
-        Si el botón no funciona, copiá y pegá este link en tu navegador:
-      </p>
-      <p style="margin:0 0 24px;font-size:13px;word-break:break-all;">
-        <a href="${url}" style="color:#1a6fd4;">${url}</a>
-      </p>
-      <p style="margin:0;font-size:13px;color:#666666;line-height:1.5;">
-        El link vence en 1 hora. Si no te registraste en LALIsta, ignorá este mensaje.
-      </p>
-    </div>
-  </body>
-</html>`,
+    text: textoVerificacionCuenta({ nombre, url }),
+    html,
   });
 }

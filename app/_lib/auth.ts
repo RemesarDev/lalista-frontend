@@ -1,8 +1,24 @@
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { Pool } from "pg";
+import { enviarEmailVerificacion } from "@/app/_lib/mailer";
 
-const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+// El dominio no se hardcodea: en Vercel lo resuelve la plataforma.
+// VERCEL_PROJECT_PRODUCTION_URL trae el dominio de produccion estable (el
+// custom mas corto, o el .vercel.app si no hay custom), siempre seteado y sin
+// el esquema. No usamos VERCEL_URL porque es unica por deploy y un link de
+// verificacion con ese host se podria vencer antes de que lo abran.
+function resolverAppUrl(): string {
+  const explicita = process.env.NEXT_PUBLIC_APP_URL;
+  if (explicita) return explicita.replace(/\/$/, "");
+
+  const produccion = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (produccion) return `https://${produccion.replace(/\/$/, "")}`;
+
+  return "http://localhost:3000";
+}
+
+const appUrl = resolverAppUrl();
 const localOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
 const trustedOrigins = Array.from(
   new Set([appUrl, ...localOrigins].filter(Boolean))
@@ -47,6 +63,20 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
+  },
+  emailVerification: {
+    // Sin esto el mail no se dispara solo: el callback de abajo quedaria
+    // colgado del endpoint /send-verification-email nada mas.
+    sendOnSignUp: true,
+    // Better Auth arma la url (/api/auth/verify-email?token=...&callbackURL=/)
+    // a partir de baseURL, que sale de resolverAppUrl().
+    sendVerificationEmail: async ({ user, url }) => {
+      await enviarEmailVerificacion({
+        to: user.email,
+        url,
+        nombre: user.name,
+      });
+    },
   },
 hooks: {
   after: async (ctx) => {

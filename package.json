@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verificar:smtp": "node --env-file=.env.local scripts/verificar-smtp.mjs"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.8.0",
@@ -19,6 +20,7 @@
     "hono": "^4.12.27",
     "leaflet": "^1.9.4",
     "next": "^16.2.6",
+    "nodemailer": "^10.0.16",
     "pg": "^8.22.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

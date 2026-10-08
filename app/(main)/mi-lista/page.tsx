@@ -11,7 +11,9 @@ import {
   XCircleIcon,
   CheckCircleIcon,
   PlusIcon,
-  PencilSimpleIcon
+  PencilSimpleIcon,
+  ShareNetworkIcon,
+  UsersIcon
 } from '@phosphor-icons/react/dist/ssr';
 import Link from 'next/link';
 import { DesktopActionButton } from '@/app/_components/global/DesktopActionButton';
@@ -22,8 +24,22 @@ import { CerrarListaModal } from './_components/CerrarListaModal';
 import { GrupoListItem } from './_components/GrupoListItem';
 import { useGestionLista } from './_hooks/useGestionLista';
 import { useQuitarConDeshacer } from './_hooks/useQuitarConDeshacer';
+import { CompartirContenidoListaModal } from '../mis-listas/_components/CompartirContenidoListaModal';
+import { CompartirListaModal } from '../mis-listas/_components/CompartirListaModal';
 
-function ListaProductos() {
+// Tipado para el estado del modal de compartir
+interface ModalCompartirState {
+    isOpen: boolean;
+    listaId: string | null;
+}
+
+interface ModalCompartirContenidoState {
+    isOpen: boolean;
+    listaId: string | null;
+    listaNombre: string;
+}
+
+function ListaProductos({ simplificado }: { simplificado: boolean }) {
   const lista = useListaStore((state) => state.lista);
   const actualizarCantidadGrupo = useListaStore((state) => state.actualizarCantidadGrupo);
   const actualizarCantidadOpcion = useListaStore((state) => state.actualizarCantidadOpcion);
@@ -31,14 +47,7 @@ function ListaProductos() {
   const toggleCompradoGrupo = useListaStore((state) => state.toggleCompradoGrupo);
 
   const { quitarGrupo, quitarOpcion } = useQuitarConDeshacer();
-
-  const [modoSimplificado, setModoSimplificado] = useState(false);
   const [grupoAbiertoId, setGrupoAbiertoId] = useState<string | null>(null);
-
-  const toggleModo = () => {
-    setModoSimplificado((prev) => !prev);
-    setGrupoAbiertoId(null);
-  };
 
   const toggleAbierto = (grupoId: string) => {
     setGrupoAbiertoId((prev) => (prev === grupoId ? null : grupoId));
@@ -64,20 +73,11 @@ function ListaProductos() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex justify-end">
-        <button
-          onClick={toggleModo}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] sm:text-xs font-bold text-slate-600 shadow-sm transition-all hover:border-orange-300 hover:text-orange-600"
-        >
-          {modoSimplificado ? 'Mostrar lista desplegada' : 'Simplificar lista'}
-        </button>
-      </div>
-
       {lista.map((grupo) => (
         <GrupoListItem
           key={grupo.grupoId}
           grupo={grupo}
-          simplificado={modoSimplificado}
+          simplificado={simplificado}
           abierto={grupoAbiertoId === grupo.grupoId}
           onToggleAbierto={toggleAbierto}
           onIncrementar={(grupoId) => {
@@ -128,6 +128,7 @@ function ListaProductos() {
 export default function MiListaPage() {
   const totalEnLista = useListaStore((state) => state.lista.length);
   const checkAuth = useListaStore((state) => state.checkAuth);
+  const user = useListaStore((state) => state.user);
   const listaId = useListaStore((state) => state.listaId);
   const listaRol = useListaStore((state) => state.listaRol);
   const listaNombre = useListaStore((state) => state.listaNombre);
@@ -142,7 +143,16 @@ export default function MiListaPage() {
   // Estados locales para la edición en línea del título
   const [editandoNombre, setEditandoNombre] = useState(false);
   const [nombreTemporal, setNombreTemporal] = useState(listaNombre ?? 'Mi lista');
+  const [modoSimplificado, setModoSimplificado] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Estado para el modal de compartir contenido de la lista
+  const [modalCompartir, setModalCompartir] = useState<ModalCompartirState>({ isOpen: false, listaId: null });
+  const [modalCompartirContenido, setModalCompartirContenido] = useState<ModalCompartirContenidoState>({
+    isOpen: false,
+    listaId: null,
+    listaNombre: '',
+  });
 
   const {
     modalGuardarOpen,
@@ -190,50 +200,88 @@ export default function MiListaPage() {
 
   return (
     <BaseContainer>
-      <div className="mb-6 flex flex-row items-center justify-between gap-4 px-1 w-full border-b border-slate-50 pb-3">
-        <div className="flex flex-col flex-1 min-w-0">
-          {editandoNombre && esOwner ? (
-            <input
-              ref={inputRef}
-              type="text"
-              value={nombreTemporal}
-              onChange={(e) => setNombreTemporal(e.target.value)}
-              onBlur={guardarNuevoNombre}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') guardarNuevoNombre();
-                if (e.key === 'Escape') {
-                  setNombreTemporal(listaNombre ?? 'Mi lista');
-                  setEditandoNombre(false);
-                }
-              }}
-              className="text-xl sm:text-2xl font-black text-slate-900 bg-transparent border-b-2 border-orange-500 outline-none w-full tracking-tight"
-            />
-          ) : (
-            <div 
-              onClick={() => {
-                if (esOwner) setEditandoNombre(true);
-              }}
-              className={`group flex items-center gap-2 w-fit ${esOwner ? 'cursor-pointer' : ''}`}
-              title={esOwner ? 'Hacé clic para cambiar el nombre' : undefined}
-            >
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">
-                {listaNombre ?? 'Mi lista'}
-              </h1>
-              {esOwner && (
-                <PencilSimpleIcon size={18} weight="bold" className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-              )}
+      {/* Contenedor principal dividido en 2 filas */}
+      <div className="mb-6 flex flex-col gap-3 px-1 w-full border-b border-slate-50 pb-4">
+        
+        {/* PRIMERA FILA: Título editable y botones de compartir alineados de izquierda a derecha */}
+        <div className="flex items-center justify-between w-full min-w-0 flex-wrap gap-2">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            {editandoNombre && esOwner ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={nombreTemporal}
+                onChange={(e) => setNombreTemporal(e.target.value)}
+                onBlur={guardarNuevoNombre}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') guardarNuevoNombre();
+                  if (e.key === 'Escape') {
+                    setNombreTemporal(listaNombre ?? 'Mi lista');
+                    setEditandoNombre(false);
+                  }
+                }}
+                className="text-xl sm:text-2xl font-black text-slate-900 bg-transparent border-b-2 border-orange-500 outline-none w-full tracking-tight"
+              />
+            ) : (
+              <div 
+                onClick={() => {
+                  if (esOwner) setEditandoNombre(true);
+                }}
+                className={`group flex items-center gap-2 w-fit ${esOwner ? 'cursor-pointer' : ''}`}
+                title={esOwner ? 'Hacé clic para cambiar el nombre' : undefined}
+              >
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">
+                  {listaNombre ?? 'Mi lista'}
+                </h1>
+                {esOwner && (
+                  <PencilSimpleIcon size={18} weight="bold" className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Botones de Compartir en la misma primera fila, de izquierda a derecha */}
+          {user && listaId && (
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setModalCompartirContenido({
+                  isOpen: true,
+                  listaId: listaId,
+                  listaNombre: listaNombre ?? 'Mi lista'
+                })}
+                title="Compartir contenido"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 py-1.5 text-xs font-bold text-emerald-700 shadow-sm transition-all hover:bg-emerald-100 hover:border-emerald-300"
+              >
+                <ShareNetworkIcon size={16} weight="bold" />
+                <span className="hidden sm:inline">Compartir contenido</span>
+              </button>
+
+              <button
+                onClick={() => setModalCompartir({
+                  isOpen: true,
+                  listaId: listaId
+                })}
+                title="Compartir colaboradores"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 py-1.5 text-xs font-bold text-emerald-700 shadow-sm transition-all hover:bg-emerald-100 hover:border-emerald-300"
+              >
+                <UsersIcon size={16} weight="bold" />
+                <span className="hidden sm:inline">Colaboradores</span>
+              </button>
             </div>
           )}
-
-          <p className="text-[11px] sm:text-xs font-medium text-slate-400 mt-0.5">
-            {totalEnLista === 0
-              ? 'Sin productos guardados'
-              : `${totalEnLista} ítem${totalEnLista === 1 ? '' : 's'} listo${totalEnLista === 1 ? '' : 's'} para comparar`
-            }
-          </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        {/* SEGUNDA FILA: en mobile, grid de columnas iguales a todo el ancho; en md vuelve al flex original */}
+        <div className="grid grid-flow-col auto-cols-fr gap-2 w-full md:flex md:flex-wrap md:items-center">
+          {/* Botón de simplificar */}
+          <button
+            onClick={() => setModoSimplificado((prev) => !prev)}
+            className="w-full md:w-auto rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] sm:text-xs font-bold text-slate-600 shadow-sm transition-all hover:border-orange-300 hover:text-orange-600"
+          >
+            {modoSimplificado ? 'Desplegar' : 'Simplificar'}
+          </button>
+
+          {/* Botón de ver mejor precio */}
           <DesktopActionButton
             href="/comparativa"
             label="Conocé el mejor precio"
@@ -242,6 +290,7 @@ export default function MiListaPage() {
             className="hidden md:inline-flex"
           />
 
+          {/* Botón de agregar productos */}
           <DesktopActionButton
             href="/buscar"
             label="Agregá productos"
@@ -251,6 +300,7 @@ export default function MiListaPage() {
             className="hidden md:inline-flex"
           />
 
+          {/* Botón Guardar / Sincronizar */}
           {!isListaVacia && puedeEditar && (
             <DesktopActionButton
               onClick={listaId ? (hayCambios ? handleSincronizar : undefined) : abrirModalGuardar}
@@ -268,10 +318,11 @@ export default function MiListaPage() {
               }
               color={sincronizadoOk ? 'verde' : 'lila'}
               variant="solid"
-              className="inline-flex"
+              className="flex w-full justify-center md:inline-flex md:w-auto"
             />
           )}
 
+          {/* Botón Cerrar lista */}
           {listaId && (
             <DesktopActionButton
               onClick={() => {
@@ -285,10 +336,11 @@ export default function MiListaPage() {
               icon={<XCircleIcon weight="bold" />}
               color="rojo"
               variant="outline"
-              className="inline-flex"
+              className="flex w-full justify-center md:inline-flex md:w-auto"
             />
           )}
 
+          {/* Botón Vaciar lista */}
           {!listaId && (
             <DesktopActionButton
               onClick={handleLimpiarLista}
@@ -297,14 +349,14 @@ export default function MiListaPage() {
               color="rojo"
               variant="outline"
               disabled={isListaVacia}
-              className="inline-flex"
+              className="flex w-full justify-center md:inline-flex md:w-auto"
             />
           )}
         </div>
       </div>
 
       <Suspense fallback={<p className="text-center text-sm text-slate-400 py-4">Cargando tus productos...</p>}>
-        <ListaProductos />
+        <ListaProductos simplificado={modoSimplificado} />
       </Suspense>
 
       <ModalGuardarLista
@@ -320,6 +372,19 @@ export default function MiListaPage() {
         onCerrarSinGuardar={() => handleCerrarLista(false)}
         onSincronizarYCerrar={() => handleCerrarLista(true)}
         loading={loadingSincronizar}
+      />
+
+      {/* Modal compartir */}
+      <CompartirListaModal
+        isOpen={modalCompartir.isOpen}
+        onClose={() => setModalCompartir({ isOpen: false, listaId: null })}
+        listaId={modalCompartir.listaId}
+      />
+      <CompartirContenidoListaModal
+        isOpen={modalCompartirContenido.isOpen}
+        onClose={() => setModalCompartirContenido({ isOpen: false, listaId: null, listaNombre: '' })}
+        listaId={modalCompartirContenido.listaId}
+        listaNombre={modalCompartirContenido.listaNombre}
       />
     </BaseContainer>
   );

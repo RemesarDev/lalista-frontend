@@ -11,7 +11,8 @@ import BaseContainer from '@/app/_components/global/BaseContainer';
 import ConfirmModal from '../../_components/global/ConfirmModal';
 import { CompartirListaModal } from './_components/CompartirListaModal';
 import { CompartirContenidoListaModal } from './_components/CompartirContenidoListaModal';
-import { ListIcon, LockIcon, TrashIcon, ShareNetworkIcon, UsersThreeIcon } from '@phosphor-icons/react';
+import { ListIcon, LockIcon, TrashIcon, ShareNetworkIcon, UsersThreeIcon, PlusIcon } from '@phosphor-icons/react';
+import { Button } from '@/app/_components/global/Button';
 import type { RolLista } from '@/app/_store/slices/listaSlice';
 
 // Tipado para el estado del modal de eliminación
@@ -39,6 +40,7 @@ export default function MisListasPage() {
     const listaIdActiva = useListaStore((state) => state.listaId);
     const loadingAuth = useListaStore((state) => state.loadingAuth);
     const checkAuth = useListaStore((state) => state.checkAuth);
+    const limpiarLista = useListaStore((state) => state.limpiarLista);
 
     const { listas, cargando, error, eliminarLista } = useMisListas(user?.id ?? null);
     const { abrirLista, cargandoAbrir } = useAbrirLista();
@@ -76,6 +78,11 @@ export default function MisListasPage() {
         if (modalEliminar.listaId) {
             eliminarLista(modalEliminar.listaId);
         }
+    };
+
+    const handleCrearNuevaLista = () => {
+        limpiarLista();
+        router.push('/mi-lista');
     };
 
     const esPropietario = modalEliminar.rol === 'owner';
@@ -209,8 +216,19 @@ export default function MisListasPage() {
                             </div>
                         </div>
                     ))}
+
+                    {/* Botón para agregar una nueva lista, manteniendo la misma geometría y separación */}
+                    <Button
+                        onClick={handleCrearNuevaLista}
+                        variant="primary"
+                        className="mt-4 flex items-center justify-center gap-2"
+                    >
+                        <PlusIcon size={18} weight="bold" />
+                        Crear nueva lista
+                    </Button>
                 </div>
             )}
+
         </BaseContainer>
     );
 }

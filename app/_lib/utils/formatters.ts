@@ -13,6 +13,16 @@ export const formatearNombre = (texto: string): string => {
     .join(' ');
 };
 
+// Abreviaturas de envase que vienen en los nombres del SEPA (Fco = frasco,
+// Brk = brick, Ttb = tetra brik). No aportan nada al leer la lista.
+const ENVASES = 'paq|pack|cja|caja|bot|botella|disc|fco|brk|brick|ttb';
+const ENVASE_CON_TAMANIO = new RegExp(
+  `\\b(?:${ENVASES})[-_ ]?(\\d+(?:[.,]\\d+)?)[-_ ]?(grs?|g|kg|mls?|lts?|l|cc)\\.?\\b`,
+  'gi'
+);
+const ENVASE_SUELTO = new RegExp(`\\b(?:${ENVASES})\\b`, 'gi');
+const TIENE_TAMANIO = /\d+(?:[.,]\d+)?\s*(?:kgs?|grs?|g|mls?|lts?|l|cc)\b/i;
+
 export const formatearNombreParaCompartir = (texto: string): string => {
   if (!texto) return '';
 
@@ -26,16 +36,22 @@ export const formatearNombreParaCompartir = (texto: string): string => {
   ];
 
   let nombre = texto
-    .replace(/\b(?:paq|pack|cja|caja|bot|botella|disc)[-_]?\d+(?:[.,]\d+)?[-_]?(?:grs?|g|kg|ml|lt|l|cc)\.?\b/gi, ' ')
+    // "Brk-1000-ml", "Fco-180-g": si el nombre ya trae el tamaño en otro lado se
+    // borra el bloque entero; si no, se conserva solo el tamaño ("1000 ml").
+    .replace(ENVASE_CON_TAMANIO, (bloque, numero: string, unidad: string, inicio: number, completo: string) => {
+      const resto = completo.slice(0, inicio) + completo.slice(inicio + bloque.length);
+      return TIENE_TAMANIO.test(resto) ? ' ' : ` ${numero} ${unidad} `;
+    })
     .replace(/\bx\s*(\d+(?:[.,]\d+)?)\s*(kg|grs?|g|ml|lt|l|cc)\b/gi, '$1 $2')
     .replace(/(\d+(?:[.,]\d+)?)\s*(kg|grs?|g|ml|lt|l|cc)\b/gi, '$1 $2')
-    .replace(/\b(paq|pack|cja|caja|bot|botella|disc)\b/gi, ' ');
+    .replace(ENVASE_SUELTO, ' ');
 
   for (const [patron, reemplazo] of reemplazos) {
     nombre = nombre.replace(patron, reemplazo);
   }
 
-  nombre = formatearNombre(nombre.replace(/[.,]+/g, ' ').replace(/\s+/g, ' ').trim());
+  // Puntos y comas sueltos afuera, pero no los decimales ("2.25 l" no es "2 25 l").
+  nombre = formatearNombre(nombre.replace(/(?<!\d)[.,]+|[.,]+(?!\d)/g, ' ').replace(/\s+/g, ' ').trim());
 
   return nombre
     .replace(/\bG\b/g, 'g')

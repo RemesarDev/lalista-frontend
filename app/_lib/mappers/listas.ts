@@ -22,6 +22,7 @@ export interface DbItemLista {
   es_principal?: boolean; // Opción principal vs alternativa
   cantidad_opcion?: number;
   nombre_personalizado?: string | null;
+  lista_nombre?: string | null; // Nombre de la lista (solo lectura, get_items_lista_v3)
 }
 
 // ==========================================

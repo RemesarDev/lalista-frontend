@@ -25,6 +25,8 @@ export function CompartirContenidoListaModal({
     listaNombre,
 }: CompartirContenidoListaModalProps) {
     const [items, setItems] = useState<ItemLista[]>([]);
+    // Nombre guardado en la base: el texto sale entero de la misma consulta que los items
+    const [nombreGuardado, setNombreGuardado] = useState<string | null>(null);
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [copiado, setCopiado] = useState(false);
@@ -34,6 +36,7 @@ export function CompartirContenidoListaModal({
 
         let mounted = true;
         setItems([]);
+        setNombreGuardado(null);
         setError(null);
         setCopiado(false);
         setCargando(true);
@@ -42,7 +45,10 @@ export function CompartirContenidoListaModal({
             .then(async (res) => {
                 const json = await res.json();
                 if (!res.ok) throw new Error(json.error ?? 'Error al cargar la lista');
-                if (mounted) setItems(json.items ?? []);
+                if (mounted) {
+                    setItems(json.items ?? []);
+                    setNombreGuardado(json.nombre ?? null);
+                }
             })
             .catch((err: Error) => {
                 if (mounted) setError(err.message);
@@ -56,7 +62,8 @@ export function CompartirContenidoListaModal({
 
     if (!isOpen) return null;
 
-    const textoLista = generarTextoLista(items);
+    const nombreLista = nombreGuardado ?? listaNombre;
+    const textoLista = generarTextoLista(items, nombreLista);
 
     const compartirWhatsApp = () => {
         window.open(
@@ -76,7 +83,7 @@ export function CompartirContenidoListaModal({
 
         try {
             await navigator.share({
-                title: listaNombre,
+                title: nombreLista,
                 text: textoLista,
             });
         } catch (err) {
@@ -107,7 +114,7 @@ export function CompartirContenidoListaModal({
                             <ShareNetworkIcon size={20} weight="regular" />
                         </div>
                         <h2 className="text-lg font-bold text-slate-900">Compartir lista</h2>
-                        <p className="mt-1 text-sm text-slate-500">{listaNombre}</p>
+                        <p className="mt-1 text-sm text-slate-500">{nombreLista}</p>
                     </div>
                     <Button variant="ghost" onClick={onClose} aria-label="Cerrar">
                         <XIcon size={20} weight="bold" />

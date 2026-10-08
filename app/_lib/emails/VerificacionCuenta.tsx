@@ -21,6 +21,7 @@ const colores = {
   fondo: '#f5f5f5',
   boton: '#f97316', // primary-500 (orange-500) del tema
   link: '#f97316',
+  logoFondo: '#c07eff', // primary-400 (purple-400) del tema, igual que la barra del header del sitio
 };
 
 export function VerificacionCuenta({ nombre, url, logoUrl }: Props) {
@@ -47,7 +48,7 @@ export function VerificacionCuenta({ nombre, url, logoUrl }: Props) {
             border: `1px solid ${colores.borde}`,
           }}
         >
-          <div style={{ padding: '28px 32px 20px', textAlign: 'center' }}>
+          <div style={{ background: colores.logoFondo, padding: '24px 32px', textAlign: 'center' }}>
             {/* eslint-disable-next-line @next/next/no-img-element -- esto renderiza a un string de HTML para un cliente de mail, nunca pasa por el pipeline de next/image */}
             <img
               src={logoUrl}

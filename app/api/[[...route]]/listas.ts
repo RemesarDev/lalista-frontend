@@ -35,14 +35,15 @@ export const listasRouter = new Hono()
     return c.json({ listas });
   })
 
-  // GET /listas/:id/items — items de una lista (agrupados por grupo_id)
+  // GET /listas/:id/items — items de una lista (agrupados por grupo_id) y su nombre
   .get('/listas/:id/items', async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) return c.json({ error: 'No autorizado' }, 401);
 
     const listId = c.req.param('id');
 
-    const { data, error } = await supabase.rpc('get_items_lista_v2', {
+    // v3 = v2 + lista_nombre (migraciones/013_items_lista_con_nombre.sql)
+    const { data, error } = await supabase.rpc('get_items_lista_v3', {
       p_list_id: listId,
       p_user_id: session.user.id,
     });
@@ -60,8 +61,10 @@ export const listasRouter = new Hono()
     }
 
     const items = Array.from(gruposMap.values()).map(mapearGrupoItemsLista);
+    // Todas las filas traen el mismo nombre. Lista vacía → null.
+    const nombre = rawRows[0]?.lista_nombre ?? null;
 
-    return c.json({ items });
+    return c.json({ items, nombre });
   })
 
   // POST /listas — guardar lista nueva

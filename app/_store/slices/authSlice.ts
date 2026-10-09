@@ -10,7 +10,7 @@ export interface AuthSlice {
   
   setUser: (user: User | null) => void;
   loginConEmail: (email: string, password: string) => Promise<{ success: boolean; error?: any }>;
-  registroConEmail: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: any }>;
+  registroConEmail: (email: string, password: string, name: string) => Promise<{ success: boolean; requiereVerificacion?: boolean; error?: any }>;
   logout: () => Promise<void>;
   borrarCuenta: (password: string) => Promise<{ success: boolean; error?: any }>;
   checkAuth: () => Promise<User | null>;
@@ -73,8 +73,17 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
     try {
       const { data, error } = await authClient.signUp.email({ email, password, name });
       if (data?.user) {
+        // Con requireEmailVerification activo, better-auth crea el user pero
+        // no la sesión (token: null) hasta que confirme el mail. Tratar esto
+        // como login exitoso dejaba al usuario "logueado" en el store sin
+        // cookie real: se caía solo en el próximo checkAuth().
+        if (!data.token) {
+          set({ loadingAuth: false });
+          return { success: true, requiereVerificacion: true };
+        }
+
         set({ user: data.user, loadingAuth: false });
-        
+
         // 🚀 Registramos analíticamente el nuevo registro de usuario
         analytics.userSignup(data.user.id).catch(console.error);
 

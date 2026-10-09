@@ -63,11 +63,16 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
   },
   emailVerification: {
     // Sin esto el mail no se dispara solo: el callback de abajo quedaria
     // colgado del endpoint /send-verification-email nada mas.
     sendOnSignUp: true,
+    // Sin esto, clickear el link del mail marca emailVerified=true pero no
+    // crea sesion: el usuario cae en / como invitado y hay que loguearse
+    // a mano aparte. Con esto, el click te deja logueado directo.
+    autoSignInAfterVerification: true,
     // Better Auth arma la url (/api/auth/verify-email?token=...&callbackURL=/)
     // a partir de baseURL, que sale de resolverAppUrl().
     sendVerificationEmail: async ({ user, url }) => {

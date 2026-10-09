@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import { useSignupForm } from './_hooks/useSignupForm';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
+import { authClient } from '@/app/_lib/auth-client';
 import { Button } from '@/app/_components/global/Button';
 import { avisar } from '@/app/_lib/avisos';
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
@@ -15,6 +16,8 @@ export default function SignupPage() {
     const [mensajeError, setMensajeError] = useState('');
     const [mostrarPass, setMostrarPass] = useState(false);
     const [emailPendienteVerificar, setEmailPendienteVerificar] = useState('');
+    const [reenviando, setReenviando] = useState(false);
+    const [reenvioBloqueadoHasta, setReenvioBloqueadoHasta] = useState(0);
 
     // 1. Extraemos todo de nuestro custom hook
     const { form, erroresTexto, reglasPass, manejarInput, validarSubmit } = useSignupForm();
@@ -46,6 +49,20 @@ export default function SignupPage() {
         }
     };
 
+    const handleReenviar = async () => {
+        if (reenviando || Date.now() < reenvioBloqueadoHasta) return;
+        setReenviando(true);
+        try {
+            await authClient.sendVerificationEmail({ email: emailPendienteVerificar });
+            avisar.exito('Te reenviamos el mail de verificación');
+            setReenvioBloqueadoHasta(Date.now() + 60_000);
+        } catch {
+            avisar.error('No pudimos reenviar el mail. Probá de nuevo en un rato.');
+        } finally {
+            setReenviando(false);
+        }
+    };
+
     if (emailPendienteVerificar) {
         return (
             <div className="flex min-h-[60vh] items-center justify-center px-4 py-10">
@@ -57,6 +74,14 @@ export default function SignupPage() {
                     <p className="mt-4 text-xs text-slate-500">
                         ¿No te llegó? Revisá también la carpeta de spam.
                     </p>
+                    <button
+                        type="button"
+                        onClick={handleReenviar}
+                        disabled={reenviando || Date.now() < reenvioBloqueadoHasta}
+                        className="mt-4 text-sm font-semibold text-slate-900 hover:underline disabled:text-slate-400 disabled:no-underline disabled:cursor-not-allowed"
+                    >
+                        {reenviando ? 'Reenviando...' : 'Reenviar email'}
+                    </button>
                     <div className="mt-6 text-sm text-slate-600">
                         <Link href="/login" className="font-semibold text-slate-900 hover:underline">
                             Ir a iniciar sesión

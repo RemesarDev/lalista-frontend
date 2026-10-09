@@ -21,7 +21,6 @@ const mensajesPorCodigo = {
     USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: "Este correo ya está registrado. Usá otro email.",
     CREDENTIAL_ACCOUNT_NOT_FOUND: "El correo o la contraseña son incorrectos.",
     USER_NOT_FOUND: "No encontramos una cuenta con ese correo.",
-    EMAIL_NOT_VERIFIED: "Confirmá tu email antes de iniciar sesión. Revisá tu bandeja de entrada.",
 } satisfies Partial<Record<BetterAuthErrorCode, string>>;
 
 function obtenerCodigoError(errorAuth: ErrorAuthLike): BetterAuthErrorCode | string | undefined {

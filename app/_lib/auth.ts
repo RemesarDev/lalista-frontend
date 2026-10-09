@@ -36,6 +36,10 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });
 
+// 60s, el estandar de GitHub/Supabase/Auth0. Evita que sendOnSignIn bombardee
+// de mails una cuenta en reintentos de login.
+const COOLDOWN_VERIFICACION_SEGUNDOS = 60;
+
 export const auth = betterAuth({
   baseURL: appUrl,
   secret: authSecret,
@@ -69,13 +73,25 @@ export const auth = betterAuth({
     // Sin esto el mail no se dispara solo: el callback de abajo quedaria
     // colgado del endpoint /send-verification-email nada mas.
     sendOnSignUp: true,
-    // Sin esto, clickear el link del mail marca emailVerified=true pero no
-    // crea sesion: el usuario cae en / como invitado y hay que loguearse
-    // a mano aparte. Con esto, el click te deja logueado directo.
+    // Reenvia el mail en login sin verificar; el cooldown de abajo lo protege.
+    sendOnSignIn: true,
+    // Sin esto, el link verifica pero no loguea: cae en / como invitado.
     autoSignInAfterVerification: true,
     // Better Auth arma la url (/api/auth/verify-email?token=...&callbackURL=/)
     // a partir de baseURL, que sale de resolverAppUrl().
     sendVerificationEmail: async ({ user, url }) => {
+      // Check-and-set atomico: Postgres serializa el UPDATE sobre la misma
+      // fila, asi que dos requests simultaneos no pasan el cooldown los dos.
+      const { rowCount } = await pool.query(
+        `update "user"
+         set "verificationEmailSentAt" = now()
+         where id = $1
+           and ("verificationEmailSentAt" is null or "verificationEmailSentAt" < now() - ($2 || ' seconds')::interval)`,
+        [user.id, COOLDOWN_VERIFICACION_SEGUNDOS]
+      );
+
+      if (rowCount === 0) return; // dentro del cooldown: no se reenvia
+
       await enviarEmailVerificacion({
         to: user.email,
         url,

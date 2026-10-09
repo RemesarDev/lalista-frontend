@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import { useSignupForm } from './_hooks/useSignupForm';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
+import { authClient } from '@/app/_lib/auth-client';
 import { Button } from '@/app/_components/global/Button';
 import { avisar } from '@/app/_lib/avisos';
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
@@ -14,6 +15,9 @@ export default function SignupPage() {
     const router = useRouter();
     const [mensajeError, setMensajeError] = useState('');
     const [mostrarPass, setMostrarPass] = useState(false);
+    const [emailPendienteVerificar, setEmailPendienteVerificar] = useState('');
+    const [reenviando, setReenviando] = useState(false);
+    const [reenvioBloqueadoHasta, setReenvioBloqueadoHasta] = useState(0);
 
     // 1. Extraemos todo de nuestro custom hook
     const { form, erroresTexto, reglasPass, manejarInput, validarSubmit } = useSignupForm();
@@ -34,7 +38,9 @@ export default function SignupPage() {
         // Nota: Pasamos form.nombre porque así lo definiste en Zod
         const result = await registro(form.email, form.password, form.nombre);
 
-        if (result.success) {
+        if (result.requiereVerificacion) {
+            setEmailPendienteVerificar(form.email);
+        } else if (result.success) {
             const nombre = form.nombre.trim().split(/\s+/)[0];
             avisar.exito(nombre ? `Listo, ${nombre}: ya tenés tu cuenta` : 'Listo: ya tenés tu cuenta');
             router.push('/');
@@ -42,6 +48,49 @@ export default function SignupPage() {
             setMensajeError(traducirErrorAuth(result.error));
         }
     };
+
+    const handleReenviar = async () => {
+        if (reenviando || Date.now() < reenvioBloqueadoHasta) return;
+        setReenviando(true);
+        try {
+            await authClient.sendVerificationEmail({ email: emailPendienteVerificar });
+            avisar.exito('Te reenviamos el mail de verificación');
+            setReenvioBloqueadoHasta(Date.now() + 60_000);
+        } catch {
+            avisar.error('No pudimos reenviar el mail. Probá de nuevo en un rato.');
+        } finally {
+            setReenviando(false);
+        }
+    };
+
+    if (emailPendienteVerificar) {
+        return (
+            <div className="flex min-h-[60vh] items-center justify-center px-4 py-10">
+                <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-sm border border-slate-200 text-center">
+                    <h1 className="text-2xl font-bold text-slate-900">¡Ya casi!</h1>
+                    <p className="mt-3 text-sm text-slate-600">
+                        Te mandamos un mail a <span className="font-semibold text-slate-900">{emailPendienteVerificar}</span> para confirmar tu cuenta. Abrí el link de ahí para poder iniciar sesión.
+                    </p>
+                    <p className="mt-4 text-xs text-slate-500">
+                        ¿No te llegó? Revisá también la carpeta de spam.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={handleReenviar}
+                        disabled={reenviando || Date.now() < reenvioBloqueadoHasta}
+                        className="mt-4 text-sm font-semibold text-slate-900 hover:underline disabled:text-slate-400 disabled:no-underline disabled:cursor-not-allowed"
+                    >
+                        {reenviando ? 'Reenviando...' : 'Reenviar email'}
+                    </button>
+                    <div className="mt-6 text-sm text-slate-600">
+                        <Link href="/login" className="font-semibold text-slate-900 hover:underline">
+                            Ir a iniciar sesión
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-[60vh] items-center justify-center px-4 py-10">

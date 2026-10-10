@@ -1,14 +1,11 @@
 import { useState } from "react";
-import { usePrefetch } from "./usePrefetch";
+import { validarFormulario } from "@/app/_lib/utils/validarRegistro";
 
 export function useSignupForm() {
     // 1. Estados Locales de React
     const [form, setForm] = useState({ nombre: "", email: "", password: "" });
     const [erroresTexto, setErroresTexto] = useState<Record<string, string[]>>({});
     const [reglasPass, setReglasPass] = useState({ length: false, upper: false, number: false });
-
-    // 2. Precarga de Zod en segundo plano
-    const obtenerValidador = usePrefetch(() => import("@/app/_lib/utils/validarRegistro"));
 
     const limpiarCampo = (campo: string) => {
         setErroresTexto((prev) => {
@@ -19,26 +16,22 @@ export function useSignupForm() {
         });
     };
 
-    // 3. Manejador de Inputs (Asíncrono para evaluar reglas en tiempo real)
-    const manejarInput = async (campo: keyof typeof form, valor: string) => {
+    // 2. Manejador de Inputs (evalua las reglas de la contraseña en tiempo real)
+    const manejarInput = (campo: keyof typeof form, valor: string) => {
         // Actualizamos el form derivando del valor actual
         const nuevoForm = { ...form, [campo]: valor };
         setForm(nuevoForm);
         limpiarCampo(campo);
 
-        // Solo necesitamos evaluar Zod en tiempo real para las contraseñas
         if (campo === "password") {
-            const modulo = await obtenerValidador();
-            const resultado = modulo.validarFormulario(nuevoForm);
-            setReglasPass(resultado.reglasPassword);
+            setReglasPass(validarFormulario(nuevoForm).reglasPassword);
         }
     };
 
-    // 4. Validador final para el Submit
-    const validarSubmit = async () => {
+    // 3. Validador final para el Submit
+    const validarSubmit = () => {
         setErroresTexto({});
-        const modulo = await obtenerValidador();
-        const resultado = modulo.validarFormulario(form);
+        const resultado = validarFormulario(form);
 
         if (!resultado.exito) {
             setErroresTexto(resultado.erroresCampos);

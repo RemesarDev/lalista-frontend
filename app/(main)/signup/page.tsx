@@ -30,12 +30,11 @@ export default function SignupPage() {
         e.preventDefault();
         setMensajeError('');
 
-        // 3. Ejecutamos la validación de Zod antes de tocar la API
-        const esValido = await validarSubmit();
+        // 3. Validamos el formulario antes de tocar la API
+        const esValido = validarSubmit();
         if (!esValido) return;
 
-        // 4. Si Zod da luz verde, enviamos a Better Auth (Zustand)
-        // Nota: Pasamos form.nombre porque así lo definiste en Zod
+        // 4. Si la validación da luz verde, enviamos a Better Auth (Zustand)
         const result = await registro(form.email, form.password, form.nombre);
 
         if (result.requiereVerificacion) {

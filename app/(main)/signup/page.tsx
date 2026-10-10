@@ -53,12 +53,16 @@ export default function SignupPage() {
         if (reenviando || Date.now() < reenvioBloqueadoHasta) return;
         setReenviando(true);
         try {
-            await authClient.sendVerificationEmail({ email: emailPendienteVerificar });
+            // El cliente de better-auth no lanza: los errores vienen en { error }.
+            const { error } = await authClient.sendVerificationEmail({ email: emailPendienteVerificar });
+            if (error) throw error;
             avisar.exito('Te reenviamos el mail de verificación');
-            setReenvioBloqueadoHasta(Date.now() + 60_000);
         } catch {
-            avisar.error('No pudimos reenviar el mail. Probá de nuevo en un rato.');
+            avisar.error('No pudimos reenviar el mail. Probá de nuevo en un minuto.');
         } finally {
+            // Bloqueo tambien en error: si el server dejo el cooldown puesto (EAUTH),
+            // un reintento inmediato responde 200 sin enviar y diriamos que salio.
+            setReenvioBloqueadoHasta(Date.now() + 60_000);
             setReenviando(false);
         }
     };

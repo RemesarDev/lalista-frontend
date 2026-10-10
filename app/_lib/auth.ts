@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { Pool } from "pg";
-import { enviarEmailVerificacion } from "@/app/_lib/mailer";
+import { enviarEmailVerificacion, enviarEmailRestablecerContrasena } from "@/app/_lib/mailer";
 
 // El dominio no se hardcodea: en Vercel lo resuelve la plataforma.
 // VERCEL_PROJECT_PRODUCTION_URL trae el dominio de produccion estable (el
@@ -36,9 +36,41 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });
 
-// 60s, el estandar de GitHub/Supabase/Auth0. Evita que sendOnSignIn bombardee
-// de mails una cuenta en reintentos de login.
-const COOLDOWN_VERIFICACION_SEGUNDOS = 60;
+// 60s, el estandar de GitHub/Supabase/Auth0. Evita que sendOnSignIn o pedidos
+// repetidos de reset bombardeen de mails una cuenta. El rate limit de Better
+// Auth no alcanza: cuenta por IP, no por cuenta.
+const COOLDOWN_EMAIL_SEGUNDOS = 60;
+
+// Cooldown compartido por todos los mails de cuenta (verificacion y reset):
+// "verificationEmailSentAt" guarda el ultimo mail de cuenta enviado, sea cual
+// sea. Conserva el nombre de cuando era solo de verificacion.
+async function enviarConCooldown(userId: string, enviar: () => Promise<void>) {
+  // Check-and-set atomico: Postgres serializa el UPDATE sobre la misma
+  // fila, asi que dos requests simultaneos no pasan el cooldown los dos.
+  const { rowCount } = await pool.query(
+    `update "user"
+     set "verificationEmailSentAt" = now()
+     where id = $1
+       and ("verificationEmailSentAt" is null or "verificationEmailSentAt" < now() - ($2 || ' seconds')::interval)`,
+    [userId, COOLDOWN_EMAIL_SEGUNDOS]
+  );
+
+  if (rowCount === 0) return; // dentro del cooldown: no se reenvia
+
+  try {
+    await enviar();
+  } catch (e) {
+    // Falla pasajera (timeout, red): liberamos el cooldown para que se pueda
+    // reintentar ya. Con la clave rechazada (EAUTH) reintentar no sirve y suma
+    // logins fallidos contra Gmail, asi que el cooldown queda puesto.
+    if ((e as { code?: string }).code !== "EAUTH") {
+      await pool
+        .query(`update "user" set "verificationEmailSentAt" = null where id = $1`, [userId])
+        .catch(() => {}); // que no tape el error original
+    }
+    throw e;
+  }
+}
 
 export const auth = betterAuth({
   baseURL: appUrl,
@@ -68,47 +100,40 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    // El link del mail pasa por /api/auth/reset-password/:token, que valida el
+    // token y redirige al redirectTo que manda el cliente con ?token=... El
+    // token vence en 1 hora (default) y se consume al usarlo.
+    sendResetPassword: async ({ user, url }) => {
+      await enviarConCooldown(user.id, () =>
+        enviarEmailRestablecerContrasena({ to: user.email, url, nombre: user.name })
+      );
+    },
+    // Abrir el link del reset prueba que el correo es suyo, igual que el de
+    // verificacion: sin esto, despues de cambiar la clave le pediriamos otro
+    // mail para poder entrar.
+    onPasswordReset: async ({ user }) => {
+      await pool.query(
+        `update "user" set "emailVerified" = true where id = $1 and "emailVerified" = false`,
+        [user.id]
+      );
+    },
+    // Si alguien tenia la clave vieja y una sesion abierta, la cortamos.
+    revokeSessionsOnPasswordReset: true,
   },
   emailVerification: {
     // Sin esto el mail no se dispara solo: el callback de abajo quedaria
     // colgado del endpoint /send-verification-email nada mas.
     sendOnSignUp: true,
-    // Reenvia el mail en login sin verificar; el cooldown de abajo lo protege.
+    // Reenvia el mail en login sin verificar; enviarConCooldown lo protege.
     sendOnSignIn: true,
     // Sin esto, el link verifica pero no loguea: cae en / como invitado.
     autoSignInAfterVerification: true,
     // Better Auth arma la url (/api/auth/verify-email?token=...&callbackURL=/)
     // a partir de baseURL, que sale de resolverAppUrl().
     sendVerificationEmail: async ({ user, url }) => {
-      // Check-and-set atomico: Postgres serializa el UPDATE sobre la misma
-      // fila, asi que dos requests simultaneos no pasan el cooldown los dos.
-      const { rowCount } = await pool.query(
-        `update "user"
-         set "verificationEmailSentAt" = now()
-         where id = $1
-           and ("verificationEmailSentAt" is null or "verificationEmailSentAt" < now() - ($2 || ' seconds')::interval)`,
-        [user.id, COOLDOWN_VERIFICACION_SEGUNDOS]
+      await enviarConCooldown(user.id, () =>
+        enviarEmailVerificacion({ to: user.email, url, nombre: user.name })
       );
-
-      if (rowCount === 0) return; // dentro del cooldown: no se reenvia
-
-      try {
-        await enviarEmailVerificacion({
-          to: user.email,
-          url,
-          nombre: user.name,
-        });
-      } catch (e) {
-        // Falla pasajera (timeout, red): liberamos el cooldown para que se pueda
-        // reintentar ya. Con la clave rechazada (EAUTH) reintentar no sirve y suma
-        // logins fallidos contra Gmail, asi que el cooldown queda puesto.
-        if ((e as { code?: string }).code !== "EAUTH") {
-          await pool
-            .query(`update "user" set "verificationEmailSentAt" = null where id = $1`, [user.id])
-            .catch(() => {}); // que no tape el error original
-        }
-        throw e;
-      }
     },
   },
 hooks: {

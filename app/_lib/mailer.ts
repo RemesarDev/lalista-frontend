@@ -1,6 +1,7 @@
 // app/_lib/mailer.ts
 import nodemailer from 'nodemailer';
 import { VerificacionCuenta, textoVerificacionCuenta } from '@/app/_lib/emails/VerificacionCuenta';
+import { RestablecerContrasena, textoRestablecerContrasena } from '@/app/_lib/emails/RestablecerContrasena';
 
 // ==========================================
 // MAILER: Nodemailer sobre SMTP de Gmail
@@ -61,6 +62,31 @@ export async function enviarEmailVerificacion({
     to,
     subject: 'Verificá tu cuenta en LALIsta',
     text: textoVerificacionCuenta({ nombre, url }),
+    html,
+  });
+}
+
+// ==========================================
+// EMAIL DE RESTABLECER CONTRASENA
+// ==========================================
+export async function enviarEmailRestablecerContrasena({
+  to,
+  url,
+  nombre,
+}: {
+  to: string;
+  url: string;
+  nombre?: string;
+}): Promise<void> {
+  // Mismo criterio que el de verificacion para el logo.
+  const logoUrl = `${new URL(url).origin}/img/lalista-logo.png`;
+  const html = '<!DOCTYPE html>' + RestablecerContrasena({ nombre, url, logoUrl }).toString();
+
+  await transporter.sendMail({
+    from: REMITENTE,
+    to,
+    subject: 'Restablecé tu contraseña en LALIsta',
+    text: textoRestablecerContrasena({ nombre, url }),
     html,
   });
 }

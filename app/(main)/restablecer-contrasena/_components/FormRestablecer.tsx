@@ -8,15 +8,7 @@ import { authClient } from '@/app/_lib/auth-client';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
 import { Button } from '@/app/_components/global/Button';
 import { avisar } from '@/app/_lib/avisos';
-
-// Mismas reglas que el registro (app/_lib/utils/validarRegistro.ts).
-function evaluarReglas(password: string) {
-    return {
-        length: password.length >= 8,
-        upper: /[A-Z]/.test(password),
-        number: /[0-9]/.test(password),
-    };
-}
+import { evaluarReglasPassword } from '@/app/_lib/utils/reglasPassword';
 
 function LinkInvalido() {
     return (
@@ -46,13 +38,13 @@ export function FormRestablecer({ token }: { token: string | null }) {
 
     if (!token || tokenInvalido) return <LinkInvalido />;
 
-    const reglas = evaluarReglas(password);
+    const reglas = evaluarReglasPassword(password);
 
     const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
         setMensajeError('');
 
-        if (!reglas.length || !reglas.upper || !reglas.number) {
+        if (!Object.values(reglas).every(Boolean)) {
             setMensajeError('La contraseña no cumple los requisitos.');
             return;
         }

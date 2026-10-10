@@ -92,6 +92,11 @@ export default function LoginPage() {
                                 )}
                             </button>
                         </div>
+                        <div className="mt-2 text-right">
+                            <Link href="/olvide-contrasena" className="text-sm text-slate-600 hover:text-slate-900 hover:underline">
+                                ¿Olvidaste tu contraseña?
+                            </Link>
+                        </div>
                     </div>
 
                     {/* Botón Submit */}

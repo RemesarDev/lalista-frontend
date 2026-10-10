@@ -1,12 +1,17 @@
 import { z } from "zod";
+import { evaluarReglasPassword } from "./reglasPassword";
 
 const registroSchema = z.object({
     nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
     email: z.email({ message: "El formato del correo es inválido" }),
-    password: z.string()
-        .min(8, { message: "length" })
-        .regex(/[A-Z]/, { message: "upper" })
-        .regex(/[0-9]/, { message: "number" }),
+    // Las reglas viven en reglasPassword.ts. Cada regla que falla se reporta con
+    // su nombre como mensaje ("length", "upper", "number"), que es lo que lee
+    // validarFormulario para armar el checklist.
+    password: z.string().superRefine((password, ctx) => {
+        for (const [regla, cumple] of Object.entries(evaluarReglasPassword(password))) {
+            if (!cumple) ctx.addIssue({ code: "custom", message: regla });
+        }
+    }),
 });
 
 export type DatosRegistro = z.infer<typeof registroSchema>;

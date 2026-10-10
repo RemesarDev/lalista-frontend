@@ -22,6 +22,9 @@ const mensajesPorCodigo = {
     CREDENTIAL_ACCOUNT_NOT_FOUND: "El correo o la contraseña son incorrectos.",
     USER_NOT_FOUND: "No encontramos una cuenta con ese correo.",
     EMAIL_NOT_VERIFIED: "Confirmá tu email antes de iniciar sesión. Revisá tu bandeja de entrada.",
+    INVALID_TOKEN: "El link no es válido o ya venció. Pedí uno nuevo.",
+    PASSWORD_TOO_SHORT: "La contraseña es demasiado corta.",
+    PASSWORD_TOO_LONG: "La contraseña es demasiado larga.",
 } satisfies Partial<Record<BetterAuthErrorCode, string>>;
 
 function obtenerCodigoError(errorAuth: ErrorAuthLike): BetterAuthErrorCode | string | undefined {

@@ -1,53 +1,23 @@
-import { z } from "zod";
 import { evaluarReglasPassword } from "./reglasPassword";
 
-const registroSchema = z.object({
-    nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
-    email: z.email({ message: "El formato del correo es inválido" }),
-    // Las reglas viven en reglasPassword.ts. Cada regla que falla se reporta con
-    // su nombre como mensaje ("length", "upper", "number"), que es lo que lee
-    // validarFormulario para armar el checklist.
-    password: z.string().superRefine((password, ctx) => {
-        for (const [regla, cumple] of Object.entries(evaluarReglasPassword(password))) {
-            if (!cumple) ctx.addIssue({ code: "custom", message: regla });
-        }
-    }),
-});
-
-export type DatosRegistro = z.infer<typeof registroSchema>;
+// Validacion del formulario de registro, sin Zod: son tres chequeos y Zod
+// pesaba ~87 KB comprimido en el navegador solo para esto. El email es un
+// chequeo de forma basico; Better Auth lo vuelve a validar en el servidor.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validarFormulario(datos: Record<string, string>) {
-    const resultado = registroSchema.safeParse(datos);
+    const nombre = datos.nombre ?? "";
+    const email = datos.email ?? "";
+    const reglasPassword = evaluarReglasPassword(datos.password ?? "");
 
-    if (resultado.success) {
-        return {
-            exito: true,
-            erroresCampos: {},
-            reglasPassword: { length: true, upper: true, number: true },
-        };
-    }
-
-    // 🚀 Extraemos los errores con el método estándar de Zod v3
-    const fieldErrors = resultado.error.flatten().fieldErrors;
-
-    // 1. Extraemos los errores de la contraseña principal para el checklist (Booleanos)
-    const passErrors = fieldErrors.password || [];
-    const passwordErrorsSet = new Set(passErrors);
-
-    const reglasPassword = {
-        length: !passwordErrorsSet.has("length"),
-        upper: !passwordErrorsSet.has("upper"),
-        number: !passwordErrorsSet.has("number"),
-    };
-
-    // 2. Construimos el diccionario de errores visuales (Textos Rojos)
     const erroresCampos: Record<string, string[]> = {};
+    if (nombre.length < 2) erroresCampos.nombre = ["El nombre debe tener al menos 2 caracteres"];
+    if (!EMAIL_REGEX.test(email)) erroresCampos.email = ["El formato del correo es inválido"];
 
-    if (fieldErrors.nombre) erroresCampos.nombre = fieldErrors.nombre;
-    if (fieldErrors.email) erroresCampos.email = fieldErrors.email;
+    const passwordValida = Object.values(reglasPassword).every(Boolean);
 
     return {
-        exito: false,
+        exito: Object.keys(erroresCampos).length === 0 && passwordValida,
         erroresCampos,
         reglasPassword,
     };

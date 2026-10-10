@@ -1,6 +1,6 @@
 // Reglas de contraseña compartidas por el registro (validarRegistro.ts) y el
-// reset (restablecer-contrasena). Sin Zod a propósito: son tres chequeos y así
-// el formulario de reset no carga la librería.
+// reset (restablecer-contrasena). Sin Zod a propósito: el frontend no carga la
+// librería (solo la usa el servidor, en app/api).
 export type ReglasPassword = {
     length: boolean;
     upper: boolean;

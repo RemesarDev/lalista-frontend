@@ -92,11 +92,23 @@ export const auth = betterAuth({
 
       if (rowCount === 0) return; // dentro del cooldown: no se reenvia
 
-      await enviarEmailVerificacion({
-        to: user.email,
-        url,
-        nombre: user.name,
-      });
+      try {
+        await enviarEmailVerificacion({
+          to: user.email,
+          url,
+          nombre: user.name,
+        });
+      } catch (e) {
+        // Falla pasajera (timeout, red): liberamos el cooldown para que se pueda
+        // reintentar ya. Con la clave rechazada (EAUTH) reintentar no sirve y suma
+        // logins fallidos contra Gmail, asi que el cooldown queda puesto.
+        if ((e as { code?: string }).code !== "EAUTH") {
+          await pool
+            .query(`update "user" set "verificationEmailSentAt" = null where id = $1`, [user.id])
+            .catch(() => {}); // que no tape el error original
+        }
+        throw e;
+      }
     },
   },
 hooks: {

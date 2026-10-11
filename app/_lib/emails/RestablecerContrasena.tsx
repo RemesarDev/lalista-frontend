@@ -55,7 +55,7 @@ export function RestablecerContrasena({ nombre, url, logoUrl }: Props) {
           </div>
 
           <div style={{ padding: '4px 32px 32px' }}>
-            <h1 style={{ margin: '0 0 16px', fontSize: '20px', textAlign: 'center' }}>
+            <h1 style={{ margin: '48px 0 16px', fontSize: '20px', textAlign: 'center' }}>
               Restablecé tu contraseña
             </h1>
 

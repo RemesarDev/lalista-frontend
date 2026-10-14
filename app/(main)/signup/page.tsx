@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
@@ -25,6 +25,41 @@ export default function SignupPage() {
     // 2. Accedemos a la acción de registro y al estado de carga desde el store
     const registro = useListaStore((state) => state.registroConEmail);
     const loading = useListaStore((state) => state.loadingAuth);
+    const checkAuth = useListaStore((state) => state.checkAuth);
+
+    // El link del mail abre otra pestaña que verifica y crea la sesion; esta se
+    // queda en "¡Ya casi!". Al volver a ella revisamos si la cookie ya esta.
+    // visibilitychange cubre el cambio de pestaña; focus, el de ventana: con
+    // dos ventanas a la vista la pestaña nunca se oculta.
+    useEffect(() => {
+        if (!emailPendienteVerificar) return;
+        // Corta si ya avanzamos o si se desmonto con un checkAuth en vuelo.
+        let terminado = false;
+        // Volver de otra pestaña dispara los dos eventos: un solo checkAuth.
+        let enCurso = false;
+
+        const alVolver = async () => {
+            if (document.visibilityState !== 'visible' || terminado || enCurso) return;
+            enCurso = true;
+            const user = await checkAuth();
+            enCurso = false;
+            // /signup no echa a quien ya tiene sesion: si alguien logueado
+            // registra otra cuenta, checkAuth devuelve la de antes.
+            if (terminado || user?.email.toLowerCase() !== emailPendienteVerificar.trim().toLowerCase()) return;
+            terminado = true;
+            const nombre = user.name?.trim().split(/\s+/)[0];
+            avisar.exito(nombre ? `Listo, ${nombre}: ya tenés tu cuenta` : 'Listo: ya tenés tu cuenta');
+            router.replace('/');
+        };
+
+        document.addEventListener('visibilitychange', alVolver);
+        window.addEventListener('focus', alVolver);
+        return () => {
+            terminado = true;
+            document.removeEventListener('visibilitychange', alVolver);
+            window.removeEventListener('focus', alVolver);
+        };
+    }, [emailPendienteVerificar, checkAuth, router]);
 
     const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();

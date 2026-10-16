@@ -5,6 +5,7 @@ import { FilterPill } from '@/app/_components/global/FilterPill';
 import { BuscadorMediosPago } from '@/app/_components/global/BuscadorMediosPago';
 import { useMisMediosPago } from '@/app/_hooks/useMisMediosPago';
 import { identidadSupermercado } from '@/app/_lib/utils/identidadSupermercado';
+import { fechaDelDiaElegido, promoVigenteEnFecha } from '@/app/_lib/utils/vigenciaPromos';
 import type { PromocionBancaria } from '@/app/api/[[...route]]/promociones';
 
 // ---------------------------------------------------------------------------
@@ -94,6 +95,10 @@ function agrupar(promos: PromocionBancaria[]): PromoAgrupada[] {
 
 const valorDe = (p: PromoAgrupada) => (p.tipo_promo === 'descuento' ? p.porcentaje ?? 0 : p.cuotas ?? 0);
 
+/** true si la promo vale ese día de la semana Y está vigente en la fecha real de ese día. */
+const valeEseDia = (p: PromoAgrupada, dia: number) =>
+  p.dias.includes(dia) && promoVigenteEnFecha(p, fechaDelDiaElegido(dia));
+
 // ---------------------------------------------------------------------------
 // Componentes
 // ---------------------------------------------------------------------------
@@ -110,10 +115,14 @@ const FILA_DESLIZABLE =
 function FilaPromo({ promo }: { promo: PromoAgrupada }) {
   const [abierta, setAbierta] = useState(false);
 
+  // La comparativa solo aplica descuentos en sucursal
+  const noSeAplicaEnComparativa = promo.tipo_promo === 'cuotas' || promo.canal === 'online';
+
   const etiquetas = [
     promo.canal ? CANAL[promo.canal] : null,
     promo.formatos.length ? promo.formatos.join(' · ') : null,
     promo.tipo_tarjeta ? TARJETA[promo.tipo_tarjeta] : null,
+    noSeAplicaEnComparativa ? 'No se aplica en la comparativa' : null,
   ].filter(Boolean) as string[];
 
   const detalle = [
@@ -302,7 +311,7 @@ function PanelSuper({
         <div className="space-y-5 overflow-y-auto p-4">
           {semana.map((d) => {
             const delDia = resumen.promos
-              .filter((p) => p.dias.includes(d.numero))
+              .filter((p) => valeEseDia(p, d.numero))
               .sort((a, b) => valorDe(b) - valorDe(a));
             const esElegido = d.numero === dia;
             return (
@@ -406,8 +415,10 @@ export default function PromocionesPage() {
       .map(([cadena, lista]) => ({
         cadena,
         promos: lista,
-        delDia: lista.filter((p) => p.dias.includes(dia)).sort((a, b) => valorDe(b) - valorDe(a)),
-        diasConPromo: new Set(lista.flatMap((p) => p.dias)),
+        delDia: lista.filter((p) => valeEseDia(p, dia)).sort((a, b) => valorDe(b) - valorDe(a)),
+        diasConPromo: new Set(
+          DIAS.filter((d) => lista.some((p) => valeEseDia(p, d.numero))).map((d) => d.numero),
+        ),
       }))
       .sort((a, b) => (b.delDia[0] ? valorDe(b.delDia[0]) : -1) - (a.delDia[0] ? valorDe(a.delDia[0]) : -1));
   }, [filtradas, dia]);

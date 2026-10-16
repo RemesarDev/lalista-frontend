@@ -89,7 +89,7 @@ export default function ComparativaPage() {
 
   const detallePromo = (sucursal: SucursalCarritoComparada | SucursalConPromo) =>
     aplicarPromos && !cargandoPromos && 'promoAplicada' in sucursal ? (
-      <DetallePromo sucursal={sucursal} />
+      <DetallePromo sucursal={sucursal} dia={diaCompra} />
     ) : null;
 
   // --- ESTADOS DE SALIDA TEMPRANA (Early Returns) ---

@@ -18,7 +18,19 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
-
+# ---------------------------------------------------------------------------
+# SUPUESTOS DEL PROGRAMA (si algo no cierra, revisar acá primero)
+# ---------------------------------------------------------------------------
+# 1. Domingo en Cencosud (Jumbo, Disco y Vea): la API casi nunca trae el domingo
+#    en la lista de días. Lo agregamos solo si el texto de la promo lo menciona
+#    ("domingo" o "todos los días").
+# 2. MasGo es una tienda física de Changomas (no es online). Por eso, en Changomas,
+#    "hyper", "express" y "market" cuentan como presencial. Solo "ecommerce" es online.
+# 3. Las promos solo online de Carrefour se guardan con la bandera del Hiper
+#    (id_comercio 10, id_bandera 1), porque en la base no hay una bandera "online".
+# 4. El tope de una promo (semanal o mensual) se guarda tal cual lo informa la cadena.
+#    La app no sabe si el usuario ya lo usó antes.
+# ---------------------------------------------------------------------------
 URL_COTO = (
     "https://www.coto.com.ar/rest/model/atg/actors/cProfileActor/"
     "getPromocionesMulticanal?enviroment=ag&pushSite=CotoDigital"
@@ -321,7 +333,14 @@ def traer_valtech(nombre, cadena):
     respuesta = requests.get(f"{cfg['base']}/_v/public/graphql/v1", params=params,
                              headers=HEADERS, timeout=30)
     respuesta.raise_for_status()
-    documentos = list(respuesta.json()["data"].values())[0]
+    contenido = respuesta.json()
+    if contenido.get("errors"):
+        detalle = contenido["errors"][0].get("message", "sin detalle")
+        raise RuntimeError(
+            f"Cambió la API de {cadena}: buscar el nuevo sha256Hash con "
+            f"F12 → Red → {cfg['operacion']} (detalle: {detalle})"
+        )
+    documentos = list(contenido["data"].values())[0]
     filas = []
     for doc in documentos:
         campos = {f["key"]: f["value"] for f in doc["fields"]}
@@ -508,7 +527,13 @@ def limpiar(texto):
 
 
 def traer_anonima():
-    headers = {**HEADERS, "Accept": "text/html"}
+        # Identificación de navegador más completa, para que La Anónima no nos bloquee
+    headers = {
+        **HEADERS,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "es-AR,es;q=0.9",
+        "Referer": "https://www.laanonima.com.ar/",
+    }
     respuesta = requests.get(URL_ANONIMA, headers=headers, timeout=30)
     respuesta.raise_for_status()
     pagina = respuesta.text
@@ -599,21 +624,34 @@ def traer_anonima():
 # Supabase
 # ---------------------------------------------------------------------------
 
+MENSAJE_FALTAN_SECRETS = (
+    "Faltan SUPABASE_URL y SUPABASE_KEY "
+    "(en GitHub: Settings → Secrets and variables → Actions)"
+)
+
+
 def leer_env():
     """Lee la configuración.
     - En GitHub Actions viene en variables de entorno (secrets).
     - En tu compu, del archivo .env que está al lado de este programa.
+    Si falta alguna de las dos, corta con un mensaje claro.
     """
-    if os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_KEY"):
-        return {"SUPABASE_URL": os.environ["SUPABASE_URL"], "SUPABASE_KEY": os.environ["SUPABASE_KEY"]}
-
-    ruta = Path(__file__).parent / ".env"
     config = {}
-    for linea in ruta.read_text(encoding="utf-8").splitlines():
-        linea = linea.strip()
-        if linea and not linea.startswith("#") and "=" in linea:
-            clave, valor = linea.split("=", 1)
-            config[clave.strip()] = valor.strip()
+    ruta = Path(__file__).parent / ".env"
+    if ruta.exists():
+        for linea in ruta.read_text(encoding="utf-8").splitlines():
+            linea = linea.strip()
+            if linea and not linea.startswith("#") and "=" in linea:
+                clave, valor = linea.split("=", 1)
+                config[clave.strip()] = valor.strip()
+
+    # Las variables de entorno (GitHub Actions) tienen prioridad sobre el .env
+    for clave in ("SUPABASE_URL", "SUPABASE_KEY"):
+        if os.environ.get(clave):
+            config[clave] = os.environ[clave]
+
+    if not config.get("SUPABASE_URL") or not config.get("SUPABASE_KEY"):
+        sys.exit(MENSAJE_FALTAN_SECRETS)
     return config
 
 
@@ -627,20 +665,16 @@ def headers_supabase(clave):
 
 
 def guardar_en_supabase(promos, fuente):
-    """Borra las promos viejas de esta fuente y guarda las de hoy."""
+    """Reemplaza las promos de esta fuente por las de hoy, en un solo paso.
+    La función SQL reemplazar_promos borra e inserta en una sola transacción:
+    si algo falla, no se pierde lo que ya estaba guardado."""
     config = leer_env()
-    url = f"{config['SUPABASE_URL']}/rest/v1/promociones_bancarias"
+    url = f"{config['SUPABASE_URL']}/rest/v1/rpc/reemplazar_promos"
     h = headers_supabase(config["SUPABASE_KEY"])
 
-    # 1. Borrar lo que se cargó antes desde esta fuente
-    r = requests.delete(url, headers=h, params={"fuente": f"eq.{fuente}"}, timeout=30)
+    r = requests.post(url, headers=h, json={"p_fuente": fuente, "p_promos": promos}, timeout=60)
     if not r.ok:
-        raise RuntimeError(f"Error al borrar ({r.status_code}): {r.text}")
-
-    # 2. Insertar las promos de hoy
-    r = requests.post(url, headers={**h, "Prefer": "return=minimal"}, json=promos, timeout=30)
-    if not r.ok:
-        raise RuntimeError(f"Error al guardar ({r.status_code}): {r.text}")
+        raise RuntimeError(f"Error al reemplazar promos ({r.status_code}): {r.text}")
 
 
 def mostrar(promos):
@@ -650,28 +684,102 @@ def mostrar(promos):
         print(f"{p['entidad']:<25} {valor:<10} días {p['dias']}  {p['canal']:<10} {tope}")
 
 
-FUENTES = [
-    ("Coto", "api_coto", traer_coto),
-    ("Carrefour", "api_carrefour", lambda: traer_valtech("carrefour", "Carrefour")),
-    ("Changomas", "api_changomas", lambda: traer_valtech("changomas", "Changomas")),
-    ("Jumbo, Disco y Vea", "api_cencosud", traer_cencosud),
-    ("La Anónima", "html_anonima", traer_anonima),
+# ---------------------------------------------------------------------------
+# Nombres oficiales de bancos y billeteras
+# ---------------------------------------------------------------------------
+import unicodedata
+
+# Cada banco o billetera con UN solo nombre. Si aparece uno nuevo, se agrega acá.
+ENTIDADES_OFICIALES = [
+    "American Express", "ANSES", "Banco Ciudad", "Banco Córdoba", "Banco del Sol",
+    "Banco Elebar", "Banco Macro", "Banco Nación", "Banco Provincia", "BBVA",
+    "Billeteras virtuales", "Cabal", "CencoPay", "Ciudadanía Porteña", "Clarín 365",
+    "Club La Nación", "Columbia", "Comafi", "Comafi Único", "Comunidad Coto",
+    "Credicoop", "Credicuotas", "Credimas", "Cuenta Digital Carrefour", "Cuenta DNI",
+    "Empleados públicos", "FinanYa", "Galicia", "Hipotecario", "ICBC",
+    "Jubilados y Pensionados", "Mastercard", "MasClub", "Mercado Pago", "Mi Carrefour",
+    "MODO", "Naranja X", "Patagonia", "Santander", "Supervielle", "Tarjeta Carrefour",
+    "Tarjeta Sol", "Tarjeta SuCrédito", "Tarjeta TCI", "Tarjeta Titanio", "Tarjeta única",
+    "TLA Exclusivo Plus", "Todos los medios de pago", "Tuya", "Visa", "Visa y Mastercard", "YOY",
 ]
 
+# Nombres distintos de la misma entidad (en minúscula y sin tildes)
+ALIASES_ENTIDAD = {
+    "macro": "Banco Macro",
+    "banco sol": "Banco del Sol",       # ver caso especial en normalizar_entidad
+    "tarjeta del sol": "Tarjeta Sol",
+}
+
+
+def _clave(texto):
+    """Pasa a minúscula y saca tildes y espacios de más, para comparar nombres."""
+    sin_tildes = "".join(
+        c for c in unicodedata.normalize("NFD", texto) if unicodedata.category(c) != "Mn"
+    )
+    return re.sub(r"\s+", " ", sin_tildes).strip().lower()
+
+
+ENTIDADES_POR_CLAVE = {_clave(e): e for e in ENTIDADES_OFICIALES}
+
+
+def normalizar_entidad(nombre, condiciones=""):
+    """Devuelve el nombre oficial de la entidad, sin importar mayúsculas ni tildes.
+    Si no la reconoce, devuelve el nombre tal cual vino."""
+    clave = _clave(nombre or "")
+
+    # Caso especial: algunas promos de Tarjeta Sol (la tarjeta del Banco de Santiago
+    # del Estero) vienen como "Banco Sol". Lo distinguimos por el texto de condiciones.
+    if clave == "banco sol":
+        texto = _clave(condiciones or "")
+        if "tarjeta sol" in texto or "tarjeta de credito sol" in texto:
+            return "Tarjeta Sol"
+        return "Banco del Sol"
+
+    if clave in ALIASES_ENTIDAD:
+        return ALIASES_ENTIDAD[clave]
+    return ENTIDADES_POR_CLAVE.get(clave, (nombre or "").strip())
+
+# El cuarto dato indica si la fuente es opcional: si falla, solo avisamos
+# y el programa termina bien (no marca el workflow en rojo).
+FUENTES = [
+    ("Coto", "api_coto", traer_coto, False),
+    ("Carrefour", "api_carrefour", lambda: traer_valtech("carrefour", "Carrefour"), False),
+    ("Changomas", "api_changomas", lambda: traer_valtech("changomas", "Changomas"), False),
+    ("Jumbo, Disco y Vea", "api_cencosud", traer_cencosud, False),
+    # La Anónima bloquea a GitHub (error 403) y no tiene API: es opcional
+    ("La Anónima", "html_anonima", traer_anonima, True),
+]
 
 if __name__ == "__main__":
+    leer_env()  # valida los secrets al empezar, antes de traer nada
+
     fallidas = []
-    for cadena, fuente, traer in FUENTES:
+    desconocidas = set()  # bancos que no están en ENTIDADES_OFICIALES
+    for cadena, fuente, traer, opcional in FUENTES:
         # Si una cadena falla, seguimos con las demás
         try:
             promos = traer()
+            for p in promos:
+                p["entidad"] = normalizar_entidad(p["entidad"], p.get("condiciones") or "")
+                if _clave(p["entidad"]) not in ENTIDADES_POR_CLAVE:
+                    desconocidas.add(f"{p['entidad']} ({cadena})")
             guardar_en_supabase(promos, fuente)
             print(f"{cadena}: {len(promos)} promos guardadas")
         except Exception as error:
-            print(f"{cadena}: ERROR -> {error}")
-            fallidas.append(cadena)
+            if opcional:
+                print(f"{cadena}: ADVERTENCIA -> {error}")
+                print(f"{cadena}: se conservan las promos que ya estaban guardadas")
+            else:
+                print(f"{cadena}: ERROR -> {error}")
+                fallidas.append(cadena)
 
-    # Si alguna cadena falló, terminamos con error para que GitHub Actions lo marque en rojo
+    # Bancos nuevos: hay que sumarlos a ENTIDADES_OFICIALES
+    if desconocidas:
+        print("Entidades no reconocidas (agregarlas a ENTIDADES_OFICIALES):")
+        for nombre in sorted(desconocidas):
+            print(f"  - {nombre}")
+
+    # Si alguna cadena obligatoria falló, terminamos con error para que GitHub Actions lo marque en rojo
     if fallidas:
         print(f"Fallaron: {', '.join(fallidas)}")
         sys.exit(1)

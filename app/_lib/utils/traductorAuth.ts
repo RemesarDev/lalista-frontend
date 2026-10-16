@@ -27,6 +27,15 @@ const mensajesPorCodigo = {
     PASSWORD_TOO_LONG: "La contraseña es demasiado larga.",
 } satisfies Partial<Record<BetterAuthErrorCode, string>>;
 
+// Codigos que agrega el servidor en app/_lib/auth-hardening.ts.
+const mensajesGatekeeper: Record<string, string> = {
+    PASSWORD_TOO_WEAK: "La contraseña debe tener al menos 8 caracteres, una mayúscula y un número.",
+    INVALID_NAME: "El nombre solo puede tener letras, espacios, apóstrofes y guiones (2 a 50 caracteres).",
+    IMAGE_NOT_ALLOWED: "No se puede definir una imagen de perfil.",
+    PASSWORD_REQUIRED: "Ingresá tu contraseña para continuar.",
+    TOO_MANY_LOGIN_ATTEMPTS: "Demasiados intentos. Esperá unos minutos y volvé a probar.",
+};
+
 function obtenerCodigoError(errorAuth: ErrorAuthLike): BetterAuthErrorCode | string | undefined {
     return errorAuth.body?.code ?? errorAuth.code;
 }
@@ -47,6 +56,9 @@ export function traducirErrorAuth(errorAuth?: unknown): string {
     const codigoError = obtenerCodigoError(errorNormalizado);
     if (esCodigoTraducible(codigoError)) {
         return mensajesPorCodigo[codigoError];
+    }
+    if (typeof codigoError === "string" && codigoError in mensajesGatekeeper) {
+        return mensajesGatekeeper[codigoError];
     }
 
     const mensaje = `${errorNormalizado.message || ""} ${errorNormalizado.body?.message || ""} ${errorNormalizado.code || ""} ${errorNormalizado.body?.code || ""}`.toLowerCase();

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verificar:smtp": "node --env-file=.env.local scripts/verificar-smtp.mjs"
+    "verificar:smtp": "node --env-file=.env.local scripts/verificar-smtp.mjs",
+    "test:gatekeeper": "node scripts/qa/gatekeeper/run-offline.mjs",
+    "test:gatekeeper:remoto": "node --test --test-reporter=spec scripts/qa/gatekeeper/blackbox.test.mjs"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.8.0",

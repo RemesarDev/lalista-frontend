@@ -4,6 +4,7 @@ import { auth } from '@/app/_lib/auth';
 import { zValidator } from '@hono/zod-validator';
 import { adminMetricsQuerySchema } from '@/app/_lib/apiSchemas';
 import { supabase, supabaseAnalytics } from '@/app/_lib/supabase';
+import { evaluarAccesoAdmin } from '@/app/_lib/auth-hardening';
 
 // 1. Middleware de Autenticación y Autorización para Admin
 const adminGuard = async (c: Context, next: Next) => {
@@ -12,7 +13,17 @@ const adminGuard = async (c: Context, next: Next) => {
             headers: c.req.raw.headers,
         });
 
-        if (!session || session.user.role !== 'admin') {
+        const veredicto = evaluarAccesoAdmin(session);
+
+        if (veredicto === 'reautenticar') {
+            // Admin con sesion de mas de 12 h (hallazgo GK-04).
+            return c.json(
+                { success: false, code: 'ADMIN_REAUTH_REQUIRED', error: 'Tu sesión de administrador venció. Volvé a iniciar sesión.' },
+                401
+            );
+        }
+
+        if (veredicto !== 'ok' || !session) {
             return c.json(
                 { success: false, error: 'Acceso denegado: Se requieren privilegios de administrador' },
                 403
@@ -26,6 +37,14 @@ const adminGuard = async (c: Context, next: Next) => {
         return c.json({ success: false, error: 'Error interno de validación en servidor' }, 500);
     }
 };
+
+// El limit va directo a la RPC: sin tope, ?limit=100000000 le pide a la base
+// un ranking gigante. NaN o fuera de rango vuelve al default.
+function limiteAcotado(valor: string | undefined): number {
+    const n = Number.parseInt(valor ?? '', 10);
+    if (!Number.isFinite(n) || n < 1) return 15;
+    return Math.min(n, 100);
+}
 
 // 2. Definición del Router de Admin
 export const adminRouter = new Hono()
@@ -57,8 +76,13 @@ export const adminRouter = new Hono()
                         // Buscamos dentro del JSONB metadata->>path
                         query = query.ilike('metadata->>path', `%${search}%`);
                     } else {
-                        // Búsqueda general por aproximación en event_name o region
-                        query = query.or(`event_name.ilike.%${search}%,region.ilike.%${search}%`);
+                        // Búsqueda general por aproximación en event_name o region.
+                        // .or() recibe un string con la sintaxis de filtros de
+                        // PostgREST: una coma o un paréntesis en "search" agrega
+                        // condiciones nuevas (ej: "x,user_id.eq.<id>"). Se sacan
+                        // los caracteres de control de esa sintaxis.
+                        const termino = search.replace(/[,()"\\:]/g, ' ').trim();
+                        query = query.or(`event_name.ilike.%${termino}%,region.ilike.%${termino}%`);
                     }
                 }
                 // 3. Filtro por rango de fechas (startDate y endDate)
@@ -116,7 +140,7 @@ export const adminRouter = new Hono()
                 const province = c.req.query('province');
                 const city = c.req.query('city');
                 const dayOfWeek = c.req.query('dayOfWeek'); // '0' a '6'
-                const limit = parseInt(c.req.query('limit') || '15', 10);
+                const limit = limiteAcotado(c.req.query('limit'));
 
                 // 2. Ejecutar la función RPC en la Base de Datos 2 (Analíticas)
                 const { data: rankingData, error: rpcError } = await supabaseAnalytics.rpc('get_top_compared_eans', {
@@ -212,7 +236,7 @@ export const adminRouter = new Hono()
                 const province = c.req.query('province');
                 const city = c.req.query('city');
                 const dayOfWeek = c.req.query('dayOfWeek');
-                const limit = parseInt(c.req.query('limit') || '15', 10);
+                const limit = limiteAcotado(c.req.query('limit'));
 
                 if (!keyword || keyword.trim() === '') {
                     return c.json({ 
@@ -451,6 +475,15 @@ export const adminRouter = new Hono()
             const filename = c.req.query('filename');
             if (!filename) {
                 return c.json({ success: false, error: 'Falta el nombre del archivo' }, 400);
+            }
+
+            // Endurecimiento: el filename va directo a createSignedUrl(). Aunque
+            // la ruta ya es admin-only, no dejamos que el parametro se escape del
+            // bucket con "..", separadores absolutos o bytes de control. Solo
+            // nombres planos: letras, numeros, punto, guion, guion bajo.
+            const nombreSeguro = /^[A-Za-z0-9._-]+$/.test(filename) && !filename.includes('..');
+            if (!nombreSeguro) {
+                return c.json({ success: false, error: 'Nombre de archivo inválido' }, 400);
             }
 
             try {

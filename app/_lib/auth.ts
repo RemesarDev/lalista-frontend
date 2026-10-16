@@ -1,7 +1,11 @@
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
+import { after } from "next/server";
 import { Pool } from "pg";
 import { enviarEmailVerificacion, enviarEmailRestablecerContrasena } from "@/app/_lib/mailer";
+import { camposAdicionalesUsuario, crearHooksBefore } from "@/app/_lib/auth-hardening";
+import { almacenRateLimitAuth, limitarIntentosLogin } from "@/app/_lib/rate-limit";
+import { origenesLocales } from "@/app/_lib/origenes";
 
 // El dominio no se hardcodea: en Vercel lo resuelve la plataforma.
 // VERCEL_PROJECT_PRODUCTION_URL trae el dominio de produccion estable (el
@@ -19,9 +23,9 @@ function resolverAppUrl(): string {
 }
 
 const appUrl = resolverAppUrl();
-const localOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
+// localhost solo fuera de produccion (hallazgo GK-03, ver app/_lib/origenes.ts).
 const trustedOrigins = Array.from(
-  new Set([appUrl, ...localOrigins].filter(Boolean))
+  new Set([appUrl, ...origenesLocales()].filter(Boolean))
 );
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -79,13 +83,8 @@ export const auth = betterAuth({
   database: pool,
   trustedProxyHeaders: true,
   user: {
-    additionalFields: {
-      role: {
-        type: "string",
-        required: false,
-        defaultValue: "user",
-      },
-    },
+    // role con input:false: ver camposAdicionalesUsuario en auth-hardening.ts.
+    additionalFields: camposAdicionalesUsuario,
     deleteUser: {
       enabled: true,
       beforeDelete: async (user) => {
@@ -93,6 +92,11 @@ export const auth = betterAuth({
           `update "user" set "deletionScheduledAt" = now() + interval '7 days' where id = $1`,
           [user.id]
         );
+        // La cuenta queda "pendiente de baja" 7 dias, pero no puede quedar
+        // usable desde otros dispositivos: si la baja la pidio el dueño porque
+        // perdio el celular, ese celular tiene que perder el acceso ya. Volver
+        // a entrar con la clave cancela la baja (ver hooks.after).
+        await pool.query(`delete from "session" where "userId" = $1`, [user.id]);
         throw new APIError('BAD_REQUEST', { message: 'DELETION_SCHEDULED' });
       },
     },
@@ -136,27 +140,53 @@ export const auth = betterAuth({
       );
     },
   },
-hooks: {
-  after: async (ctx) => {
-    try {
-      const path = (ctx as any).path;
-      if (path !== '/sign-in/email') return {};
+  hooks: {
+    // Politica de clave y nombre del lado del servidor, limite de intentos de
+    // login por cuenta y clave obligatoria para pedir la baja.
+    before: crearHooksBefore({ limitarIntentosLogin }),
+    after: async (ctx) => {
+      try {
+        const path = (ctx as any).path;
+        if (path !== '/sign-in/email') return {};
 
-      const newSession = (ctx as any).context?.newSession;
-      if (!newSession?.user?.id) return {};
+        const newSession = (ctx as any).context?.newSession;
+        if (!newSession?.user?.id) return {};
 
-      await pool.query(
-        `update "user" set "deletionScheduledAt" = null where id = $1 and "deletionScheduledAt" is not null`,
-        [newSession.user.id]
-      );
-    } catch {
-      // silencioso
-    }
-    return {};
+        await pool.query(
+          `update "user" set "deletionScheduledAt" = null where id = $1 and "deletionScheduledAt" is not null`,
+          [newSession.user.id]
+        );
+      } catch {
+        // silencioso
+      }
+      return {};
+    },
   },
-},
+  // Los contadores del rate limit de Better Auth van a Redis en vez de a la
+  // memoria de cada instancia (ver almacenRateLimitAuth). Sigue activo solo en
+  // produccion, que es el default.
+  rateLimit: {
+    customStorage: almacenRateLimitAuth,
+  },
   advanced: {
     useSecureCookies: process.env.NODE_ENV === "production",
+    // Los mails (verificacion y reset) salen despues de responder. Si se
+    // esperan, /sign-up/email y /request-password-reset tardan segundos cuando
+    // el email existe (SMTP) y milisegundos cuando no: la respuesta es
+    // generica, pero el tiempo delata que cuentas existen. Los errores de envio
+    // ya se tragaban antes (Better Auth los loguea y sigue), asi que esto no
+    // cambia lo que ve el usuario.
+    backgroundTasks: {
+      handler: (promesa) => {
+        try {
+          after(() => promesa);
+        } catch {
+          // Fuera de un request de Next (scripts, tests): la promesa ya esta
+          // corriendo, solo no la esperamos.
+          void promesa;
+        }
+      },
+    },
   },
 });
 

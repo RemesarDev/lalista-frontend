@@ -2,33 +2,34 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
-import { auth } from '@/app/_lib/auth';
+import { errorInterno } from '@/app/api/_middlewares/errorInterno';
+import { requireAuth, type EntornoAutenticado } from '@/app/api/_middlewares/requireAuth';
 import { checkUserLimit } from '@/app/api/_middlewares/checkLimits'; 
 import {
   agregarDireccionSchema,
   actualizarRadioDireccionSchema,
 } from '@/app/_lib/apiSchemas';
 
-export const direccionesRouter = new Hono()
+export const direccionesRouter = new Hono<EntornoAutenticado>()
+  // Sesion obligatoria para todo /direcciones, antes de cualquier validador.
+  .use('/direcciones/*', requireAuth)
 
   // GET /direcciones — todas las direcciones del usuario
   .get('/direcciones', async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const { data, error } = await supabase.rpc('obtener_direcciones_usuario', {
       p_user_id: session.user.id,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
 
     return c.json({ direcciones: data ?? [] });
   })
 
   // POST /direcciones — agregar nueva dirección
   .post('/direcciones', zValidator('json', agregarDireccionSchema), async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     // Validar límite de direcciones del usuario antes de insertar
     const limitError = await checkUserLimit(c, supabase, session.user.id, 'direcciones');
@@ -44,30 +45,28 @@ export const direccionesRouter = new Hono()
       p_radio:        Math.round(radio_busqueda),
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
     
     return c.json({ direccion: data }, 201);
   })
 
   // PATCH /direcciones/:id/activar — cambiar dirección activa
   .patch('/direcciones/:id/activar', async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const { data, error } = await supabase.rpc('cambiar_direccion_activa', {
       p_id:       c.req.param('id'),
       p_user_id: session.user.id,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
 
     return c.json({ direccion: data }, 200);
   })
 
   // PATCH /direcciones/:id/radio — actualizar radio de búsqueda
   .patch('/direcciones/:id/radio', zValidator('json', actualizarRadioDireccionSchema), async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const { radio_busqueda } = c.req.valid('json');
 
@@ -77,22 +76,21 @@ export const direccionesRouter = new Hono()
       p_radio:   radio_busqueda,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
 
     return c.json({ direccion: data }, 200);
   })
 
   // DELETE /direcciones/:id — eliminar una dirección
   .delete('/direcciones/:id', async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const { error } = await supabase.rpc('eliminar_direccion', {
       p_id:       c.req.param('id'),
       p_user_id: session.user.id,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
 
     return c.json({ success: true }, 200);
   });

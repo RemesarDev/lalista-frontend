@@ -3,6 +3,7 @@ import { insertAnalyticsEvent } from '@/app/_lib/utils/analytics';
 import { analyticsEventSchema } from '@/app/_lib/apiSchemas';
 import { sanitizeAndValidateMetadata } from '@/app/_lib/utils/validacionMetadata';
 import { auth } from '@/app/_lib/auth';
+import { redactarMetadata } from '@/app/_lib/utils/redactarSecretos';
 
 export const analyticsRouter = new Hono();
 
@@ -42,13 +43,17 @@ analyticsRouter.post('/analytics', async (c) => {
     // Campo general de región heredado por compatibilidad (prioriza ciudad, luego provincia, luego país)
     const fallbackRegion = city || province || country;
 
-    // 5. Insertar enriqueciendo el metadata validado con la ubicación detallada
+    // 5. Insertar enriqueciendo el metadata validado con la ubicación detallada.
+    // redactarMetadata saca tokens de reset/verificacion de rutas y mensajes
+    // de error antes de guardarlos (hallazgo GK-02). Se hace aca ademas de en
+    // el cliente porque el endpoint es publico y el JS viejo puede seguir en
+    // cache.
     await insertAnalyticsEvent({
       eventName,
       region: fallbackRegion,
       userId: verifiedUserId, // Usamos el ID verificado, no el del body
       metadata: {
-        ...metadataValidation.sanitized,
+        ...redactarMetadata(metadataValidation.sanitized),
         country,
         province,
         city,

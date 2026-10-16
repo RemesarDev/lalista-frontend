@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { analytics } from '@/app/_lib/services/analyticsService';
 import { useListaStore } from '@/app/_store/store';
+import { limpiarRutaParaAnalitica } from '@/app/_lib/utils/redactarSecretos';
 
 export function AnalyticsTracker() {
     const pathname = usePathname();
@@ -26,7 +27,9 @@ export function AnalyticsTracker() {
         if (lastTrackedPath.current === fullPath) return;
         lastTrackedPath.current = fullPath;
 
-        analytics.pageView(fullPath, user?.id).catch(console.error);
+        // Nunca mandar el query string crudo: /restablecer-contrasena trae el
+        // token de reset en ?token= (hallazgo GK-02).
+        analytics.pageView(limpiarRutaParaAnalitica(fullPath), user?.id).catch(console.error);
     }, [pathname, searchParams, user?.id, loadingAuth]);
 
     // 2. Automatización global de errores (Fetch & Promesas)

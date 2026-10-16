@@ -2,7 +2,8 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { supabase } from '@/app/_lib/supabase';
-import { auth } from '@/app/_lib/auth';
+import { errorInterno } from '@/app/api/_middlewares/errorInterno';
+import { requireAuth, type EntornoAutenticado } from '@/app/api/_middlewares/requireAuth';
 import { checkUserLimit } from '@/app/api/_middlewares/checkLimits'; 
 import {
   guardarListaSchema,
@@ -18,18 +19,19 @@ import {
 } from '@/app/_lib/mappers/listas';
 import { enmascararEmail } from '@/app/_lib/utils/enmascararEmail';
 
-export const listasRouter = new Hono()
+export const listasRouter = new Hono<EntornoAutenticado>()
+  // Sesion obligatoria para todo /listas, antes de cualquier validador.
+  .use('/listas/*', requireAuth)
 
   // GET /listas — listas del usuario autenticado
   .get('/listas', async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const { data, error } = await supabase.rpc('get_listas_usuario', {
       p_user_id: session.user.id,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
 
     const listas = ((data as DbLista[]) ?? []).map(mapearLista);
     return c.json({ listas });
@@ -37,8 +39,7 @@ export const listasRouter = new Hono()
 
   // GET /listas/:id/items — items de una lista (agrupados por grupo_id) y su nombre
   .get('/listas/:id/items', async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const listId = c.req.param('id');
 
@@ -48,7 +49,7 @@ export const listasRouter = new Hono()
       p_user_id: session.user.id,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
 
     const rawRows = (data as DbItemLista[]) ?? [];
 
@@ -69,8 +70,7 @@ export const listasRouter = new Hono()
 
   // POST /listas — guardar lista nueva
   .post('/listas', zValidator('json', guardarListaSchema), async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     // 1. Validar límite de listas del usuario antes de insertar
     const limitError = await checkUserLimit(c, supabase, session.user.id, 'listas');
@@ -84,15 +84,14 @@ export const listasRouter = new Hono()
       p_items: items,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
 
     return c.json({ id: data }, 201);
   })
 
   // PATCH /listas/:id — sincronizar lista existente (y renombrar si es owner)
   .patch('/listas/:id', zValidator('json', sincronizarListaSchema), async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const listId = c.req.param('id');
     const { items, nombre } = c.req.valid('json');
@@ -104,7 +103,7 @@ export const listasRouter = new Hono()
       p_nombre: nombre ?? null,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
     if (!data) return c.json({ error: 'No autorizado o lista no encontrada' }, 403);
 
     return c.json({ success: true }, 200);
@@ -112,8 +111,7 @@ export const listasRouter = new Hono()
 
   // DELETE /listas/:id — abandonar o eliminar lista
   .delete('/listas/:id', async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const listId = c.req.param('id');
 
@@ -122,7 +120,7 @@ export const listasRouter = new Hono()
       p_user_id: session.user.id,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
     if (data === 'not_found') return c.json({ error: 'Lista no encontrada' }, 404);
 
     return c.json({ result: data }, 200);
@@ -130,8 +128,7 @@ export const listasRouter = new Hono()
 
   // POST /listas/:id/miembros — compartir lista con otro usuario
   .post('/listas/:id/miembros', zValidator('json', compartirListaSchema), async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const listId = c.req.param('id');
     const { userId, rol } = c.req.valid('json');
@@ -149,7 +146,7 @@ export const listasRouter = new Hono()
       p_rol: rol,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
     if (data === 'not_owner') return c.json({ error: 'Solo el dueño puede compartir la lista' }, 403);
     if (data === 'same_user') return c.json({ error: 'No podés compartir la lista con vos mismo' }, 400);
 
@@ -158,8 +155,7 @@ export const listasRouter = new Hono()
 
   // GET /listas/:id/miembros — miembros y owner de una lista
   .get('/listas/:id/miembros', async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const listId = c.req.param('id');
     const { data, error } = await supabase.rpc('get_miembros_lista', {
@@ -167,7 +163,7 @@ export const listasRouter = new Hono()
       p_owner_id: session.user.id,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
     if (data === null) return c.json({ error: 'Solo el dueño puede administrar los miembros' }, 403);
 
     const miembros = ((data as Array<{ email: string }>) ?? []).map((miembro) => ({
@@ -180,8 +176,7 @@ export const listasRouter = new Hono()
 
   // PATCH /listas/:id/miembros/:userId — cambiar rol de un miembro
   .patch('/listas/:id/miembros/:userId', zValidator('json', actualizarRolMiembroSchema), async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const listId = c.req.param('id');
     const { rol } = c.req.valid('json');
@@ -199,7 +194,7 @@ export const listasRouter = new Hono()
       p_rol: rol,
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
     if (data === 'not_owner') return c.json({ error: 'Solo el dueño puede cambiar roles' }, 403);
     if (data === 'invalid_role') return c.json({ error: 'Rol inválido' }, 400);
     if (data === 'not_found') return c.json({ error: 'Miembro no encontrado' }, 404);
@@ -209,8 +204,7 @@ export const listasRouter = new Hono()
 
   // DELETE /listas/:id/miembros/:userId — quitar un miembro
   .delete('/listas/:id/miembros/:userId', async (c) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session) return c.json({ error: 'No autorizado' }, 401);
+    const session = c.get('sesion');
 
     const { data, error } = await supabase.rpc('eliminar_miembro_lista', {
       p_list_id: c.req.param('id'),
@@ -218,7 +212,7 @@ export const listasRouter = new Hono()
       p_user_id: c.req.param('userId'),
     });
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return errorInterno(c, error);
     if (data === 'not_owner') return c.json({ error: 'Solo el dueño puede eliminar miembros' }, 403);
     if (data === 'not_found') return c.json({ error: 'Miembro no encontrado' }, 404);
 

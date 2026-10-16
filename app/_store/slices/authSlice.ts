@@ -3,6 +3,17 @@ import type { StoreState } from '../store';
 import { authClient, type User } from '../../_lib/auth-client';
 import { analytics } from '@/app/_lib/services/analyticsService';
 
+// Respuestas de /api/* que versiones anteriores del service worker guardaron
+// en Cache Storage (ver app/sw.ts). Se borran al cerrar sesion para que no
+// queden listas ni direcciones de esta cuenta en el dispositivo.
+async function borrarCachesPrivadas() {
+  try {
+    if (typeof caches !== 'undefined') await caches.delete('apis');
+  } catch {
+    // Sin Cache Storage (modo privado, navegador viejo): no hay nada que borrar.
+  }
+}
+
 
 export interface AuthSlice {
   user: User | null;
@@ -110,6 +121,7 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
       await authClient.signOut();
     } finally {
       set({ user: null, loadingAuth: false });
+      await borrarCachesPrivadas();
       get().limpiarLista();
       get().limpiarDirecciones();
       // Sin esto queda el barrio visible en el header y cero sucursales, y la
@@ -134,6 +146,7 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
           }
           await authClient.signOut();
           set({ user: null, loadingAuth: false });
+          await borrarCachesPrivadas();
           get().limpiarLista();
           get().limpiarDirecciones();
           get().limpiarUbicacion();

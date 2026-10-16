@@ -399,6 +399,47 @@ describe('3. Sesiones', () => {
     assert.equal(await sesionActual(e, jar), null);
     assert.equal(await sesionActual(e, otroDispositivo), null);
   });
+
+  it('TC-SES-06: cambiar la clave desde el perfil exige la actual, valida la nueva y cierra las otras sesiones', async () => {
+    const email = 'cambio-clave@qa.test';
+    const e = crearEntorno();
+    const jar = await usuarioConSesion(e, email);
+    const otroDispositivo: Jar = new Map();
+    await pedir(e, 'POST', '/sign-in/email', { body: { email, password: CLAVE_OK }, jar: otroDispositivo });
+    assert.ok(await sesionActual(e, otroDispositivo));
+
+    // Clave actual incorrecta: 400 INVALID_PASSWORD, nada cambia.
+    const malActual = await pedir(e, 'POST', '/change-password', {
+      body: { currentPassword: 'NoEsLaClave1', newPassword: 'OtraClave22', revokeOtherSessions: true },
+      jar,
+    });
+    assert.equal(malActual.status, 400);
+    assert.equal(codigo(malActual), 'INVALID_PASSWORD');
+    assert.ok(await sesionActual(e, otroDispositivo), 'un intento fallido no debe cerrar sesiones');
+
+    // Clave nueva debil: la rechaza el hook del servidor, no solo el formulario.
+    const debil = await pedir(e, 'POST', '/change-password', {
+      body: { currentPassword: CLAVE_OK, newPassword: 'aaaaaaaa', revokeOtherSessions: true },
+      jar,
+    });
+    assert.equal(debil.status, 400);
+    assert.equal(codigo(debil), 'PASSWORD_TOO_WEAK');
+
+    // Cambio valido con revokeOtherSessions: este dispositivo sigue, el otro no.
+    const ok = await pedir(e, 'POST', '/change-password', {
+      body: { currentPassword: CLAVE_OK, newPassword: 'OtraClave22', revokeOtherSessions: true },
+      jar,
+    });
+    assert.equal(ok.status, 200);
+    assert.ok(await sesionActual(e, jar), 'el dispositivo que cambio la clave sigue logueado');
+    assert.equal(await sesionActual(e, otroDispositivo), null);
+
+    // La clave vieja ya no entra y la nueva si.
+    const vieja = await pedir(e, 'POST', '/sign-in/email', { body: { email, password: CLAVE_OK } });
+    assert.equal(vieja.status, 401);
+    const nueva = await pedir(e, 'POST', '/sign-in/email', { body: { email, password: 'OtraClave22' } });
+    assert.equal(nueva.status, 200);
+  });
 });
 
 // -----------------------------------------------------------------------------

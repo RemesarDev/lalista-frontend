@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useListaStore } from '@/app/_store/store';
 import BaseContainer from '@/app/_components/global/BaseContainer';
-import { UserIcon, EnvelopeIcon, TrashIcon, SignOutIcon } from '@phosphor-icons/react';
+import { UserIcon, EnvelopeIcon, TrashIcon, SignOutIcon, KeyIcon } from '@phosphor-icons/react';
 import { ModalBorrarCuenta } from './_components/ModalBorrarCuenta';
+import { ModalCambiarContrasena, type DatosCambioContrasena } from './_components/ModalCambiarContrasena';
 import { Button } from '@/app/_components/global/Button';
 import { avisar } from '@/app/_lib/avisos';
 import { traducirErrorAuth } from '@/app/_lib/utils/traductorAuth';
@@ -17,9 +18,11 @@ export default function PerfilPage() {
     const logout = useListaStore((state) => state.logout);
     const borrarCuenta = useListaStore((state) => state.borrarCuenta);
     const checkAuth = useListaStore((state) => state.checkAuth);
+    const cambiarContrasena = useListaStore((state) => state.cambiarContrasena);
 
     const [modalOpen, setModalOpen] = useState(false);
     const [loadingBorrar, setLoadingBorrar] = useState(false);
+    const [modalClaveOpen, setModalClaveOpen] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -44,6 +47,18 @@ export default function PerfilPage() {
         await logout();
         avisar.exito('Cerraste sesión');
         router.replace('/');
+    };
+
+    const handleCambiarContrasena = async ({ actual, nueva, cerrarOtrasSesiones }: DatosCambioContrasena) => {
+        const result = await cambiarContrasena(actual, nueva, cerrarOtrasSesiones);
+        if (result.success) {
+            setModalClaveOpen(false);
+            avisar.exito(cerrarOtrasSesiones
+                ? 'Cambiaste tu contraseña y cerraste las otras sesiones'
+                : 'Cambiaste tu contraseña');
+        }
+        // Los errores los muestra el modal, junto al campo que corresponde.
+        return result;
     };
 
     const handleBorrarCuenta = async (password: string) => {
@@ -100,6 +115,16 @@ export default function PerfilPage() {
                     <Button
                         variant="secondary"
                         fullWidth
+                        onClick={() => setModalClaveOpen(true)}
+                        className="gap-2 rounded-2xl px-4 py-3"
+                    >
+                        <KeyIcon size={18} weight="bold" />
+                        Cambiar contraseña
+                    </Button>
+
+                    <Button
+                        variant="secondary"
+                        fullWidth
                         onClick={handleLogout}
                         className="gap-2 rounded-2xl px-4 py-3"
                     >
@@ -120,6 +145,12 @@ export default function PerfilPage() {
 
                 </div>
             </div>
+
+            <ModalCambiarContrasena
+                isOpen={modalClaveOpen}
+                onClose={() => setModalClaveOpen(false)}
+                onConfirm={handleCambiarContrasena}
+            />
 
             <ModalBorrarCuenta
                 isOpen={modalOpen}

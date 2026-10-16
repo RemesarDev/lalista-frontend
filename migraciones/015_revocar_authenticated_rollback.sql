@@ -1,37 +1,45 @@
 -- =============================================================================
 -- ROLLBACK DE EMERGENCIA de 015_revocar_authenticated.sql
 -- =============================================================================
--- Devuelve el EXECUTE a authenticated en las 16 funciones y los grants de tabla
--- de Better Auth a anon/authenticated, es decir, el estado previo a 015 (ver el
--- ACL documentado en 011_revocar_anon_rollback.sql).
+-- Devuelve los permisos al estado exacto que se midio en produccion el
+-- 2026-10-16, justo antes de aplicar 015:
 --
--- Cuando se usa: solo si despues de 015 algo que SI usa el rol authenticated
--- deja de andar. Segun el codigo actual nada lo usa: el servidor va con
--- service_role y Better Auth con el rol de DATABASE_URL. Reabrir esto vuelve a
--- dejar el IDOR por /rest/v1/rpc descripto en 015.
+--   * authenticated: EXECUTE en las 19 funciones de usuario.
+--   * anon y PUBLIC: EXECUTE solo en estas cuatro (GK-20):
+--       actualizar_lista_v2(uuid, text, jsonb, text)
+--       actualizar_lista(uuid, text, jsonb)
+--       guardar_lista_usuario(text, text, jsonb)
+--       get_items_lista(uuid, text)
+--   * anon y authenticated: los grants de tabla de user/session/account/
+--     verification.
+--
+-- Cuando se usa: solo si despues de 015 algo que SI usa anon o authenticated
+-- deja de andar. Segun el codigo actual nada los usa: el servidor va con
+-- service_role y Better Auth con el rol de DATABASE_URL (postgres).
+-- Reabrir esto vuelve a dejar el IDOR por /rest/v1/rpc descripto en 015.
 -- =============================================================================
 
 begin;
 
-grant execute on function public.actualizar_radio_direccion(uuid, text, numeric) to authenticated;
-grant execute on function public.cambiar_direccion_activa(uuid, text) to authenticated;
-grant execute on function public.obtener_direcciones_usuario(text) to authenticated;
-grant execute on function public.agregar_direccion(text, text, double precision, double precision, integer) to authenticated;
-grant execute on function public.eliminar_direccion(uuid, text) to authenticated;
+do $$
+declare f record;
+begin
+  for f in
+    select p.oid::regprocedure as firma
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and pg_get_function_identity_arguments(p.oid) ~ '(p_user_id|p_owner_id|p_solicitante_id)'
+      and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+  loop
+    execute format('grant execute on function %s to authenticated', f.firma);
+  end loop;
+end $$;
 
-grant execute on function public.get_listas_usuario(text) to authenticated;
-grant execute on function public.get_items_lista_v2(uuid, text) to authenticated;
-grant execute on function public.get_items_lista_v3(uuid, text) to authenticated;
-grant execute on function public.guardar_lista_usuario_v2(text, text, jsonb) to authenticated;
-grant execute on function public.actualizar_lista_v2(uuid, text, jsonb) to authenticated;
-grant execute on function public.abandonar_lista(uuid, text) to authenticated;
-
-grant execute on function public.compartir_lista(uuid, text, text, text) to authenticated;
-grant execute on function public.get_miembros_lista(uuid, text) to authenticated;
-grant execute on function public.actualizar_rol_miembro(uuid, text, text, text) to authenticated;
-grant execute on function public.eliminar_miembro_lista(uuid, text, text) to authenticated;
-
-grant execute on function public.buscar_usuarios_por_email(text, text) to authenticated;
+grant execute on function public.actualizar_lista_v2(uuid, text, jsonb, text) to public, anon;
+grant execute on function public.actualizar_lista(uuid, text, jsonb) to public, anon;
+grant execute on function public.guardar_lista_usuario(text, text, jsonb) to public, anon;
+grant execute on function public.get_items_lista(uuid, text) to public, anon;
 
 grant all on table public."user", public."session", public."account", public."verification" to anon, authenticated;
 

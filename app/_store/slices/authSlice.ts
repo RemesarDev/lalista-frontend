@@ -24,6 +24,7 @@ export interface AuthSlice {
   registroConEmail: (email: string, password: string, name: string) => Promise<{ success: boolean; requiereVerificacion?: boolean; error?: any }>;
   logout: () => Promise<void>;
   borrarCuenta: (password: string) => Promise<{ success: boolean; error?: any }>;
+  cambiarContrasena: (actual: string, nueva: string, cerrarOtrasSesiones: boolean) => Promise<{ success: boolean; error?: unknown }>;
   checkAuth: () => Promise<User | null>;
 }
 
@@ -129,6 +130,25 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
       // Además, en un dispositivo compartido la dirección del que se fue
       // seguiría a la vista.
       get().limpiarUbicacion();
+    }
+  },
+
+  // No toca loadingAuth a proposito: la pagina de perfil muestra "Cargando..."
+  // mientras loadingAuth es true, y eso desmontaria el modal a mitad del envio.
+  // El servidor exige la clave actual, valida la nueva con la misma regla que
+  // el registro (auth-hardening.ts) y, con revokeOtherSessions, cierra las
+  // sesiones de los otros dispositivos y emite una cookie nueva para este.
+  cambiarContrasena: async (actual, nueva, cerrarOtrasSesiones) => {
+    try {
+      const { error } = await authClient.changePassword({
+        currentPassword: actual,
+        newPassword: nueva,
+        revokeOtherSessions: cerrarOtrasSesiones,
+      });
+      if (error) return { success: false, error };
+      return { success: true };
+    } catch (error) {
+      return { success: false, error };
     }
   },
 

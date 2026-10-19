@@ -55,8 +55,9 @@ const mismosFiltros = (a: Filtros, b: Filtros) =>
  * asi que cualquier combinacion elegida seguida es una sola peticion. Si se
  * vuelve a lo que ya estaba aplicado, no se busca nada.
  *
- * Lo comparten el menu de categorias (en StickySearch) y los chips (en
- * FiltrosBusqueda), que son hermanos en la pagina, por eso es un contexto.
+ * Lo comparten el menu de categorias y los chips (FiltrosBusqueda), que van
+ * en la franja fija de StickySearch, y la nota de los resultados
+ * (NotaFiltros), por eso es un contexto.
  */
 export function FiltrosDiferidosProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -92,6 +93,11 @@ export function FiltrosDiferidosProvider({ children }: { children: ReactNode }) 
       else params.delete('etiquetas');
 
       const url = `/buscar?${params.toString()}`;
+
+      // Los chips y el menu estan en la franja fija, asi que se pueden tocar
+      // con la lista muy abajo. Con resultados nuevos se vuelve arriba para
+      // verlos desde el primero.
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
       // Cambiar de categoria deja una entrada en el historial, asi "atras"
       // vuelve a la anterior. Las etiquetas se reemplazan, como antes.

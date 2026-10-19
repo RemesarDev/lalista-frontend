@@ -29,11 +29,17 @@ body {
    AvisoComparar (bottom-20 / md:bottom-6). */
 :root {
   --avisos-abajo: 5rem;
+  /* Alto del header pegado arriba; lo usa el buscador de /buscar para
+     pegarse justo debajo. HeaderFijo lo mide y lo actualiza: estos son solo
+     respaldos para antes de que corra JavaScript (mobile tiene la fila de
+     direccion y radio, escritorio no). */
+  --alto-header: 97px;
 }
 
 @media (min-width: 48rem) {
   :root {
     --avisos-abajo: 1.5rem;
+    --alto-header: 59px;
   }
 }
 

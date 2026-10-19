@@ -2,19 +2,30 @@
 import { useListaStore } from '@/app/_store/store';
 import { MenuCategorias } from './MenuCategorias';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { DesktopActionButton } from './DesktopActionButton';
 import { ShoppingCartIcon } from '@phosphor-icons/react';
 import { analytics } from '@/app/_lib/services/analyticsService';
 import SearchHints from './avisos/SearchHintsProps';
 import { useFiltrosDiferidos } from '@/app/(main)/buscar/_hooks/useFiltrosDiferidos';
 
-export default function StickySearch() {
+/**
+ * Buscador pegado debajo del header mientras se scrollea.
+ *
+ * `children` se muestra dentro de la misma franja fija, debajo del buscador:
+ * /buscar lo usa para los chips de etiquetas, asi siguen a mano aunque el
+ * usuario haya bajado mucho cargando productos.
+ */
+export default function StickySearch({ children }: { children?: ReactNode }) {
   const searchParams = useSearchParams();
   // Inicializamos el input con lo que ya esté en la URL para que no arranque vacío si recargás la página
   const [query, setQuery] = useState(searchParams.get('q') || "");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  // Los consejos de busqueda flotan sobre los chips de la franja fija: se
+  // muestran solo mientras el usuario escribe, para no taparlos el resto del
+  // tiempo.
+  const [escribiendo, setEscribiendo] = useState(false);
   const setTerminoBusqueda = useListaStore((state) => state.setTerminoBusqueda);
   const { visibles: filtros, descartar: descartarPendientes } = useFiltrosDiferidos();
 
@@ -69,12 +80,19 @@ export default function StickySearch() {
       if (categoria) params.set('categoria', categoria);
       if (etiquetas) params.set('etiquetas', etiquetas);
       
-      router.push(`/buscar?${params.toString()}`);
+      // Resultados nuevos: se vuelve arriba a mano. El scroll automatico de
+      // Next saltea los elementos sticky y dejaria el comienzo de la lista
+      // tapado por el header y esta barra.
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      router.push(`/buscar?${params.toString()}`, { scroll: false });
     }
   };
 
   return (
-    <div className="sticky top-[57px] z-40 w-full backdrop-blur-md px-2 py-2">
+    // top-(--alto-header): se pega justo debajo del header, que publica su alto
+    // real (ver HeaderFijo). Los margenes negativos estiran el fondo de borde a
+    // borde para que los productos no se vean pasar por los costados.
+    <div className="sticky top-(--alto-header) z-40 -mx-4 bg-slate-50/90 px-6 py-2 backdrop-blur-md sm:-mx-6 sm:px-8">
       <div className="mx-auto flex max-w-5xl flex-col gap-2 md:flex-row md:items-center md:justify-center md:gap-3">
         <div className="flex w-full items-center gap-2 md:w-auto">
         <form
@@ -103,10 +121,12 @@ export default function StickySearch() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setEscribiendo(true)}
+            onBlur={() => setEscribiendo(false)}
             placeholder="¿Qué producto buscas hoy? (Ej: Leche, Arroz)"
             className="w-full rounded-xl border border-accent-300 bg-white py-2.5 pl-10 pr-4 text-sm font-sans text-slate-800 shadow-sm transition placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
-          <SearchHints searchTerm={query} />
+          {escribiendo && <SearchHints searchTerm={query} />}
         </form>
 
 
@@ -124,6 +144,8 @@ export default function StickySearch() {
           />
         </div>
       </div>
+
+      {children && <div className="mx-auto mt-2 max-w-5xl">{children}</div>}
     </div>
   );
 }

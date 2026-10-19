@@ -5,7 +5,7 @@ import { Suspense, useEffect, useRef } from 'react';
 import { useBusqueda } from './_hooks/useBusqueda';
 import { FiltrosDiferidosProvider } from './_hooks/useFiltrosDiferidos';
 import { ProductCard } from './_components/ProductCard';
-import { FiltrosBusqueda } from './_components/FiltrosBusqueda';
+import { FiltrosBusqueda, NotaFiltros } from './_components/FiltrosBusqueda';
 import { useListaStore } from '@/app/_store/store';
 import StickySearch from '@/app/_components/global/StickySearch';
 import BaseContainer from '@/app/_components/global/BaseContainer';
@@ -126,21 +126,11 @@ function ResultadosBusqueda() {
     }
   };
 
-  // La barra se muestra siempre en esta vista, no solo cuando hay un filtro
-  // activo: los chips especiales tienen que poder elegirse en
-  // cualquier momento, sin necesidad de elegir antes una categoria. El chip
-  // de categoria en si ya se oculta solo cuando no hay categoria elegida
-  // (logica interna de FiltrosBusqueda), asi que no hace falta duplicar esa
-  // condicion aca afuera.
-  const barraFiltros = (
-    <div className="pb-4">
-      <FiltrosBusqueda />
-    </div>
-  );
-
+  // Los chips de filtros viven en la franja fija del buscador (ver
+  // BuscarVista). Aca solo queda la aclaracion sobre las etiquetas activas.
   if (cargando) return (
     <>
-      {barraFiltros}
+      <NotaFiltros />
       <div className="col-span-2 flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
         <span className="text-5xl animate-bounce">🛒</span>
         <p className="text-sm">Buscando precios en tu zona...</p>
@@ -150,7 +140,7 @@ function ResultadosBusqueda() {
 
   if (!cargando && productos.length === 0) return (
     <>
-      {barraFiltros}
+      <NotaFiltros />
       <div className="col-span-2 flex flex-col items-center justify-center py-16 gap-2 text-center text-slate-400 px-4">
         <span className="text-4xl">🔍</span>
         <p className="text-sm font-medium">No se encontraron resultados en tu zona.</p>
@@ -165,7 +155,7 @@ function ResultadosBusqueda() {
 
   return (
     <div className="flex flex-col gap-6">
-      {barraFiltros}
+      <NotaFiltros />
 
       {/* Banner de Modo Alternativa */}
       {esModoAlternativa && (
@@ -222,10 +212,15 @@ function ResultadosBusqueda() {
 export default function BuscarVista() {
   return (
     <Suspense fallback={<p className="text-center text-slate-400 py-10">Cargando...</p>}>
-      {/* El menu de categorias (en StickySearch) y los chips (en los
-          resultados) comparten la misma espera antes de buscar. */}
+      {/* El menu de categorias y los chips comparten la misma espera antes de
+          buscar. Los dos van en la franja fija del buscador, asi se pueden
+          usar aunque el usuario haya bajado mucho en la lista. Los chips se
+          muestran siempre, no solo con un filtro activo: tienen que poder
+          elegirse sin elegir antes una categoria. */}
       <FiltrosDiferidosProvider>
-        <StickySearch />
+        <StickySearch>
+          <FiltrosBusqueda />
+        </StickySearch>
         <BaseContainer>
           <ResultadosBusqueda />
         </BaseContainer>

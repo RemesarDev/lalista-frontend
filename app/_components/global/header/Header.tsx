@@ -1,10 +1,13 @@
 import HeaderLocation from "./HeaderLocation";
 import HeaderLogo from "./HeaderLogo";
 import HeaderNavUser from "./HeaderNavUser";
+import HeaderFijo from "./HeaderFijo";
 
 export default function Header() {
   return (
-    <header className="w-full bg-primary-400 border-b border-accent-300 px-4 py-3 sticky top-0 z-50">
+    // HeaderFijo mide el alto real y lo publica en --alto-header para lo que
+    // se pega debajo (el buscador de /buscar).
+    <HeaderFijo className="w-full bg-primary-400 border-b border-accent-300 px-4 py-3 sticky top-0 z-50">
       {/* Usamos flex-col para móvil y cambiamos a row en md */}
       <div className="flex flex-col gap-3 max-w-7xl mx-auto w-full">
         
@@ -19,6 +22,6 @@ export default function Header() {
           <HeaderLocation />
         </div>
       </div>
-    </header>
+    </HeaderFijo>
   );
 }

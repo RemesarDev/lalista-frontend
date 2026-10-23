@@ -505,6 +505,126 @@ Resultado: **PASS**.
 
 ---
 
+---
+
+## 3.7. Geobloqueo y funcionamiento offline
+
+### TC-GEO-01 — API permitida para Argentina
+
+| Campo              | Detalle                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| ID                 | `TC-GEO-01`                                                    |
+| Endpoint           | `GET /api/productos?sucursales_ids=9-1-153`                    |
+| Tipo               | Geobloqueo / caso permitido                                   |
+| Entrada            | Header `x-vercel-ip-country: AR`                              |
+| Resultado esperado | HTTP `200` y respuesta normal de productos                     |
+| Resultado obtenido | HTTP `200`, productos y precios devueltos correctamente        |
+| Estado             | ✅ PASS                                                        |
+| Herramienta        | Terminal                                                       |
+
+### TC-GEO-02 — API bloqueada para país externo
+
+| Campo              | Detalle                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| ID                 | `TC-GEO-02`                                                    |
+| Endpoint           | `GET /api/productos?sucursales_ids=9-1-153`                    |
+| Tipo               | Geobloqueo / caso bloqueado                                   |
+| Entrada            | Header `x-vercel-ip-country: US`                              |
+| Resultado esperado | HTTP `403` con error `REGION_NOT_SUPPORTED`                   |
+| Resultado obtenido | HTTP `403` con el error esperado                               |
+| Estado             | ✅ PASS                                                        |
+| Herramienta        | Terminal                                                       |
+
+### TC-GEO-03 — API bloqueada cuando el país no está informado
+
+| Campo              | Detalle                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| ID                 | `TC-GEO-03`                                                    |
+| Endpoint           | `GET /api/productos?sucursales_ids=9-1-153`                    |
+| Tipo               | Geobloqueo / país desconocido                                 |
+| Entrada            | Sin header `x-vercel-ip-country`                              |
+| Resultado esperado | HTTP `403` con error `REGION_NOT_SUPPORTED`                   |
+| Resultado obtenido | HTTP `403` con el error esperado                               |
+| Estado             | ✅ PASS                                                        |
+| Herramienta        | Terminal                                                       |
+
+### TC-GEO-04 — Bloqueo de navegación fuera de Argentina
+
+| Campo              | Detalle                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| ID                 | `TC-GEO-04`                                                    |
+| Ruta               | `/mi-lista`                                                    |
+| Tipo               | Geobloqueo / navegación                                        |
+| Entorno            | Producción local con `npm run start`                          |
+| Entrada            | País no informado o distinto de `AR`                          |
+| Resultado esperado | Mostrar pantalla `/acceso-restringido`                        |
+| Resultado obtenido | Se mostró la pantalla de disponibilidad regional               |
+| Estado             | ✅ PASS                                                        |
+| Herramienta        | Navegador                                                      |
+
+### TC-GEO-05 — Conservación de la lista offline
+
+| Campo              | Detalle                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| ID                 | `TC-GEO-05`                                                    |
+| Tipo               | Offline / persistencia local                                   |
+| Precondición       | Lista creada previamente con conexión                          |
+| Acción             | Desactivar la red desde DevTools                              |
+| Resultado esperado | La lista guardada continúa visible                             |
+| Resultado obtenido | La lista continuó visible                                      |
+| Estado             | ✅ PASS                                                        |
+| Herramienta        | Navegador                                                      |
+
+### TC-GEO-06 — Advertencia de conexión offline
+
+| Campo              | Detalle                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| ID                 | `TC-GEO-06`                                                    |
+| Tipo               | Offline / interfaz                                             |
+| Acción             | Desactivar la red con una fecha de conexión registrada         |
+| Resultado esperado | Mostrar banner offline y última conexión registrada            |
+| Resultado obtenido | El banner mostró la advertencia y la fecha de última conexión   |
+| Estado             | ✅ PASS                                                        |
+| Herramienta        | Navegador                                                      |
+
+### TC-GEO-07 — Limpieza de caché de API ante bloqueo
+
+| Campo              | Detalle                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| ID                 | `TC-GEO-07`                                                    |
+| Tipo               | Service worker / limpieza de caché                             |
+| Precondición       | Existencia de entradas en `Cache Storage > apis`               |
+| Acción             | Ejecutar una solicitud que devuelve `403 REGION_NOT_SUPPORTED`  |
+| Resultado esperado | El contenido de `apis` debe eliminarse                         |
+| Resultado obtenido | La caché `apis` quedó vacía                                    |
+| Estado             | ✅ PASS                                                        |
+| Herramienta        | Navegador / DevTools                                           |
+
+### TC-GEO-08 — Conservación de datos locales del usuario
+
+| Campo              | Detalle                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| ID                 | `TC-GEO-08`                                                    |
+| Tipo               | Offline / integridad de datos                                  |
+| Acción             | Ejecutar bloqueo regional y revisar `localStorage`             |
+| Resultado esperado | Conservar la clave `lalista-storage`                           |
+| Resultado obtenido | `lalista-storage` permaneció disponible                        |
+| Estado             | ✅ PASS                                                        |
+| Herramienta        | Navegador / DevTools                                           |
+
+### TC-GEO-09 — Registro y control del service worker
+
+| Campo              | Detalle                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| ID                 | `TC-GEO-09`                                                    |
+| Tipo               | Service worker / integración                                   |
+| Acción             | Verificar registro y control de la página                       |
+| Resultado esperado | Service worker registrado y página controlada                   |
+| Resultado obtenido | Serwist registrado `/serwist/sw.js`; `navigator.serviceWorker.controller` devolvió `true` |
+| Estado             | ✅ PASS                                                        |
+| Herramienta        | Navegador / DevTools                                           |
+
+
 # 6. Resumen de resultados
 
 | Categoría     |  Casos | Resultado                    |
@@ -514,14 +634,19 @@ Resultado: **PASS**.
 | Rate limiting |      1 | ✅ PASS                       |
 | Sesiones      |      1 | ✅ PASS                       |
 | Logging       |      1 | ✅ PASS                       |
-| UX / interfaz |      2 | ✅ 2 PASS                     |
-| **Total**     | **14** | **✅ PASS**                   |
+| UX / interfaz |      2 | ✅ 2 PASS  
+| Geobloqueo / offline | 9 | ✅ 9 PASS |                   |
+| **Total**     | **23** | **✅ PASS** |                 |
 
 ### Resultado general
 
 Las funcionalidades y escenarios ejecutados para MVP3 presentan resultado satisfactorio luego de las correcciones realizadas.
 
 Se identificó un defecto relacionado con la validación del radio máximo de búsqueda. El defecto fue reproducido, documentado, corregido y sometido a re-test, obteniendo resultado satisfactorio.
+
+Se validó el geobloqueo local mediante API y navegación, la limpieza de la caché `apis`, la conservación de `lalista-storage`, el funcionamiento offline de la lista y el registro del service worker.
+
+La validación del Firewall de Vercel y la repetición de estas pruebas en producción quedan pendientes.
 
 El proceso de testing permitió generar evidencia concreta del ciclo:
 
@@ -533,8 +658,9 @@ El proceso de testing permitió generar evidencia concreta del ciclo:
 
 Las siguientes funcionalidades forman parte de la estrategia de testing pero no se registran como PASS hasta contar con una ejecución y evidencia correspondiente:
 
-* Geobloqueo de IPs para restringir acceso a Argentina.
-* Validación específica del comportamiento del geobloqueo en ambiente desplegado.
+* Confirmar en producción la regla de Firewall de Vercel.
+* Repetir pruebas de API y navegación desde una ubicación fuera de Argentina.
+* Validar nuevamente el flujo offline después de activar el Firewall.
 * Persistencia histórica de logs para consulta y monitoreo.
 * Validación de rate limiting en ambiente distribuido/serverless.
 * Pruebas adicionales de autenticación/autorización en endpoints que lo requieran.

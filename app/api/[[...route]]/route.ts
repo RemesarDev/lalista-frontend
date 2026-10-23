@@ -15,10 +15,72 @@ import { ratelimit } from '@/app/_lib/rate-limit';
 import { adminRouter } from './admin';
 import { supportRouter } from './support';
 import { promocionesRouter } from './promociones';
+import {
+  permiteBypassGeograficoLocal,
+  paisPermitido,
+} from '@/app/_lib/geo';
 
 export const runtime = 'nodejs'; 
 
 const app = new Hono().basePath('/api');
+
+// ==========================================
+// 2. CAPAS GLOBALES DE SEGURIDAD
+// ==========================================
+app.use('*', secureHeaders());
+
+app.use('*', cors({
+    origin: (origin) => {
+        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+        const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+        const vercelBranchUrl = process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : null;
+
+        const allowedOrigins = new Set([
+            appUrl,
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            ...(vercelUrl ? [vercelUrl] : []),
+            ...(vercelBranchUrl ? [vercelBranchUrl] : []),
+        ]);
+
+        if (!origin || allowedOrigins.has(origin)) {
+            return origin || appUrl;
+        }
+
+        return null;
+    },
+    credentials: true,
+}));
+
+// ==========================================
+// RESTRICCIÓN GEOGRÁFICA DE LA API
+// ==========================================
+
+app.use('*', async (c, next) => {
+  const hostname = new URL(c.req.url).hostname;
+  const headers = c.req.raw.headers;
+
+  const bypassLocalSinPais =
+    permiteBypassGeograficoLocal(hostname) &&
+    !headers.has('x-vercel-ip-country');
+
+  if (paisPermitido(headers) || bypassLocalSinPais) {
+    await next();
+    return;
+  }
+
+  return c.json(
+    {
+      error: 'REGION_NOT_SUPPORTED',
+      message: 'Lalista actualmente está disponible solo en Argentina.',
+    },
+    403,
+    {
+      'Cache-Control': 'private, no-store, max-age=0',
+    },
+  );
+});
+
 
 // ==========================================
 // MANEJADOR GLOBAL DE ERRORES DE API
@@ -33,7 +95,7 @@ app.onError((err, c) => {
     });
 
     // Extracción de ubicación con fallback seguro
-    const country = c.req.header('x-vercel-ip-country') || 'AR';
+    const country = c.req.header('x-vercel-ip-country') || 'UNKNOWN';
     const rawProvince = c.req.header('x-vercel-ip-country-region');
     const rawCity = c.req.header('x-vercel-ip-city');
     const province = rawProvince ? decodeURIComponent(rawProvince) : null;
@@ -96,34 +158,6 @@ app.use('*', async (c, next) => {
 });
 
 // ==========================================
-// 2. CAPAS GLOBALES DE SEGURIDAD
-// ==========================================
-app.use('*', secureHeaders());
-
-app.use('*', cors({
-    origin: (origin) => {
-        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
-        const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
-        const vercelBranchUrl = process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : null;
-
-        const allowedOrigins = new Set([
-            appUrl,
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
-            ...(vercelUrl ? [vercelUrl] : []),
-            ...(vercelBranchUrl ? [vercelBranchUrl] : []),
-        ]);
-
-        if (!origin || allowedOrigins.has(origin)) {
-            return origin || appUrl;
-        }
-
-        return null;
-    },
-    credentials: true,
-}));
-
-// ==========================================
 // 3. AUTENTICACIÓN (Better Auth) 
 // ==========================================
 app.all('/auth/*', (c) => {
@@ -133,17 +167,17 @@ app.all('/auth/*', (c) => {
 // ==========================================
 // 4. ENRUTAMIENTO MODULAR (Chaining)
 // ==========================================
-const routes = app
-    .route('/', productosRouter)
-    .route('/', listasRouter)
-    .route('/', usuariosRouter)
-    .route('/', direccionesRouter)
-    .route('/maps', mapsRouter)
-    .route('/', historicoRouter)
-    .route('/', analyticsRouter)
-    .route('/', adminRouter)
-    .route('/', supportRouter)
-    .route('/', promocionesRouter);
+export const routes = app
+  .route('/', productosRouter)
+  .route('/', listasRouter)
+  .route('/', usuariosRouter)
+  .route('/', direccionesRouter)
+  .route('/maps', mapsRouter)
+  .route('/', historicoRouter)
+  .route('/', analyticsRouter)
+  .route('/', adminRouter)
+  .route('/', supportRouter)
+  .route('/', promocionesRouter);
 
 // ==========================================
 // 5. EXPORTACIONES PARA NEXT.JS

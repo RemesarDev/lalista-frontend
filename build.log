@@ -1,0 +1,60 @@
+
+> lalista-front@0.1.0 build
+> next build
+
+▲ Next.js 16.3.8 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.ts took 14.0s
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 92s
+  Running TypeScript ...
+  Finished TypeScript in 98s ...
+  Collecting page data using 3 workers ...
+✓ Running next.config.ts took 1152ms
+  Generating static pages using 3 workers (0/27) ...
+  Generating static pages using 3 workers (6/27) 
+  Generating static pages using 3 workers (13/27) 
+  Generating static pages using 3 workers (20/27) 
+✓ Running next.config.ts took 961ms
+○ (serwist) Using esbuild to bundle the service worker.
+✓ (serwist) 58 precache entries (1617.69 KiB)
+✓ Generating static pages using 3 workers (27/27) in 3.4s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /~offline
+├ ○ /acceso-restringido
+├ ○ /admin
+├ ○ /admin/backup
+├ ○ /admin/mensajes
+├ ○ /admin/metrics
+├ ƒ /api/[[...route]]
+├ ○ /buscar
+├ ○ /calculadora
+├ ○ /comparativa
+├ ○ /dev-ui
+├ ○ /login
+├ ○ /manifest.webmanifest
+├ ○ /mi-lista
+├ ○ /mis-listas
+├ ○ /olvide-contrasena
+├ ○ /perfil
+├ ○ /preguntas-frecuentes
+├ ○ /promociones
+├ ƒ /restablecer-contrasena
+├   /serwist/[path]
+│ ├ ● /serwist/sw.js.map
+│ └ ● /serwist/sw.js
+├ ○ /signup
+└ ○ /ubicacion
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+

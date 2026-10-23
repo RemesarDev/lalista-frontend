@@ -1,21 +1,14 @@
-import type { Metadata, Viewport } from "next";
-import { AuthProvider } from "./_components/global/AuthProvider";
-import { AnalyticsTracker } from '@/app/_components/global/AnalyticsTracker';
-import { SerwistProvider } from "@serwist/turbopack/react";
-import OfflineBanner from "./_components/OfflineBanner";
-import { ContenedorAvisos } from "./_components/global/avisos/ContenedorAvisos";
-import "./globals.css"; 
-import { Suspense } from "react";
-import ModalLimite from "./_components/global/avisos/ModalLimite";
-
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "LALIsta - Tu compañera en las compras",
-  description: "Comparador inteligente de precios de supermercados para Argentina.",
+  title: 'LALIsta - Tu compañera en las compras',
+  description:
+    'Comparador inteligente de precios de supermercados para Argentina.',
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "La Lista",
+    statusBarStyle: 'default',
+    title: 'La Lista',
   },
 };
 
@@ -26,24 +19,15 @@ export const viewport: Viewport = {
   themeColor: '#C27BFF',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="es">
       <body className="antialiased bg-slate-100 text-slate-900 font-sans">
-        <SerwistProvider swUrl="/serwist/sw.js">
-          <OfflineBanner />
-          <Suspense fallback={null}>
-            <AnalyticsTracker />
-          </Suspense>
-          <AuthProvider>
-            {children}
-            <ModalLimite />
-          </AuthProvider>
-          {/* Avisos flotantes (toasts). En Suspense porque lee la URL. */}
-          <Suspense fallback={null}>
-            <ContenedorAvisos />
-          </Suspense>
-        </SerwistProvider>
+        {children}
       </body>
     </html>
   );
